@@ -1,0 +1,88 @@
+/* ОБЕРТКА ВСЕГО ЭКРАНА */
+.auth-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.65) 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  overflow: hidden;
+}
+.auth-card {
+  background: rgba(20, 20, 20, 0.88);
+  padding: 40px;
+  border-radius: 16px;
+  width: 400px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.7),
+    0 0 120px 40px rgba(0, 0, 0, 0.85); 
+}
+
+.auth-title {
+  color: #ffffff;
+  font-family: 'Ubuntu', 'Arial', sans-serif;
+  font-size: 28px;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.auth-subtitle {
+  color: rgba(255, 255, 255, 0.45);
+  font-family: 'Ubuntu', 'Arial', sans-serif;
+  font-size: 14px;
+  margin-bottom: 30px;
+}
+
+.input-group {
+  margin-bottom: 18px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 15px;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.input-group input:focus {
+  border-color: #0077ff;
+  background: rgba(0, 119, 255, 0.05);
+  box-shadow: 0 0 15px rgba(0, 119, 255, 0.2);
+}
+
+.auth-button {
+  width: 100%;
+  padding: 14px;
+  background: #0077ff;
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  margin-top: 10px;
+}
+
+.auth-button:hover {
+  background: #0066dd;
+}
+
+.error-text {
+  color: #ff3333;
+  font-size: 14px;
+  margin-top: 15px;
+  font-weight: 500;
+}
