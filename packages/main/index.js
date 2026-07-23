@@ -123,4 +123,8 @@ mp.events.add("playerCommand", async (player, command) => {
             }
         } catch (err) { console.error(err) }
     }
+
+    if (cmdName === "xyz") {
+        player.outputChatBox(`Координаты: ${player.position}`);
+    }
 })

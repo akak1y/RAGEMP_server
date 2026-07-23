@@ -64,5 +64,10 @@ mp.events.add('server:phone:spawnVehicle', async (player, vehicleDbId) => { // �
 
 mp.events.add('server:dealership:requestConfig', (player) => { // отправка конфига в vue
     if (!player.isLoggedIn) return;
-    player.call('client:dealership:setConfig', [JSON.stringify(VehicleConfig)]);
+    player.call('client:dealership:setConfig', [JSON.stringify(VehicleConfig)])
+});
+
+mp.events.add('server:dealership:requestPos', (player) => { // отправка конфига в vue
+    if (!player.isLoggedIn) return;
+    player.call('client:dealership:setPos', [DealershipPos])
 })

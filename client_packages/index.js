@@ -7,6 +7,7 @@ let openWindowsState = { // состояние интерфесов
     dealership: false
 };
 let isAnyUiWindowOpen = false; // для заморозки игрока если открыто любое окно
+let dealershipPos = null;
 
 mp.gui.chat.show(false); // скрываем чат и миникарту
 mp.game.ui.displayRadar(false);
@@ -48,7 +49,7 @@ mp.events.add("client:account:hideAuth", () => { // успешная автор�
     globalKeyBlock = false;
     isAnyUiWindowOpen = false;
     openWindowsState = { inventory: false, phone: false, dealership: false };
-
+    mp.events.callRemote("server:dealership:requestPos");
     if (uiBrowser) uiBrowser.execute(`window.changeScreen("game");`) // меняем окно авторизации на игровой худ
 });
 
@@ -87,8 +88,6 @@ mp.keys.bind(0x50, true, () => { // P - телефон
 
 mp.keys.bind(0x45, true, () => { // E - маркер автосалона
     if (!isAuthorized || globalKeyBlock || isAnyUiWindowOpen) return;
-    
-    const dealershipPos = new mp.Vector3(-2183.0, 4268.0, 48.0);
     const distance = mp.game.gameplay.getDistanceBetweenCoords( mp.players.local.position.x, mp.players.local.position.y, mp.players.local.position.z, dealershipPos.x, dealershipPos.y, dealershipPos.z, true ); // вычисляем дистанцию до маркера в 3D
     
     if (distance <= 2.5 && uiBrowser) {
@@ -122,8 +121,15 @@ mp.events.add("client:setRedisStats", (count) => {
     }
 });
 
+mp.events.add("client:dealership:setConfig", (carsJson) => {
+    if (uiBrowser) {
+        uiBrowser.execute(`if(window.setDealershipCars) window.setDealershipCars('${carsJson}');`)
+    }
+});
+
 mp.events.add("client:phone:updateCars", () => { mp.events.callRemote("server:phone:requestCars") });
 mp.events.add("client:ui:requestStatsUpdate", () => { mp.events.callRemote("server:requestRedisStats") });
 mp.events.add("client:toggleCursor", (toggle) => { mp.gui.cursor.show(toggle, toggle) });
 mp.events.add("client:server:buyCar", (model) => { mp.events.callRemote("server:dealership:buy", model) }); // информация в бэк о покупке авто
 mp.events.add("client:server:spawnCar", (vehDbId) => { mp.events.callRemote("server:phone:spawnVehicle", vehDbId) }); // о спавне
+mp.events.add("client:dealership:setPos", (pos) => { dealershipPos = pos }); // получение xyz из конфига сервера
