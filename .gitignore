@@ -11,11 +11,8 @@
 /packages/main/package-lock.json
 /client_packages/.listcache
 /UI-Server/node_modules
-/UI-Server/package.json
 /UI-Server/package-lock.json
-/UI-Server/vite.config.js
 /node_modules
-/package.json
 /package-lock.json
 /.dependency-cruiser.js
 /packages/main/logs
