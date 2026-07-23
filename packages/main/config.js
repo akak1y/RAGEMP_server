@@ -11,5 +11,5 @@ module.exports = {
         "oppressor2": { name: "Oppressor", price: 10000 },
         "blazer5": { name: "Blazer", price: 15000 }
     },
-    DealershipPos: new mp.Vector3(-2183.0, 4268.0, 48.0) 
+    DealershipPos: new mp.Vector3(-474.0, -95.0, 39.0) 
 }
