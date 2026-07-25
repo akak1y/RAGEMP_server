@@ -1,10 +1,11 @@
 const { createClient } = require('redis');
+let gConfig = require('./settings.json');
 let redisClient = null; // хранилище
 
 async function initRedis() {
     try {
         redisClient = createClient({ // создаём клиент
-            url: 'redis://localhost:6379'
+            url: gConfig.redis.url
         });
         // регистрируем события
         redisClient.on('connect', () => console.log('[Redis] Успешно подключено к серверу ОЗУ.'));

@@ -18,7 +18,7 @@
     <!--телефон-->
     <Phone
       v-if="windows.phone"
-      :cars="myCars"
+      :cars="myCars" :pay="payDeliveryCar"
       @spawn-car="onSpawnCar"
     />
     <!--автосалон-->
@@ -51,6 +51,7 @@ const totalAccounts = ref(0);
 const inventory = ref(new Array(20).fill(null));
 const myCars = ref([]);
 const dealershipCars = ref({});
+const payDeliveryCar = ref(true);
 const windows = ref({ inventory: false, phone: false, dealership: false });
 
 const toggleWindow = (winName) => {
@@ -87,14 +88,18 @@ const onBuyCar = (model) => {
   closeWindow('dealership')
 };
 
-const onSpawnCar = (carId) => {
-  if (typeof mp !== 'undefined') mp.trigger("client:server:spawnCar", carId);
+const onSpawnCar = (carId, pay) => {
+  if (typeof mp !== 'undefined') mp.trigger("client:server:spawnCar", carId, pay);
   closeWindow('phone')
 };
 
+const setPayDeliveryCar = (pay) => {
+  payDeliveryCar.value = pay
+};
+
 onMounted(() => { // CEF мост
-  window.showAuthError = (message) => { errorMessage.value = message; };
-  window.updateMoney = (val) => { money.value = val; };
+  window.showAuthError = (message) => { errorMessage.value = message };
+  window.updateMoney = (val) => { money.value = val };
   window.updateInventory = (slotsJson, configJson) => { 
     try {
       const parsedSlots = typeof slotsJson === 'string' ? JSON.parse(slotsJson) : slotsJson;
@@ -145,5 +150,7 @@ onMounted(() => { // CEF мост
     currentScreen.value = screenName;
     if (screenName === 'game' && typeof mp !== 'undefined') { mp.trigger("client:ui:requestStatsUpdate") }
   };
+
+  window.setPayDeliveryCar = (pay) => { setPayDeliveryCar(pay) }
 });
 </script>

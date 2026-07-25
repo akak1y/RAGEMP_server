@@ -1,11 +1,12 @@
 const { Sequelize } = require('sequelize');
 const mysql = require('mysql2');
+let gConfig = require('./settings.json');
 
 const dbName = 'ragemp_server';
 const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'akak',
+    host: gConfig.bd.host,
+    user: gConfig.bd.user,
+    password: gConfig.bd.password,
     multipleStatements: true
 });
 
@@ -55,8 +56,8 @@ function initDB() {
             connection.end(); // закрываем временное подключение
 
             try {
-                sequelizeInstance = new Sequelize(dbName, 'root', 'akak', {
-                    host: 'localhost',
+                sequelizeInstance = new Sequelize(dbName, gConfig.bd.user, gConfig.bd.password, {
+                    host: gConfig.bd.host,
                     dialect: 'mysql',
                     dialectModule: mysql,
                     logging: false, // - спам SQL

@@ -1,0 +1,10 @@
+{
+  "bd": {
+    "host": "localhost",
+    "user": "root",
+    "password": "akak"
+  },
+  "redis": {
+    "url": "redis://localhost:6379"
+  }
+}

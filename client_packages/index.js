@@ -8,6 +8,7 @@ let openWindowsState = { // состояние интерфесов
 };
 let isAnyUiWindowOpen = false; // для заморозки игрока если открыто любое окно
 let dealershipPos = null;
+let garagePos = null;
 
 mp.gui.chat.show(false); // скрываем чат и миникарту
 mp.game.ui.displayRadar(false);
@@ -50,6 +51,7 @@ mp.events.add("client:account:hideAuth", () => { // успешная автор�
     isAnyUiWindowOpen = false;
     openWindowsState = { inventory: false, phone: false, dealership: false };
     mp.events.callRemote("server:dealership:requestPos");
+    mp.events.callRemote("server:garage:requestPos");
     if (uiBrowser) uiBrowser.execute(`window.changeScreen("game");`) // меняем окно авторизации на игровой худ
 });
 
@@ -83,16 +85,22 @@ mp.keys.bind(0x50, true, () => { // P - телефон
     if (!isAuthorized || globalKeyBlock) return;
     if (!openWindowsState.phone && isAnyUiWindowOpen) return;
     mp.events.callRemote("server:phone:requestCars"); // запрашиваем список авто
-    if (uiBrowser) uiBrowser.execute(`if(window.toggleWindow) window.toggleWindow('phone');`)
+    if (uiBrowser) uiBrowser.execute(`if(window.setPayDeliveryCar) window.setPayDeliveryCar(true); if(window.toggleWindow) window.toggleWindow('phone');`)
 });
 
-mp.keys.bind(0x45, true, () => { // E - маркер автосалона
-    if (!isAuthorized || globalKeyBlock || isAnyUiWindowOpen) return;
-    const distance = mp.game.gameplay.getDistanceBetweenCoords( mp.players.local.position.x, mp.players.local.position.y, mp.players.local.position.z, dealershipPos.x, dealershipPos.y, dealershipPos.z, true ); // вычисляем дистанцию до маркера в 3D
+mp.keys.bind(0x45, true, () => { // E - взаимодействие с маркером
+    if (!isAuthorized || globalKeyBlock || isAnyUiWindowOpen || !dealershipPos) return;
+    let distance = mp.game.gameplay.getDistanceBetweenCoords( mp.players.local.position.x, mp.players.local.position.y, mp.players.local.position.z, dealershipPos.x, dealershipPos.y, dealershipPos.z, true ); // вычисляем дистанцию до маркера автосалона
     
     if (distance <= 2.5 && uiBrowser) {
         mp.events.callRemote("server:dealership:requestConfig");
         uiBrowser.execute(`if(window.toggleWindow) window.toggleWindow('dealership');`)
+    } else {
+        let distance = mp.game.gameplay.getDistanceBetweenCoords( mp.players.local.position.x, mp.players.local.position.y, mp.players.local.position.z, garagePos.x, garagePos.y, garagePos.z, true );
+        if (distance <= 2.5) {
+            mp.events.callRemote("server:phone:requestCars"); // если это гараж, то меняем оплату спавна авто на бесплатно
+            if (uiBrowser) uiBrowser.execute(`if(window.setPayDeliveryCar) window.setPayDeliveryCar(false); if(window.toggleWindow) window.toggleWindow('phone');`)
+        }
     }
 });
 
@@ -131,5 +139,6 @@ mp.events.add("client:phone:updateCars", () => { mp.events.callRemote("server:ph
 mp.events.add("client:ui:requestStatsUpdate", () => { mp.events.callRemote("server:requestRedisStats") });
 mp.events.add("client:toggleCursor", (toggle) => { mp.gui.cursor.show(toggle, toggle) });
 mp.events.add("client:server:buyCar", (model) => { mp.events.callRemote("server:dealership:buy", model) }); // информация в бэк о покупке авто
-mp.events.add("client:server:spawnCar", (vehDbId) => { mp.events.callRemote("server:phone:spawnVehicle", vehDbId) }); // о спавне
-mp.events.add("client:dealership:setPos", (pos) => { dealershipPos = pos }); // получение xyz из конфига сервера
+mp.events.add("client:server:spawnCar", (vehDbId, pay) => { mp.events.callRemote("server:phone:spawnVehicle", vehDbId, pay) });
+mp.events.add("client:dealership:setPos", (pos) => { dealershipPos = new mp.Vector3(pos.x, pos.y, pos.z) }); // получение xyz из конфига сервера
+mp.events.add("client:garage:setPos", (pos) => { garagePos = new mp.Vector3(pos.x, pos.y, pos.z) });

@@ -1,5 +1,5 @@
 const Vehicle = require('./models/Vehicle');
-const { VehicleConfig, DealershipPos } = require('./config');
+const { VehicleConfig, DealershipPos, PhoneConfig } = require('./config');
 
 mp.blips.new(225, DealershipPos, { name: "Автосалон", color: 2, scale: 1.0, shortRange: true }); // иконка на карте
 mp.markers.new(1, new mp.Vector3(DealershipPos.x, DealershipPos.y, DealershipPos.z - 1.0), 1.5, { color: [0, 200, 0, 150]}); // чекпоинт
@@ -34,13 +34,21 @@ mp.events.add('server:phone:requestCars', async (player) => { // при откр
     } catch (err) { console.error("[Phone Error] Не удалось получить гараж:", err) }
 });
 
-mp.events.add('server:phone:spawnVehicle', async (player, vehicleDbId) => { // доставка авто
-    if (!player.isLoggedIn || !vehicleDbId) return;
+mp.events.add('server:phone:spawnVehicle', async (player, vehicleDbId, pay) => { // доставка авто
+    if (!player.isLoggedIn || !vehicleDbId) return; // ПРОПИСАТЬ ЛОГИКУ СПИСАНИЯ ДЕНЕГ ЕСЛИ PAY
 
     const hasPhone = player.inventory.some(slot => slot && slot.itemId === 'phone'); // проверка наличия телефона в инвентаре
     if (!hasPhone) {
         player.outputChatBox("!{#FF3333}[Ошибка] У вас нет телефона!");
         return
+    }
+    
+    if (pay) {
+        const payment = await player.takeMoney(PhoneConfig.deliveryCar);
+        if (!payment) {
+            player.outputChatBox("!{#FF3333}[Ошибка] У вас недостаточно денег!");
+            return
+        }
     }
 
     try {
@@ -67,7 +75,7 @@ mp.events.add('server:dealership:requestConfig', (player) => { // отправк
     player.call('client:dealership:setConfig', [JSON.stringify(VehicleConfig)])
 });
 
-mp.events.add('server:dealership:requestPos', (player) => { // отправка конфига в vue
+mp.events.add('server:dealership:requestPos', (player) => {
     if (!player.isLoggedIn) return;
     player.call('client:dealership:setPos', [DealershipPos])
 })
