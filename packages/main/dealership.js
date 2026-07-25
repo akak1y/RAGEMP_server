@@ -35,7 +35,7 @@ mp.events.add('server:phone:requestCars', async (player) => { // при откр
 });
 
 mp.events.add('server:phone:spawnVehicle', async (player, vehicleDbId, pay) => { // доставка авто
-    if (!player.isLoggedIn || !vehicleDbId) return; // ПРОПИСАТЬ ЛОГИКУ СПИСАНИЯ ДЕНЕГ ЕСЛИ PAY
+    if (!player.isLoggedIn || !vehicleDbId) return;
 
     const hasPhone = player.inventory.some(slot => slot && slot.itemId === 'phone'); // проверка наличия телефона в инвентаре
     if (!hasPhone) {
@@ -44,7 +44,7 @@ mp.events.add('server:phone:spawnVehicle', async (player, vehicleDbId, pay) => {
     }
     
     if (pay) {
-        const payment = await player.takeMoney(PhoneConfig.deliveryCar);
+        const payment = await player.takeMoney(PhoneConfig.deliveryCar); // если платно - списываем деньги
         if (!payment) {
             player.outputChatBox("!{#FF3333}[Ошибка] У вас недостаточно денег!");
             return
