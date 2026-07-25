@@ -3,7 +3,7 @@
     <div class="phone-screen">
       <div class="phone-header">Akak OS</div>
       <div class="phone-apps-list">
-        <p v-if="pay" class="phone-section-title"> Доставка авто: 100$ </p>
+        <p v-if="pay" class="phone-section-title"> Доставка авто: {{ price }}$ </p>
         <p class="phone-section-title">Ваш гараж:</p>
           
         <div v-if="cars.length > 0" class="cars-scroll-area">
@@ -26,6 +26,10 @@ defineProps({
   pay: {
     type: Boolean,
     default: false
+  },
+  price: {
+    type: Number,
+    default: 0
   }
 });
 defineEmits(['spawn-car'])

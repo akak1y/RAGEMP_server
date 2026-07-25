@@ -8,3 +8,47 @@ body, html {
   background: transparent;
   user-select: none;
 }
+.debug-hud {
+  position: absolute;
+  top: 150px;
+  right: 10px;
+  width: 400px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 10px;
+  font-family: "Verdana", "Helvetica", "Arial", sans-serif;
+  font-size: 13px;
+  color: #fff;
+  z-index: 999999;
+  pointer-events: none;
+}
+.debug-title {
+  color: #00ffffd0;
+  border-bottom: 1px solid #ffffff;
+  padding-bottom: 5px;
+  margin-bottom: 5px;
+  text-align: center;
+}
+.debug-item {
+  line-height: 1.2;
+}
+.info {
+  color: #ffffffd0;
+}
+.cpp-event {
+  color: #ffff00d0;
+}
+.vue-event {
+  color: #ff00ffd0;
+}
+.native-event {
+  color: #ff3333d0;
+}
+.hidden-focus-trap {
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}

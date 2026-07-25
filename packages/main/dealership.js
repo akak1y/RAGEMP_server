@@ -78,4 +78,9 @@ mp.events.add('server:dealership:requestConfig', (player) => { // отправк
 mp.events.add('server:dealership:requestPos', (player) => {
     if (!player.isLoggedIn) return;
     player.call('client:dealership:setPos', [DealershipPos])
+});
+
+mp.events.add('server:phone:requestPriceDeliveryCar', (player) => {
+    if (!player.isLoggedIn) return;
+    player.call('client:phone:requestPriceDeliveryCar', [PhoneConfig.deliveryCar])
 })

@@ -5,7 +5,6 @@
     :error="errorMessage"
     @submit-login="onLoginSubmit"
   />
-
   <div v-else class="game-ui">
     <!--худ-->
     <Hud :money="money" :totalPlayers="totalAccounts" />
@@ -18,7 +17,7 @@
     <!--телефон-->
     <Phone
       v-if="windows.phone"
-      :cars="myCars" :pay="payDeliveryCar"
+      :cars="myCars" :pay="payDeliveryCar" :price="priceDeliveryCar"
       @spawn-car="onSpawnCar"
     />
     <!--автосалон-->
@@ -28,11 +27,25 @@
       @buy="onBuyCar"
       @close="closeWindow('dealership')"
     />
+    <!--перехватываем нажатие клавиш-->
+    <input
+      ref="focusTrap" 
+      type="text" 
+      class="hidden-focus-trap" 
+      @keydown.esc.prevent.stop="handleEscapeClose"
+    />
+  </div>
+  <!--debug окно-->
+  <div class="debug-hud">
+    <div class="debug-title">DEBUG:</div>
+    <div v-for="(log, idx) in debugLogs" :key="idx" class="debug-item" :class="log.type">
+      [{{ log.time }}] {{ log.text }}
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch, nextTick } from 'vue';
 
 import './css/global.css';
 import './css/auth.css';
@@ -44,6 +57,7 @@ import Inventory from './components/Inventory.vue';
 import Phone from './components/Phone.vue';
 import Dealership from './components/Dealership.vue';
 
+const debugLogs = ref([]);
 const currentScreen = ref('auth'); 
 const errorMessage = ref('');
 const money = ref(0);
@@ -52,7 +66,46 @@ const inventory = ref(new Array(20).fill(null));
 const myCars = ref([]);
 const dealershipCars = ref({});
 const payDeliveryCar = ref(true);
+const priceDeliveryCar = ref(0);
 const windows = ref({ inventory: false, phone: false, dealership: false });
+const focusTrap = ref(null);
+
+window.addDebugLog = (text, type = 'info') => {
+  const now = new Date();
+  const timeStr = `${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}`;
+  debugLogs.value.push({ time: timeStr, text: text, type: type }); // добавляем строку лога
+  if (debugLogs.value.length > 20) { debugLogs.value.shift() } // удаляем 20+
+};
+
+watch(windows, (newVal) => {
+  const isAnyWindowOpen = Object.values(newVal).some(v => v === true);
+  if (window.addDebugLog) window.addDebugLog(`Смена ${isAnyWindowOpen}`, 'vue-event');
+  if (isAnyWindowOpen) {
+    nextTick(() => { // ждём пока полностью откроется
+      if (focusTrap.value) { focusTrap.value.focus() } // ставим курсор на невидимое поле
+    })
+  }
+}, { deep: true });
+
+const handleEscapeClose = (event) => {
+  event.preventDefault(); // закрываем фокус
+  event.stopPropagation();
+  for (const winName in windows.value) { // ищем открытое окно
+    if (windows.value[winName] === true) {
+      windows.value[winName] = false;
+      setTimeout(() => {
+        if (focusTrap.value) { // снимаем фокус через 150 мс
+          focusTrap.value.blur();
+        }
+        if (typeof mp !== 'undefined') { // прячем курсор
+          mp.trigger("client:toggleCursor", false);
+          mp.trigger("client:ui:windowStateChanged", winName, false);
+        }
+      }, 150);
+      break
+    }
+  }
+};
 
 const toggleWindow = (winName) => {
   windows.value[winName] = !windows.value[winName];
@@ -91,10 +144,6 @@ const onBuyCar = (model) => {
 const onSpawnCar = (carId, pay) => {
   if (typeof mp !== 'undefined') mp.trigger("client:server:spawnCar", carId, pay);
   closeWindow('phone')
-};
-
-const setPayDeliveryCar = (pay) => {
-  payDeliveryCar.value = pay
 };
 
 onMounted(() => { // CEF мост
@@ -151,6 +200,7 @@ onMounted(() => { // CEF мост
     if (screenName === 'game' && typeof mp !== 'undefined') { mp.trigger("client:ui:requestStatsUpdate") }
   };
 
-  window.setPayDeliveryCar = (pay) => { setPayDeliveryCar(pay) }
+  window.setPayDeliveryCar = (pay) => { payDeliveryCar.value = pay }
+  window.setPriceDeliveryCar = (price) => { priceDeliveryCar.value = price }
 });
 </script>

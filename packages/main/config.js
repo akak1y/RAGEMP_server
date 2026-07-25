@@ -12,7 +12,7 @@ module.exports = {
         "blazer5": { name: "Blazer", price: 15000 }
     },
     PhoneConfig: {
-        deliveryCar: 100
+        deliveryCar: 200
     },
     DealershipPos: { x: -474.0, y: -95.0, z: 39.0 },
     GaragePos: { x: -439.2, y: -102.7, z: 40.5 }
