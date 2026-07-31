@@ -118,7 +118,7 @@ mp.events.add('playerQuit', async (player) => {
     } catch (err) { console.error(`[Sequelize Save Error]: ${err.message}`) }
 });
 
-mp.events.add("server:requestRedisStats", async (player) => { // добавляем мост для обновления счётчиков акк-ов
+mp.events.add("server:requestRedisStats", async (player) => { // мост для обновления счётчиков акк-ов
     if (!player.isLoggedIn) return; // защита
     try {
         const { getRedis } = require('./redis');

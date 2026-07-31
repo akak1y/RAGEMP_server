@@ -1,4 +1,5 @@
 let uiBrowser = null;
+let windowDebug = false;
 let isAuthorized = false;
 let globalKeyBlock = false; // предохранитель для чата
 let openWindowsState = { // состояние интерфесов
@@ -15,6 +16,12 @@ mp.game.ui.displayRadar(false);
 
 mp.events.add("playerReady", () => { uiBrowser = mp.browsers.new("http://localhost:5173/") }); // подключаемся к vue сайту
 
+setInterval(() => {
+  if (windowDebug && uiBrowser) { // отправляем текущие координаты в vue
+    uiBrowser.execute(`if(window.updateDebugCoords) window.updateDebugCoords(${mp.players.local.position.x}, ${mp.players.local.position.y}, ${mp.players.local.position.z}, ${mp.players.local.getHeading(true)});`)
+  }
+}, 300);
+
 mp.keys.bind(0x54, false, () => { // срабатывает на отпускание T
     if (!isAuthorized || isAnyUiWindowOpen) return;
     globalKeyBlock = true // закрываем доступ к окнам
@@ -30,6 +37,10 @@ mp.keys.bind(0x1B, true, () => { // escape
         openWindowsState = { inventory: false, phone: false, dealership: false }; // обнуляем состояния
         setTimeout(() => { isAnyUiWindowOpen = false }, 170); // с задеркой выключаем проверку
     }
+});
+mp.keys.bind(0x74, true, () => { // F5 - дебаг окно
+    windowDebug = !windowDebug;
+    if (uiBrowser) uiBrowser.execute(`if(window.toggleDebug) window.toggleDebug(${windowDebug});`)
 });
 
 mp.events.add("browserCreated", (browser) => { // когда создался браузер
@@ -153,3 +164,6 @@ mp.events.add("client:server:buyCar", (model) => { mp.events.callRemote("server:
 mp.events.add("client:server:spawnCar", (vehDbId, pay) => { mp.events.callRemote("server:phone:spawnVehicle", vehDbId, pay) });
 mp.events.add("client:dealership:setPos", (pos) => { dealershipPos = new mp.Vector3(pos.x, pos.y, pos.z) }); // получение xyz из конфига сервера
 mp.events.add("client:garage:setPos", (pos) => { garagePos = new mp.Vector3(pos.x, pos.y, pos.z) })
+
+// по кнопке запуск дебаг окна
+// передача координат в vue каждые пол секунды 500

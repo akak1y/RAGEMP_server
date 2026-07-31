@@ -36,7 +36,15 @@
     />
   </div>
   <!--debug окно-->
-  <div class="debug-hud">
+  <div v-if="windowDebug" class="debug-hud">
+    <div class="debug-title">POSITION:</div>
+    <div class="coords-grid">
+      <div><span class="coord-label">X:</span> {{ currentX }}</div>
+      <div><span class="coord-label">Y:</span> {{ currentY }}</div>
+      <div><span class="coord-label">Z:</span> {{ currentZ }}</div>
+      <div><span class="coord-label">H:</span> {{ currentHeading }}°</div>
+    </div>
+    <div class="debug-divider"></div>
     <div class="debug-title">DEBUG:</div>
     <div v-for="(log, idx) in debugLogs" :key="idx" class="debug-item" :class="log.type">
       [{{ log.time }}] {{ log.text }}
@@ -58,6 +66,11 @@ import Phone from './components/Phone.vue';
 import Dealership from './components/Dealership.vue';
 
 const debugLogs = ref([]);
+const windowDebug = ref(false);
+const currentX = ref(0.0);
+const currentY = ref(0.0);
+const currentZ = ref(0.0);
+const currentHeading = ref(0.0);
 const currentScreen = ref('auth'); 
 const errorMessage = ref('');
 const money = ref(0);
@@ -147,6 +160,13 @@ const onSpawnCar = (carId, pay) => {
 };
 
 onMounted(() => { // CEF мост
+  window.updateDebugCoords = (x, y, z, heading) => {
+    currentX.value = Number(x).toFixed(2);
+    currentY.value = Number(y).toFixed(2);
+    currentZ.value = Number(z).toFixed(2);
+    currentHeading.value = Number(heading).toFixed(1);
+  };
+  window.toggleDebug = (value) => { windowDebug.value = value };
   window.showAuthError = (message) => { errorMessage.value = message };
   window.updateMoney = (val) => { money.value = val };
   window.updateInventory = (slotsJson, configJson) => { 

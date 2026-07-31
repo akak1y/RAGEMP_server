@@ -10,14 +10,14 @@ body, html {
 }
 .debug-hud {
   position: absolute;
-  top: 150px;
+  top: 129px;
   right: 10px;
   width: 400px;
   background: rgba(0, 0, 0, 0.4);
   padding: 10px;
   font-family: "Verdana", "Helvetica", "Arial", sans-serif;
   font-size: 13px;
-  color: #fff;
+  color: #00ff00;
   z-index: 999999;
   pointer-events: none;
 }
@@ -51,4 +51,15 @@ body, html {
   width: 1px;
   height: 1px;
   pointer-events: none;
+}
+.coords-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+.coord-label {
+  color: #ffffff;
+}
+.debug-divider {
+  border-bottom: 2px solid rgb(255, 255, 255);
+  margin: 10px 0;
 }
