@@ -4,7 +4,8 @@ const { VehicleConfig, DealershipPos, PhoneConfig, GaragePos } = require('./conf
 mp.blips.new(225, DealershipPos, { name: "Автосалон", color: 2, scale: 1.0, shortRange: true }); // иконка на карте
 mp.markers.new(1, new mp.Vector3(DealershipPos.x, DealershipPos.y, DealershipPos.z - 1.0), 1.5, { color: [0, 200, 0, 150]}); // чекпоинт
 
-const spawnedVehicles = new Map();
+if (!global.spawnedVehicles) { global.spawnedVehicles = new Map() }
+if (!global.playerOwnedVehicles) { global.playerOwnedVehicles = new Map() }
 
 mp.events.add('server:dealership:buy', async (player, model) => {
     if (!player.isLoggedIn || !VehicleConfig[model]) return;
@@ -42,14 +43,6 @@ mp.events.add('server:phone:spawnVehicle', async (player, vehicleDbId, fromPhone
         player.outputChatBox("!{#FF3333}[Ошибка] У вас нет телефона!");
         return
     }
-    
-    if (fromPhone) {
-        const payment = await player.takeMoney(PhoneConfig.deliveryCar); // если платно - списываем деньги
-        if (!payment) {
-            player.outputChatBox("!{#FF3333}[Ошибка] У вас недостаточно денег!");
-            return
-        }
-    }
 
     try {
         const carData = await Vehicle.findOne({
@@ -57,10 +50,21 @@ mp.events.add('server:phone:spawnVehicle', async (player, vehicleDbId, fromPhone
         });
         if (!carData) return;
 
-        if (spawnedVehicles.has(player.accountId)) {
-            const oldVeh = spawnedVehicles.get(player.accountId); // находим авто которое игрок уже заспавнил
-            if (mp.vehicles.exists(oldVeh)) oldVeh.destroy(); // если она в мире -> уничтожаем
+        if (global.spawnedVehicles.has(vehicleDbId)) {
+            const oldVeh = global.spawnedVehicles.get(vehicleDbId); // находим авто которое игрок уже заспавнил
+            if (mp.vehicles.exists(oldVeh)) {
+                player.outputChatBox(`!{#FF1111}[Телефон] Машина ${carData.model} уже заспавнена.`)
+                return
+            }
         }
+        if (fromPhone) {
+            const payment = await player.takeMoney(PhoneConfig.deliveryCar); // если платно - списываем деньги
+            if (!payment) {
+                player.outputChatBox("!{#FF3333}[Ошибка] У вас недостаточно денег!");
+                return
+            }
+        }
+        
         const posCar = new Object();;
         if (!fromPhone) {
             posCar.coords = new mp.Vector3(GaragePos.x, GaragePos.y, GaragePos.z); // спавним на метке гаража
@@ -71,15 +75,23 @@ mp.events.add('server:phone:spawnVehicle', async (player, vehicleDbId, fromPhone
             posCar.heading = player.heading;
             posCar.inside = false
         }
-        const veh = mp.vehicles.new(mp.joaat(carData.model), posCar.coords, { // вызываем хэш  авто
+        const veh = mp.vehicles.new(mp.joaat(carData.model), posCar.coords, { // вызываем хэш авто
             heading: posCar.heading, engine: true, locked: false, dimension: player.dimension
         });
+        veh.vehicleDbId = vehicleDbId;
         if (posCar.inside) {
             setTimeout(() => {
                 if (mp.players.exists(player) && mp.vehicles.exists(veh)) { player.putIntoVehicle(veh, 0) } // садим игрока за руль с задержкой
-            }, 150);
+            }, 150)
         }
-        spawnedVehicles.set(player.accountId, veh); // записываем в ОЗУ
+        global.spawnedVehicles.set(vehicleDbId, veh); // записываем в ОЗУ
+
+        let playerCars = global.playerOwnedVehicles.get(player.accountId);
+        if (!playerCars) {
+            playerCars = new Set();
+            global.playerOwnedVehicles.set(player.accountId, playerCars); // добавляем овнера авто в карту
+        }
+        playerCars.add(vehicleDbId);
         player.outputChatBox(`!{#00FFFF}[Телефон] Ваша машина ${carData.model} доставлена.`)
     } catch (err) { console.error(err) }
 });

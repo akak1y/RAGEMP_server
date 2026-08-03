@@ -5,11 +5,15 @@ let globalKeyBlock = false; // предохранитель для чата
 let openWindowsState = { // состояние интерфесов
     inventory: false,
     phone: false,
-    dealership: false
+    dealership: false,
+    carCustom: false
 };
 let isAnyUiWindowOpen = false; // для заморозки игрока если открыто любое окно
 let dealershipPos = null;
 let garagePos = null;
+let CarCustomPos = null;
+let playerIsDeveloper = false;
+let isCameraRotateActive = false;
 
 mp.gui.chat.show(false); // скрываем чат и миникарту
 mp.game.ui.displayRadar(false);
@@ -32,15 +36,28 @@ mp.keys.bind(0x0D, true, () => { // enter
 });
 mp.keys.bind(0x1B, true, () => { // escape
     if (!isAuthorized) return;
+    if (openWindowsState.carCustom && isCameraRotateActive) { // если открыт автосалон
+        isCameraRotateActive = false;
+        mp.gui.cursor.show(true, true); // активируем мышь для кликов по меню
+        mp.game.controls.disableAllControlActions(0); // деактивируем все контроллеры
+        return
+    }
     setTimeout(() => { globalKeyBlock = false }, 60);
     if (isAnyUiWindowOpen) {
-        openWindowsState = { inventory: false, phone: false, dealership: false }; // обнуляем состояния
-        setTimeout(() => { isAnyUiWindowOpen = false }, 170); // с задеркой выключаем проверку
+        openWindowsState = { inventory: false, phone: false, dealership: false, carCustom: false }; // обнуляем состояния
+        setTimeout(() => { isAnyUiWindowOpen = false }, 170); // с задержкой выключаем проверку
     }
 });
 mp.keys.bind(0x74, true, () => { // F5 - дебаг окно
+    if (!isAuthorized || !playerIsDeveloper) return;
     windowDebug = !windowDebug;
     if (uiBrowser) uiBrowser.execute(`if(window.toggleDebug) window.toggleDebug(${windowDebug});`)
+});
+mp.keys.bind(0xC0, true, () => { // Ё - включаем курсор
+    if (!isAuthorized || !openWindowsState.carCustom) return;
+    isCameraRotateActive = !isCameraRotateActive;
+    if (isCameraRotateActive) { mp.gui.cursor.show(false, false) }
+    else { mp.gui.cursor.show(true, true) }
 });
 
 mp.events.add("browserCreated", (browser) => { // когда создался браузер
@@ -57,18 +74,20 @@ mp.events.add("client:account:authError", (msg) => { // ошибка автор�
     if (uiBrowser) uiBrowser.execute(`window.showAuthError("${msg}");`); 
 });
 
-mp.events.add("client:account:hideAuth", () => { // успешная авторизация
+mp.events.add("client:account:hideAuth", (developer) => { // успешная авторизация
     mp.gui.cursor.show(false, false); // сбрасываем все блокировки при спавне
     mp.gui.chat.show(true);
     mp.game.ui.displayRadar(true);
     isAuthorized = true;
     globalKeyBlock = false;
     isAnyUiWindowOpen = false;
-    openWindowsState = { inventory: false, phone: false, dealership: false };
+    openWindowsState = { inventory: false, phone: false, dealership: false, carCustom: false };
     mp.events.callRemote("server:dealership:requestPos");
     mp.events.callRemote("server:garage:requestPos");
+    mp.events.callRemote("server:customCar:requestPos");
     mp.events.callRemote("server:phone:requestPriceDeliveryCar");
-    if (uiBrowser) uiBrowser.execute(`window.changeScreen("game");`) // меняем окно авторизации на игровой худ
+    if (uiBrowser) uiBrowser.execute(`window.changeScreen("game");`); // меняем окно авторизации на игровой худ
+    playerIsDeveloper = developer
 });
 
 mp.events.add("client:ui:windowStateChanged", (winName, isOpen) => { // выключаем/включаем чат при открытии/закрытии любого окна
@@ -77,6 +96,14 @@ mp.events.add("client:ui:windowStateChanged", (winName, isOpen) => { // выкл
 
     if (isAnyUiWindowOpen) { mp.gui.chat.activate(false) }
     else { mp.gui.chat.activate(true) }
+    if (winName === 'carCustom' && isOpen === false) { // если из LSC
+        isCameraRotateActive = false;
+        if (mp.players.local.vehicle) { // возвращаем коллизию и размораживаем
+            mp.players.local.vehicle.freezePosition(false);
+            mp.players.local.vehicle.setCollision(true, true)
+        }
+        mp.events.callRemote('server:custom:exitShop')
+    }
 });
 
 mp.events.add("render", () => { // при открытом любом окне отключаем движение персонажа
@@ -88,6 +115,10 @@ mp.events.add("render", () => { // при открытом любом окне �
         mp.game.controls.disableControlAction(0, 1, true);  // мышь X
         mp.game.controls.disableControlAction(0, 2, true);  // мышь Y
         mp.game.controls.disableControlAction(0, 24, true) // лкм
+    }
+    if (isAuthorized && openWindowsState.carCustom && isCameraRotateActive) { // если в LSC - разрешаем двигать мышью
+        mp.game.controls.enableControlAction(0, 1, true); // мышь X
+        mp.game.controls.enableControlAction(0, 2, true); // мышь Y
     }
 });
 
@@ -105,7 +136,7 @@ mp.keys.bind(0x50, true, () => { // P - телефон
 });
 
 mp.keys.bind(0x45, true, () => { // E - взаимодействие с маркером
-    if (!isAuthorized || globalKeyBlock || isAnyUiWindowOpen || !dealershipPos || !garagePos) return;
+    if (!isAuthorized || globalKeyBlock || isAnyUiWindowOpen || !dealershipPos || !garagePos || !CarCustomPos) return;
     let distance = mp.game.gameplay.getDistanceBetweenCoords( mp.players.local.position.x, mp.players.local.position.y, mp.players.local.position.z, dealershipPos.x, dealershipPos.y, dealershipPos.z, true ); // вычисляем дистанцию до маркера автосалона
     
     if (distance <= 2.5 && uiBrowser) {
@@ -116,11 +147,22 @@ mp.keys.bind(0x45, true, () => { // E - взаимодействие с марк
         if (distance <= 2.5) {
             mp.events.callRemote("server:phone:requestCars"); // если это гараж, то меняем оплату спавна авто на бесплатно
             if (uiBrowser) uiBrowser.execute(`if(window.setPayDeliveryCar) window.setPayDeliveryCar(false); if(window.toggleWindow) window.toggleWindow('phone');`)
+        } else {
+            let distance = mp.game.gameplay.getDistanceBetweenCoords( mp.players.local.position.x, mp.players.local.position.y, mp.players.local.position.z, CarCustomPos.x, CarCustomPos.y, CarCustomPos.z, true );
+            if (distance <= 2.5) {
+                mp.events.callRemote('server:customCar:enterTuning') // входим в LSC
+            }
         }
     }
 });
 
 // мосты для vue
+mp.events.add("client:ui:debugLog", (msg, type = 'info') => {
+    if (uiBrowser) {
+        uiBrowser.execute(`if(window.addDebugLog) window.addDebugLog('${msg}', '${type}');`)
+    }
+});
+
 mp.events.add("client:updateMoney", (money) => {
     if (uiBrowser) {
         uiBrowser.execute(`if(window.updateMoney) window.updateMoney(${money});`)
@@ -164,6 +206,30 @@ mp.events.add("client:server:buyCar", (model) => { mp.events.callRemote("server:
 mp.events.add("client:server:spawnCar", (vehDbId, pay) => { mp.events.callRemote("server:phone:spawnVehicle", vehDbId, pay) });
 mp.events.add("client:dealership:setPos", (pos) => { dealershipPos = new mp.Vector3(pos.x, pos.y, pos.z) }); // получение xyz из конфига сервера
 mp.events.add("client:garage:setPos", (pos) => { garagePos = new mp.Vector3(pos.x, pos.y, pos.z) })
+mp.events.add("client:customCar:setPos", (pos) => { CarCustomPos = new mp.Vector3(pos.x, pos.y, pos.z) });
 
-// по кнопке запуск дебаг окна
-// передача координат в vue каждые пол секунды 500
+mp.events.add('client:custom:startTuning', (boxX, boxY, boxZ, boxH) => { // при заезде в LSC - фиксируем авто
+    if (!isAuthorized || !mp.players.local.vehicle) return;
+    const veh = mp.players.local.vehicle;
+    veh.position = new mp.Vector3(boxX, boxY, boxZ);
+    veh.setHeading(boxH);
+    veh.freezePosition(true);
+    veh.setCollision(false, false);
+
+    isAnyUiWindowOpen = true;
+    if (uiBrowser) uiBrowser.execute(`if(window.toggleWindow) window.toggleWindow('carCustom');`);
+    mp.gui.cursor.show(true, true) // включаем курсор
+});
+
+mp.events.add('client:custom:applyUpgrade', (categoryKey, optionJson, price) => { // применяем изменения LSC
+    if (!mp.players.local.vehicle) return;
+
+    const veh = mp.players.local.vehicle;
+    const option = JSON.parse(optionJson);
+
+    if (categoryKey === 'color') { // если покраска
+        veh.setCustomPrimaryColour(option.r, option.g, option.b);
+        veh.setCustomSecondaryColour(option.r, option.g, option.b)
+    }
+    mp.events.callRemote('server:custom:buyUpgrade', categoryKey, optionJson, price) // запрос для списания денег и сохранения изменений
+})

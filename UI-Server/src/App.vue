@@ -27,6 +27,8 @@
       @buy="onBuyCar"
       @close="closeWindow('dealership')"
     />
+    <!--тюнинг-->
+    <CarCustom v-if="windows.carCustom" />
     <!--перехватываем нажатие клавиш-->
     <input
       ref="focusTrap" 
@@ -58,12 +60,14 @@ import { ref, onMounted, watch, nextTick } from 'vue';
 import './css/global.css';
 import './css/auth.css';
 import './css/game.css';
+import './css/carCustom.css';
 
 import Auth from './components/Auth.vue';
 import Hud from './components/Hud.vue';
 import Inventory from './components/Inventory.vue';
 import Phone from './components/Phone.vue';
 import Dealership from './components/Dealership.vue';
+import CarCustom from './components/CarCustom.vue';
 
 const debugLogs = ref([]);
 const windowDebug = ref(false);
@@ -80,10 +84,10 @@ const myCars = ref([]);
 const dealershipCars = ref({});
 const payDeliveryCar = ref(true);
 const priceDeliveryCar = ref(0);
-const windows = ref({ inventory: false, phone: false, dealership: false });
+const windows = ref({ inventory: false, phone: false, dealership: false, carCustom: false });
 const focusTrap = ref(null);
 
-window.addDebugLog = (text, type = 'info') => {
+const addDebugLog = (text, type = 'info') => {
   const now = new Date();
   const timeStr = `${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}`;
   debugLogs.value.push({ time: timeStr, text: text, type: type }); // добавляем строку лога
@@ -95,7 +99,12 @@ watch(windows, (newVal) => {
   if (window.addDebugLog) window.addDebugLog(`Смена ${isAnyWindowOpen}`, 'vue-event');
   if (isAnyWindowOpen) {
     nextTick(() => { // ждём пока полностью откроется
-      if (focusTrap.value) { focusTrap.value.focus() } // ставим курсор на невидимое поле
+      setTimeout(() => {
+        if (focusTrap.value) {
+          focusTrap.value.focus(); // ставим курсор на невидимое поле
+          if (window.addDebugLog) window.addDebugLog('[FOCUS] Ловушка фокуса успешно активирована при открытии.', 'info');
+        }
+      }, 50);
     })
   }
 }, { deep: true });
@@ -103,6 +112,7 @@ watch(windows, (newVal) => {
 const handleEscapeClose = (event) => {
   event.preventDefault(); // закрываем фокус
   event.stopPropagation();
+  if (window.addDebugLog) window.addDebugLog('[ESC] Прерывание клавиши. Безопасный таймаут...', 'vue-event');
   for (const winName in windows.value) { // ищем открытое окно
     if (windows.value[winName] === true) {
       windows.value[winName] = false;
@@ -114,6 +124,7 @@ const handleEscapeClose = (event) => {
           mp.trigger("client:toggleCursor", false);
           mp.trigger("client:ui:windowStateChanged", winName, false);
         }
+        if (window.addDebugLog) window.addDebugLog('[SUCCESS] Фокус очищен, триггеры закрытия отправлены в C++.', 'info');
       }, 150);
       break
     }
@@ -160,13 +171,27 @@ const onSpawnCar = (carId, pay) => {
 };
 
 onMounted(() => { // CEF мост
+  window.addEventListener('keydown', (event) => { // перехватывает нажатия клавиш
+    if (event.key === 'Escape' || event.keyCode === 27) {
+      const isAnyWindowOpen = Object.values(windows.value).some(v => v === true);
+      
+      if (isAnyWindowOpen) {
+        handleEscapeClose(event)
+      }
+    }
+  });
+  window.addDebugLog = (msg) => { addDebugLog(msg) };
+  
   window.updateDebugCoords = (x, y, z, heading) => {
     currentX.value = Number(x).toFixed(2);
     currentY.value = Number(y).toFixed(2);
     currentZ.value = Number(z).toFixed(2);
     currentHeading.value = Number(heading).toFixed(1);
   };
-  window.toggleDebug = (value) => { windowDebug.value = value };
+  window.toggleDebug = (value) => {
+    windowDebug.value = value;
+    currentScreen.value = 'game'
+  };
   window.showAuthError = (message) => { errorMessage.value = message };
   window.updateMoney = (val) => { money.value = val };
   window.updateInventory = (slotsJson, configJson) => { 

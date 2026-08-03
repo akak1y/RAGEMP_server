@@ -71,7 +71,7 @@ mp.events.add('server:account:login', async (player, username, password) => { //
                     hwid: player.serial || '',
                     money: 50000,
                     admin_level: 1,
-                    pos_x: -2183.0, pos_y: 4268.0, pos_z: 48.0
+                    pos_x: -436.0, pos_y: -162.0, pos_z: 39.0
                 })
             });
             
@@ -96,7 +96,8 @@ mp.events.add('server:account:login', async (player, username, password) => { //
         const { loadPlayerInventory } = require('./inventory');
         await loadPlayerInventory(player);
 
-        player.call('client:account:hideAuth');
+        const isDeveloper = player.adminLevel;
+        player.call('client:account:hideAuth', [isDeveloper]);
         player.call('client:updateMoney', [player.money]);
         player.spawn(player.lastPos)
     } catch (err) { player.call('client:account:authError', ['Внутренняя ошибка сервера базы данных.']) }
@@ -116,6 +117,17 @@ mp.events.add('playerQuit', async (player) => {
             logger.info(`[Sequelize Save] Позиция игрока "${player.accountName}" успешно обновлена.`)
         }
     } catch (err) { console.error(`[Sequelize Save Error]: ${err.message}`) }
+
+    const accountId = player.accountId;
+    const playerCarsSet = global.playerOwnedVehicles.get(accountId);
+    if (playerCarsSet && playerCarsSet.size > 0) {
+        for (const vehicleDbId of playerCarsSet) { // проходимся по каждому авто игрока
+            const vehicleObj = global.spawnedVehicles.get(vehicleDbId);
+            if (vehicleObj && mp.vehicles.exists(vehicleObj)) { vehicleObj.destroy() }// проверяем существует ли авто и удаляем
+            global.spawnedVehicles.delete(vehicleDbId) // удаляем из карты машину
+        }
+        global.playerOwnedVehicles.delete(accountId)
+    }
 });
 
 mp.events.add("server:requestRedisStats", async (player) => { // мост для обновления счётчиков акк-ов

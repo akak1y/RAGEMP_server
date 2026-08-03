@@ -26,6 +26,7 @@ let User = null;
         require('./inventory');
         require('./dealership');
         require('./garage');
+        require('./customCar');
         console.log('[System] Все системы сервера RAGE MP успешно запущены и готовы!');
         
         const totalCount = await User.count();
