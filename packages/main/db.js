@@ -43,6 +43,12 @@ const initDbQueries = `
         color_r INT DEFAULT 255,
         color_g INT DEFAULT 255,
         color_b INT DEFAULT 255,
+        engine_mod INT DEFAULT -1,
+        wheel_type INT DEFAULT 0,
+        wheel_mod INT DEFAULT -1,
+        brakes_mod INT DEFAULT -1,
+        transmission_mod INT DEFAULT -1,
+        turbo_mod INT DEFAULT -1,
         FOREIGN KEY (owner_id) REFERENCES accounts(id) ON DELETE CASCADE
     );
 `;

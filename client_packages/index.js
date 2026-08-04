@@ -137,21 +137,46 @@ mp.keys.bind(0x50, true, () => { // P - телефон
 
 mp.keys.bind(0x45, true, () => { // E - взаимодействие с маркером
     if (!isAuthorized || globalKeyBlock || isAnyUiWindowOpen || !dealershipPos || !garagePos || !CarCustomPos) return;
-    let distance = mp.game.gameplay.getDistanceBetweenCoords( mp.players.local.position.x, mp.players.local.position.y, mp.players.local.position.z, dealershipPos.x, dealershipPos.y, dealershipPos.z, true ); // вычисляем дистанцию до маркера автосалона
-    
-    if (distance <= 2.5 && uiBrowser) {
-        mp.events.callRemote("server:dealership:requestConfig");
-        uiBrowser.execute(`if(window.toggleWindow) window.toggleWindow('dealership');`)
-    } else {
-        let distance = mp.game.gameplay.getDistanceBetweenCoords( mp.players.local.position.x, mp.players.local.position.y, mp.players.local.position.z, garagePos.x, garagePos.y, garagePos.z, true );
-        if (distance <= 2.5) {
-            mp.events.callRemote("server:phone:requestCars"); // если это гараж, то меняем оплату спавна авто на бесплатно
-            if (uiBrowser) uiBrowser.execute(`if(window.setPayDeliveryCar) window.setPayDeliveryCar(false); if(window.toggleWindow) window.toggleWindow('phone');`)
-        } else {
-            let distance = mp.game.gameplay.getDistanceBetweenCoords( mp.players.local.position.x, mp.players.local.position.y, mp.players.local.position.z, CarCustomPos.x, CarCustomPos.y, CarCustomPos.z, true );
-            if (distance <= 2.5) {
-                mp.events.callRemote('server:customCar:enterTuning') // входим в LSC
+
+    const playerPos = mp.players.local.position;
+    const interactionRadius = 2.5;
+
+    const interactionZones = [ // конфигурация зон
+        {
+            name: 'dealership',
+            position: dealershipPos,
+            onInteract: () => {
+                mp.events.callRemote('server:dealership:requestConfig');
+                if (uiBrowser) uiBrowser.execute(`if(window.toggleWindow) window.toggleWindow('dealership');`);
             }
+        },
+        {
+            name: 'garage',
+            position: garagePos,
+            onInteract: () => {
+                mp.events.callRemote('server:phone:requestCars');
+                if (uiBrowser) {
+                    uiBrowser.execute(`
+                        if(window.setPayDeliveryCar) window.setPayDeliveryCar(false);
+                        if(window.toggleWindow) window.toggleWindow('phone');
+                    `)
+                }
+            }
+        },
+        {
+            name: 'customCar',
+            position: CarCustomPos,
+            onInteract: () => {
+                mp.events.callRemote('server:customCar:enterTuning'); // входим в LSC
+            }
+        },
+    ];
+    for (const zone of interactionZones) { // проверяем каждую зону
+        if (!zone.position) continue;
+        const distance = mp.game.gameplay.getDistanceBetweenCoords( playerPos.x, playerPos.y, playerPos.z, zone.position.x, zone.position.y, zone.position.z, true );
+        if (distance <= interactionRadius) {
+            zone.onInteract();
+            break
         }
     }
 });
@@ -231,5 +256,53 @@ mp.events.add('client:custom:applyUpgrade', (categoryKey, optionJson, price) => 
         veh.setCustomPrimaryColour(option.r, option.g, option.b);
         veh.setCustomSecondaryColour(option.r, option.g, option.b)
     }
+    if (categoryKey === 'wheels') {
+        veh.setWheelType(option.type);
+        veh.setMod(23, option.id); 
+    }
+    if (categoryKey === 'performance') {
+        veh.setMod(Number(option.type), Number(option.id));
+    }
     mp.events.callRemote('server:custom:buyUpgrade', categoryKey, optionJson, price) // запрос для списания денег и сохранения изменений
+});
+
+mp.events.addDataHandler("customColor", (entity, value) => { // триггеры тюнинга
+    if (mp.vehicles.exists(entity) && value) {
+        entity.setCustomPrimaryColour(value.r, value.g, value.b);
+        entity.setCustomSecondaryColour(value.r, value.g, value.b)
+    }
+});
+mp.events.addDataHandler("customWheels", (entity, value) => {
+    if (mp.vehicles.exists(entity) && value) {
+        entity.setWheelType(Number(value.type));
+        entity.setMod(23, Number(value.id))
+    }
+});
+
+mp.events.addDataHandler(/^customMod_(\d+)$/, (entity, value) => {
+    if (mp.vehicles.exists(entity) && value !== undefined && value !== null) {
+        const modType = Number(entity.activeDataHandlerKey.split('_')[1]);
+        entity.setMod(modType, Number(value))
+    }
+});
+
+mp.events.add("entityStreamIn", (entity) => { // синхронизация стрима
+    if (entity.type === "vehicle") {
+        const rgb = entity.getVariable("customColor");
+        if (rgb) {
+            entity.setCustomPrimaryColour(Number(rgb.r), Number(rgb.g), Number(rgb.b));
+            entity.setCustomSecondaryColour(Number(rgb.r), Number(rgb.g), Number(rgb.b))
+        }
+
+        const wheels = entity.getVariable("customWheels");
+        if (wheels && wheels.id !== undefined) {
+            entity.setWheelType(Number(wheels.type));
+            entity.setMod(23, Number(wheels.id))
+        }
+        const technicalMods = [11, 12, 13, 18];
+        technicalMods.forEach(modType => {
+            const modValue = entity.getVariable(`customMod_${modType}`);
+            if (modValue !== undefined && modValue !== null) entity.setMod(modType, Number(modValue));
+        });
+    }
 })

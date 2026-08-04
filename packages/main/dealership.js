@@ -11,10 +11,7 @@ mp.events.add('server:dealership:buy', async (player, model) => {
     if (!player.isLoggedIn || !VehicleConfig[model]) return;
     const config = VehicleConfig[model];
 
-    if (player.money < config.price) { // проверка баланса
-        player.outputChatBox("!{#FF3333}[Ошибка] Недостаточно денег.");
-        return
-    }
+    if (player.money < config.price) return player.outputChatBox("!{#FF3333}[Ошибка] Недостаточно денег."); // проверка баланса
 
     const hasPaid = await player.takeMoney(config.price); // если хватает денег - списываем с баланса
     if (!hasPaid) return;
@@ -39,30 +36,21 @@ mp.events.add('server:phone:spawnVehicle', async (player, vehicleDbId, fromPhone
     if (!player.isLoggedIn || !vehicleDbId) return;
 
     const hasPhone = player.inventory.some(slot => slot && slot.itemId === 'phone'); // проверка наличия телефона в инвентаре
-    if (!hasPhone) {
-        player.outputChatBox("!{#FF3333}[Ошибка] У вас нет телефона!");
-        return
-    }
+    if (!hasPhone) return player.outputChatBox("!{#FF3333}[Ошибка] У вас нет телефона!");
 
     try {
         const carData = await Vehicle.findOne({
             where: { id: vehicleDbId, owner_id: player.accountId } // находим авто бд с условием владельца
         });
         if (!carData) return;
-
+        const config = VehicleConfig[carData.model];
         if (global.spawnedVehicles.has(vehicleDbId)) {
             const oldVeh = global.spawnedVehicles.get(vehicleDbId); // находим авто которое игрок уже заспавнил
-            if (mp.vehicles.exists(oldVeh)) {
-                player.outputChatBox(`!{#FF1111}[Телефон] Машина ${carData.model} уже заспавнена.`)
-                return
-            }
+            if (mp.vehicles.exists(oldVeh)) return player.outputChatBox(`!{#FF1111}[Телефон] Машина ${config.name} уже заспавнена.`)
         }
         if (fromPhone) {
             const payment = await player.takeMoney(PhoneConfig.deliveryCar); // если платно - списываем деньги
-            if (!payment) {
-                player.outputChatBox("!{#FF3333}[Ошибка] У вас недостаточно денег!");
-                return
-            }
+            if (!payment) return player.outputChatBox("!{#FF3333}[Ошибка] У вас недостаточно денег!")
         }
         
         const posCar = new Object();;
@@ -79,6 +67,19 @@ mp.events.add('server:phone:spawnVehicle', async (player, vehicleDbId, fromPhone
             heading: posCar.heading, engine: true, locked: false, dimension: player.dimension
         });
         veh.vehicleDbId = vehicleDbId;
+        veh.setVariable("customColor", {
+            r: carData.color_r,
+            g: carData.color_g,
+            b: carData.color_b
+        });
+        veh.setVariable("customMod_11", carData.engine_mod !== null ? carData.engine_mod : -1);
+        veh.setVariable("customMod_12", carData.brakes_mod !== null ? carData.brakes_mod : -1);
+        veh.setVariable("customMod_13", carData.transmission_mod !== null ? carData.transmission_mod : -1);
+        veh.setVariable("customMod_18", carData.turbo_mod !== null ? carData.turbo_mod : -1);
+        veh.setVariable("customWheels", {
+            type: carData.wheel_type !== null ? carData.wheel_type : 0,
+            id: carData.wheel_mod !== null ? carData.wheel_mod : -1
+        });
         if (posCar.inside) {
             setTimeout(() => {
                 if (mp.players.exists(player) && mp.vehicles.exists(veh)) { player.putIntoVehicle(veh, 0) } // садим игрока за руль с задержкой
@@ -92,7 +93,7 @@ mp.events.add('server:phone:spawnVehicle', async (player, vehicleDbId, fromPhone
             global.playerOwnedVehicles.set(player.accountId, playerCars); // добавляем овнера авто в карту
         }
         playerCars.add(vehicleDbId);
-        player.outputChatBox(`!{#00FFFF}[Телефон] Ваша машина ${carData.model} доставлена.`)
+        player.outputChatBox(`!{#00FFFF}[Телефон] Ваша машина ${config.name} доставлена.`)
     } catch (err) { console.error(err) }
 });
 

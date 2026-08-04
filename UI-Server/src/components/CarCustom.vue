@@ -58,20 +58,21 @@ const categories = ref({
       { name: 'Желтый', value: { r: 255, g: 215, b: 0 }, price: 1000 }
     ]
   },
-  engine: {
+  performance: {
     title: 'Технический тюнинг',
     options: [
-      { name: 'Двигатель', value: 1, price: 1000 },
-      { name: 'Тормоза', value: 2, price: 2000 },
-      { name: 'Коробка передач', value: 3, price: 3000 },
-      { name: 'Турбо-наддув', value: 4, price: 4000 }
+      { name: 'Двигатель', value: { type: 11, id: 3 }, price: 1000 },
+      { name: 'Тормоза', value: { type: 12, id: 2 }, price: 2000 },
+      { name: 'Коробка передач', value: { type: 13, id: 2 }, price: 3000 },
+      { name: 'Турбо-наддув', value: { type: 18, id: 0 }, price: 4000 }
     ]
   },
   wheels: {
     title: 'Диски',
     options: [
-      { name: 'Спортивные', value: 0, price: 1000 },
-      { name: 'Внедорожные', value: 1, price: 2000 }
+      { name: 'Сток', value: { type: 0, id: -1 }, price: 100 },
+      { name: 'Спортивные', value: { type: 0, id: 5 }, price: 1000 },
+      { name: 'Внедорожные', value:{ type: 2, id: 8 }, price: 2000 }
     ]
   }
 });
@@ -87,7 +88,4 @@ const buyUpgrade = (categoryKey, option) => {
   const trap = document.querySelector('.hidden-focus-trap');
   if (trap) trap.focus();
 };
-/*const closeShop = () => {
-  if (typeof mp !== 'undefined' && window.toggleWindow) { window.toggleWindow(`carCustom`) }
-};*/
 </script>

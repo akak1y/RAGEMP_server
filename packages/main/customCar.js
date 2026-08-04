@@ -30,10 +30,35 @@ mp.events.add('server:custom:buyUpgrade', async (player, categoryKey, optionJson
                 color_b: option.b
             }, {
                 where: { id: veh.vehicleDbId }
-            });
-            logger.info(`Игрок ${player.accountName} перекрасил машину ID ${veh.vehicleDbId} в RGB (${option.r}, ${option.g}, ${option.b})`)
+            })
         }
-        player.call('client:ui:debugLog', [`Модификация "${categoryKey}" успешно куплена за ${price}$`])
+        if (categoryKey === 'performance' && veh.vehicleDbId) {
+    
+            const modFields = {
+                11: 'engine_mod',
+                12: 'brakes_mod',
+                13: 'transmission_mod',
+                18: 'turbo_mod'
+            };
+            const dbField = modFields[option.type];
+            if (dbField) {
+                await Vehicle.update(
+                    { [dbField]: option.id }, 
+                    { where: { id: veh.vehicleDbId } }
+                );
+                veh.setVariable(`customMod_${option.type}`, option.id)
+            }
+        }
+
+        if (categoryKey === 'wheels' && veh.vehicleDbId) {
+            await Vehicle.update({ 
+                wheel_type: option.type, 
+                wheel_mod: option.id 
+            }, { 
+                where: { id: veh.vehicleDbId } 
+            });
+            veh.setVariable("customWheels", { type: option.type, id: option.id })
+        }
     } catch (err) { logger.error(`Ошибка при покупке тюнинга: ${err.message}`) }
 });
 
@@ -48,8 +73,7 @@ mp.events.add('server:custom:exitShop', (player) => { // выход из LSC
         veh.dimension = 0;
     }
     tuningVehicles.delete(player.accountId);
-    player.dimension = 0;
-    logger.info(`Игрок ${player.accountName} успешно выехал из тюнинга за рулем автомобиля`)
+    player.dimension = 0
 });
 
 mp.events.add('server:customCar:enterTuning', (player) => { // вход в LSC

@@ -96,14 +96,10 @@ const addDebugLog = (text, type = 'info') => {
 
 watch(windows, (newVal) => {
   const isAnyWindowOpen = Object.values(newVal).some(v => v === true);
-  if (window.addDebugLog) window.addDebugLog(`Смена ${isAnyWindowOpen}`, 'vue-event');
   if (isAnyWindowOpen) {
     nextTick(() => { // ждём пока полностью откроется
       setTimeout(() => {
-        if (focusTrap.value) {
-          focusTrap.value.focus(); // ставим курсор на невидимое поле
-          if (window.addDebugLog) window.addDebugLog('[FOCUS] Ловушка фокуса успешно активирована при открытии.', 'info');
-        }
+        if (focusTrap.value) focusTrap.value.focus(); // ставим курсор на невидимое поле
       }, 50);
     })
   }
@@ -112,7 +108,6 @@ watch(windows, (newVal) => {
 const handleEscapeClose = (event) => {
   event.preventDefault(); // закрываем фокус
   event.stopPropagation();
-  if (window.addDebugLog) window.addDebugLog('[ESC] Прерывание клавиши. Безопасный таймаут...', 'vue-event');
   for (const winName in windows.value) { // ищем открытое окно
     if (windows.value[winName] === true) {
       windows.value[winName] = false;
@@ -122,9 +117,8 @@ const handleEscapeClose = (event) => {
         }
         if (typeof mp !== 'undefined') { // прячем курсор
           mp.trigger("client:toggleCursor", false);
-          mp.trigger("client:ui:windowStateChanged", winName, false);
+          mp.trigger("client:ui:windowStateChanged", winName, false)
         }
-        if (window.addDebugLog) window.addDebugLog('[SUCCESS] Фокус очищен, триггеры закрытия отправлены в C++.', 'info');
       }, 150);
       break
     }
