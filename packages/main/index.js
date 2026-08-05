@@ -11,13 +11,12 @@ const { initDB } = require('./db');
 const { initRedis, getRedis } = require('./redis');
 const { performance } = require('perf_hooks');
 
-let User = null; 
+const accountService = require('./services/AccountService'); // подключён сервис аккаунтов
 
 (async () => {
     try {
         await initDB();
-        const { initUserModel } = require('./models/Users');
-        User = initUserModel(); 
+        accountService.initialize(); // инициализируем модель аккаунтов
         
         await initRedis(); // запуск RAM-кэш redis
         console.log('[System] Базы данных и кэш успешно запущены.');
@@ -29,7 +28,7 @@ let User = null;
         require('./customCar');
         console.log('[System] Все системы сервера RAGE MP успешно запущены и готовы!');
         
-        const totalCount = await User.count();
+        const totalCount = await accountService.getTotalCount();
         await getRedis().set('server:stats:total_accounts', totalCount, { EX: 600 }); // сохранение числа и обновление кэша redis каждые 10 мин
         console.log(`[Redis] Обновлен кэш статистики аккаунтов: ${totalCount} шт.`)
     } catch (err) {
@@ -59,7 +58,7 @@ mp.events.add("playerCommand", async (player, command) => {
             return
         }
         const tStartMysql = performance.now();
-        const userCheck = await User.findOne({ where: { username: targetUsername.toLowerCase() } });
+        const userCheck = await accountService.findByUsername(targetUsername);
         const tEndMysql = performance.now();
         if (!userCheck) {
             player.outputChatBox(`!{#FFaa00}[MySQL] Игрок "${targetUsername}" не найден.`);
@@ -96,8 +95,7 @@ mp.events.add("playerCommand", async (player, command) => {
 
     if (cmdName === "test") {
         const cachedTotal = await getRedis().get('server:stats:total_accounts');
-        const dbUsers = await User.findAll({ attributes: ['id', 'username', 'money', 'admin_level'] }); // вытаскиваем из бд необходимое
-        const rowsForTable = dbUsers.map(u => u.toJSON()); // переводим в читаемый вид
+        const rowsForTable = await accountService.getAllAccounts();
         console.log("========== ТЕКУЩИЙ СПИСОК АККАУНТОВ В БД ==========");
         console.table(rowsForTable);
         console.log("=================================================");
@@ -109,9 +107,9 @@ mp.events.add("playerCommand", async (player, command) => {
         if (!targetUsername) return player.outputChatBox("Использование: /delacc [логин]");
 
         try {
-            const userToDestroy = await User.findOne({ where: { username: targetUsername.toLowerCase() } }); // ищем по логину
+            const userToDestroy = await accountService.findByUsername(targetUsername);
             if (userToDestroy) {
-                await userToDestroy.destroy(); // каскадно удаляет и машины и предметы
+                await accountService.deleteAccount(userToDestroy.id);
                 player.outputChatBox(`[Успех] Аккаунт ${targetUsername} успешно удален через ORM.`);
                 
                 mp.players.forEach((targetPlayer) => { // перебираем игроков в онлайне, если находим то кикаем

@@ -1,5 +1,4 @@
-const { getUserModel } = require('./models/Users');
-const User = getUserModel();
+const accountService = require('./services/AccountService');
 const bcrypt = require('bcryptjs');
 const logger = require('./logger');
 const profile = require('./profiler');
@@ -9,11 +8,7 @@ mp.Player.prototype.addMoney = async function(amount) {
         this.money += amount;
         this.call('client:updateMoney', [this.money]);
 
-        const userDb = await User.findByPk(this.accountId); // через Sequelize ищем игрока в бд и обновляем значение
-        if (userDb) {
-            userDb.money = this.money;
-            await userDb.save()
-        }
+        await accountService.updateAccount(this.accountId, { money: this.money });
     } catch (err) { console.error(`[Sequelize Error] addMoney: ${err.message}`) }
 };
 
@@ -22,13 +17,8 @@ mp.Player.prototype.takeMoney = async function(amount) {
     try {
         this.money -= amount;
         this.call('client:updateMoney', [this.money]);
-        const userDb = await User.findByPk(this.accountId);
-        if (userDb) {
-            userDb.money = this.money;
-            await userDb.save();
-            return true
-        }
-        return false
+        const saved = await accountService.updateAccount(this.accountId, { money: this.money });
+        return saved
     } catch (err) {
         console.error(`[Sequelize Error] takeMoney: ${err.message}`);
         return false
@@ -40,7 +30,7 @@ mp.events.add('server:account:login', async (player, username, password) => { //
 
     try {
         const userDb = await profile(`Sequelize:FindUser:${username}`, async () => { // оборачиваем в профилировщик
-            return await User.findOne({ where: { username: username.trim().toLowerCase() } }) // ищем в бд первое вхождение username
+            return await accountService.findByUsername(username)
         });
         
         if (userDb) { // если аккаунт был найден в бд
@@ -65,13 +55,12 @@ mp.events.add('server:account:login', async (player, username, password) => { //
             const hashedPassword = await bcrypt.hash(password, salt); // шифруем пароль
             
             const newUser = await profile('Sequelize:CreateUser', async () => { // создаём новый аккаунт в бд с заданными данными
-                return await User.create({
-                    username: username.trim(),
+                return await accountService.createAccount({
+                    username: username,
                     password: hashedPassword,
                     hwid: player.serial || '',
                     money: 50000,
-                    admin_level: 1,
-                    pos_x: -436.0, pos_y: -162.0, pos_z: 39.0
+                    admin_level: 1
                 })
             });
             
@@ -108,14 +97,8 @@ mp.events.add('playerQuit', async (player) => {
     if (!player.isLoggedIn || !player.lastPos) return;
 
     try {
-        const userDb = await User.findByPk(player.accountId);
-        if (userDb) {
-            userDb.pos_x = player.lastPos.x;
-            userDb.pos_y = player.lastPos.y;
-            userDb.pos_z = player.lastPos.z;
-            await userDb.save(); // сохраняем актуальные координаты
-            logger.info(`[Sequelize Save] Позиция игрока "${player.accountName}" успешно обновлена.`)
-        }
+        const saved = await accountService.updatePosition(player.accountId, player.lastPos);
+        if (saved) logger.info(`[Sequelize Save] Позиция игрока "${player.accountName}" успешно обновлена.`)
     } catch (err) { console.error(`[Sequelize Save Error]: ${err.message}`) }
 
     const accountId = player.accountId;
@@ -137,7 +120,7 @@ mp.events.add("server:requestRedisStats", async (player) => { // мост для
         const redis = getRedis();
         const cachedTotal = await redis.get('server:stats:total_accounts'); // вытаскиваем данные из ОЗУ
         if (cachedTotal === null) { // если в ОЗУ нет данных, вытаскиваем из бд
-            const countFromDb = await User.count();
+            const countFromDb = await accountService.getTotalCount();
             logger.warn('[Redis Error] Сработал запрос в БД');
             await redis.set('server:stats:total_accounts', countFromDb, { EX: 3600 });
             cachedTotal = countFromDb
