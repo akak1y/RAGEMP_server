@@ -1,5 +1,5 @@
 const accountService = require('./services/AccountService');
-const bcrypt = require('bcryptjs');
+const authService = require('./services/AuthService');
 const logger = require('./logger');
 const profile = require('./profiler');
 
@@ -29,57 +29,46 @@ mp.events.add('server:account:login', async (player, username, password) => { //
     logger.info(`Игрок ${username} инициировал процесс входа на сервер.`);
 
     try {
-        const userDb = await profile(`Sequelize:FindUser:${username}`, async () => { // оборачиваем в профилировщик
-            return await accountService.findByUsername(username)
+        const authResult = await profile(`Auth:Login:${username}`, async () => {
+            return await authService.authenticate(username, password)
         });
-        
-        if (userDb) { // если аккаунт был найден в бд
-            const passwordMatch = await profile('Bcrypt:ComparePassword', async () => {
-                return await bcrypt.compare(password, userDb.password) // сверяем зашифрованный пароль
-            });
 
-            if (!passwordMatch) { // если пароли не совпали
-                logger.warn(`Игрок ${username} ввел неверный пароль.`);
-                player.call('client:account:authError', ['Неверный пароль!']);
-                return
-            }
-            
-            player.isLoggedIn = true; // если совпали
-            player.accountId = userDb.id;
-            player.accountName = userDb.username;
-            player.money = userDb.money;
-            player.adminLevel = userDb.admin_level;
-            player.lastPos = new mp.Vector3(userDb.pos_x, userDb.pos_y, userDb.pos_z) // заполняем кэш данными из бд
+        let userDb;
+
+        if (authResult.success) { // если пароли совпали
+            userDb = authResult.user;
+        } else if (authResult.error === 'wrong_password') { // если пароли не совпали
+            player.call('client:account:authError', ['Неверный пароль!']);
+            return
         } else { // если не был найден в бд -> регистрация
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(password, salt); // шифруем пароль
-            
-            const newUser = await profile('Sequelize:CreateUser', async () => { // создаём новый аккаунт в бд с заданными данными
-                return await accountService.createAccount({
-                    username: username,
-                    password: hashedPassword,
+            const regResult = await profile(`Auth:Register:${username}`, async () => {
+                return await authService.register(username, password, {
                     hwid: player.serial || '',
                     money: 50000,
                     admin_level: 1
                 })
             });
-            
-            player.isLoggedIn = true;
-            player.accountId = newUser.id;
-            player.accountName = newUser.username;
-            player.money = newUser.money;
-            player.adminLevel = newUser.admin_level;
-            player.lastPos = new mp.Vector3(newUser.pos_x, newUser.pos_y, newUser.pos_z);
-            
+
+            if (!regResult.success) {
+                player.call('client:account:authError', [regResult.error === 'username_taken' ? 'Этот логин уже занят!' : 'Некорректный логин.']);
+                return
+            }
+            userDb = regResult.user;
+
             const { getRedis } = require('./redis');
             await getRedis().incr('server:stats:total_accounts'); // +1 в статистику аккаунтов сразу в ОЗУ
-            logger.info(`Зарегистрирован новый аккаунт: ${player.accountName}. Кэш Redis инкрементирован.`)
+            logger.info(`Зарегистрирован новый аккаунт: ${userDb.username}. Кэш Redis инкрементирован.`)
         }
 
+        player.isLoggedIn = true;
+        player.accountId = userDb.id;
+        player.accountName = userDb.username;
+        player.money = userDb.money;
+        player.adminLevel = userDb.admin_level;
+        player.lastPos = new mp.Vector3(userDb.pos_x, userDb.pos_y, userDb.pos_z) // заполняем кэш данными из бд
+
         player.posTracker = setInterval(() => { // запускаем таймер позиции и обновляем в ОЗУ раз в 3 сек
-            if (mp.players.exists(player) && player.position){
-                player.lastPos = player.position
-            }
+            if (mp.players.exists(player) && player.position) player.lastPos = player.position;
         }, 3000);
 
         const { loadPlayerInventory } = require('./inventory');
@@ -98,7 +87,7 @@ mp.events.add('playerQuit', async (player) => {
 
     try {
         const saved = await accountService.updatePosition(player.accountId, player.lastPos);
-        if (saved) logger.info(`[Sequelize Save] Позиция игрока "${player.accountName}" успешно обновлена.`)
+        if (saved) logger.info(`[Sequelize Save] Позиция игрока "${player.accountName}" успешно обновлена.`);
     } catch (err) { console.error(`[Sequelize Save Error]: ${err.message}`) }
 
     const accountId = player.accountId;
@@ -106,7 +95,7 @@ mp.events.add('playerQuit', async (player) => {
     if (playerCarsSet && playerCarsSet.size > 0) {
         for (const vehicleDbId of playerCarsSet) { // проходимся по каждому авто игрока
             const vehicleObj = global.spawnedVehicles.get(vehicleDbId);
-            if (vehicleObj && mp.vehicles.exists(vehicleObj)) { vehicleObj.destroy() }// проверяем существует ли авто и удаляем
+            if (vehicleObj && mp.vehicles.exists(vehicleObj)) vehicleObj.destroy();// проверяем существует ли авто и удаляем
             global.spawnedVehicles.delete(vehicleDbId) // удаляем из карты машину
         }
         global.playerOwnedVehicles.delete(accountId)
