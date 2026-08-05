@@ -1,24 +1,29 @@
 const accountService = require('./services/AccountService');
 const authService = require('./services/AuthService');
+const moneyService = require('./services/MoneyService');
 const logger = require('./logger');
 const profile = require('./profiler');
 
 mp.Player.prototype.addMoney = async function(amount) {
     try {
-        this.money += amount;
-        this.call('client:updateMoney', [this.money]);
-
-        await accountService.updateAccount(this.accountId, { money: this.money });
+        const success = await moneyService.addMoney(this.accountId, amount, reason);
+        if (success) {
+            this.money += amount;
+            this.call('client:updateMoney', [this.money]);
+        }
+        return success
     } catch (err) { console.error(`[Sequelize Error] addMoney: ${err.message}`) }
 };
 
 mp.Player.prototype.takeMoney = async function(amount) {
     if (this.money < amount) return false; // проверка на наличие необходимой суммы
     try {
-        this.money -= amount;
-        this.call('client:updateMoney', [this.money]);
-        const saved = await accountService.updateAccount(this.accountId, { money: this.money });
-        return saved
+        const success = await moneyService.takeMoney(this.accountId, amount, reason);
+        if (success) {
+            this.money -= amount;
+            this.call('client:updateMoney', [this.money]);
+        }
+        return success
     } catch (err) {
         console.error(`[Sequelize Error] takeMoney: ${err.message}`);
         return false

@@ -72,8 +72,9 @@ mp.events.add("playerCommand", async (player, command) => {
     if (cmdName === "givemoney") {
         const amount = parseInt(args);
         if (isNaN(amount)) return player.outputChatBox("Использование: /givemoney [количество]");
-        await player.addMoney(amount);
-        player.outputChatBox(`[Админ] Вы выдали себе $${amount}`)
+        const success = await player.addMoney(amount);
+        if (success) { player.outputChatBox(`[Админ] Вы выдали себе $${amount}`) }
+        else { player.outputChatBox("!{#FF3333}[Ошибка] Некорректная сумма. Нужно целое число больше 0.") }
     }
 
     if (cmdName === "giveitem") {
