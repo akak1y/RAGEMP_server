@@ -15,6 +15,16 @@ module.exports = {
     PhoneConfig: {
         deliveryCar: 200
     },
+    TuningConfig: {
+        color: 1000,
+        wheels: 5000,
+        performance: {
+            11: 15000, // двигатель
+            12: 10000, // тормоза
+            13: 12000, // коробка передач
+            18: 25000  // турбина
+        }
+    },
     DealershipPos: { x: -474.0, y: -95.0, z: 39.0 },
     GaragePos: { x: -439.2, y: -102.7, z: 40.5, h: 33.0 },
     CarCustomPos: { x: -403.5, y: -71.6, z: 44.5, h: 52.0 },

@@ -5,7 +5,7 @@ const vehicleService = require('./services/VehicleService');
 const logger = require('./logger');
 const profile = require('./profiler');
 
-mp.Player.prototype.addMoney = async function(amount) {
+mp.Player.prototype.addMoney = async function(amount, reason = '') {
     try {
         const success = await moneyService.addMoney(this.accountId, amount, reason);
         if (success) {
@@ -16,7 +16,7 @@ mp.Player.prototype.addMoney = async function(amount) {
     } catch (err) { console.error(`[Sequelize Error] addMoney: ${err.message}`) }
 };
 
-mp.Player.prototype.takeMoney = async function(amount) {
+mp.Player.prototype.takeMoney = async function(amount, reason = '') {
     if (this.money < amount) return false; // проверка на наличие необходимой суммы
     try {
         const success = await moneyService.takeMoney(this.accountId, amount, reason);
@@ -29,6 +29,11 @@ mp.Player.prototype.takeMoney = async function(amount) {
         console.error(`[Sequelize Error] takeMoney: ${err.message}`);
         return false
     }
+};
+
+mp.Player.prototype.applyMoneyDelta = function(delta) { // синхронизация кэша
+    this.money += delta;
+    this.call('client:updateMoney', [this.money]);
 };
 
 mp.events.add('server:account:login', async (player, username, password) => { // авторизация и регистрация в одном событии

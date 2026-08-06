@@ -12,7 +12,7 @@ mp.events.add('server:dealership:buy', async (player, model) => {
 
     const result = await vehicleService.buyVehicle(player.accountId, model);
     if (!result.success) return;
-
+    player.applyMoneyDelta(-config.price);
     player.outputChatBox(`!{#33FF33}[Успех] Вы купили ${config.name}!`);
     player.call('client:phone:updateCars') // обновляем телефон
 });
