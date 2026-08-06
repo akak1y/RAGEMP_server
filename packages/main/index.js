@@ -12,6 +12,7 @@ const { initRedis, getRedis } = require('./redis');
 const { performance } = require('perf_hooks');
 
 const accountService = require('./services/AccountService'); // подключён сервис аккаунтов
+const inventoryService = require('./services/InventoryService'); // подключён сервис инвентаря
 
 (async () => {
     try {
@@ -22,7 +23,6 @@ const accountService = require('./services/AccountService'); // подключё
         console.log('[System] Базы данных и кэш успешно запущены.');
 
         require('./player');
-        require('./inventory');
         require('./dealership');
         require('./garage');
         require('./customCar');
@@ -80,18 +80,11 @@ mp.events.add("playerCommand", async (player, command) => {
     if (cmdName === "giveitem") {
         const itemId = args[0] ? args[0].toLowerCase().trim() : null;
         const count = parseInt(args[1]) || 1;
-        if (!itemId) {
-            return player.outputChatBox("Использование: /giveitem [phone / burger / water] [количество]")
-        }
-
-        const { giveItem } = require('./inventory');
-        const success = await giveItem(player, itemId, count);
+        if (!itemId) return player.outputChatBox("Использование: /giveitem [phone / burger / water] [количество]");
+        const success = await inventoryService.giveItem(player, itemId, count);
         
-        if (success) {
-            player.outputChatBox(`!{#33FF33}[Админ] Получен предмет: ${itemId} (${count} шт)`)
-        } else {
-            player.outputChatBox("!{#FF3333}[Ошибка] Не удалось выдать предмет. Возможно, нет свободного слота.")
-        }
+        if (success) { player.outputChatBox(`!{#33FF33}[Админ] Получен предмет: ${itemId} (${count} шт)`) }
+        else { player.outputChatBox("!{#FF3333}[Ошибка] Не удалось выдать предмет. Возможно, нет свободного слота.") }
     }
 
     if (cmdName === "test") {

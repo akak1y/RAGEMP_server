@@ -1,4 +1,5 @@
 const vehicleService = require('./services/VehicleService');
+const inventoryService = require('./services/InventoryService');
 const { VehicleConfig, DealershipPos, PhoneConfig, GaragePos } = require('./config');
 
 mp.blips.new(225, DealershipPos, { name: "Автосалон", color: 2, scale: 1.0, shortRange: true }); // иконка на карте
@@ -31,7 +32,7 @@ mp.events.add('server:phone:requestCars', async (player) => { // при откр
 mp.events.add('server:phone:spawnVehicle', async (player, vehicleDbId, fromPhone) => { // доставка авто
     if (!player.isLoggedIn || !vehicleDbId) return;
 
-    const hasPhone = player.inventory.some(slot => slot && slot.itemId === 'phone'); // проверка наличия телефона в инвентаре
+    const hasPhone = inventoryService.hasItem(player, 'phone');
     if (!hasPhone) return player.outputChatBox("!{#FF3333}[Ошибка] У вас нет телефона!");
 
     try {

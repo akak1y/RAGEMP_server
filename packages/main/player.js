@@ -2,6 +2,7 @@ const accountService = require('./services/AccountService');
 const authService = require('./services/AuthService');
 const moneyService = require('./services/MoneyService');
 const vehicleService = require('./services/VehicleService');
+const inventoryService = require('./services/InventoryService');
 const logger = require('./logger');
 const profile = require('./profiler');
 
@@ -82,8 +83,7 @@ mp.events.add('server:account:login', async (player, username, password) => { //
             if (mp.players.exists(player) && player.position) player.lastPos = player.position;
         }, 3000);
 
-        const { loadPlayerInventory } = require('./inventory');
-        await loadPlayerInventory(player);
+        await inventoryService.loadPlayerInventory(player);
 
         const isDeveloper = player.adminLevel;
         player.call('client:account:hideAuth', [isDeveloper]);

@@ -1,4 +1,4 @@
-const Vehicle = require('../models/Vehicle');
+const { getVehicleModel } = require('../models/Vehicle');
 const { VehicleConfig } = require('../config');
 const moneyService = require('./MoneyService');
 const logger = require('../logger');
@@ -27,7 +27,7 @@ class VehicleService {
         const paid = await moneyService.takeMoney(userId, config.price, `покупка ${config.name}`);
         if (!paid) return { success: false, error: 'not_enough_money' };
 
-        await Vehicle.create({ owner_id: userId, model: model });
+        await getVehicleModel().create({ owner_id: userId, model: model });
         logger.info(`[VehicleService] Игрок ID ${userId} купил ${config.name} за $${config.price}`);
         return { success: true, error: null };
     }
@@ -38,7 +38,7 @@ class VehicleService {
      * @returns {Promise<Array<Vehicle>>}
      */
     async getPlayerVehicles(userId) {
-        return await Vehicle.findAll({ where: { owner_id: userId } });
+        return await getVehicleModel().findAll({ where: { owner_id: userId } });
     }
 
     /**
@@ -48,7 +48,7 @@ class VehicleService {
      * @returns {Promise<Vehicle|null>}
      */
     async getVehicleForOwner(vehicleDbId, userId) {
-        return await Vehicle.findOne({ where: { id: vehicleDbId, owner_id: userId } });
+        return await getVehicleModel().findOne({ where: { id: vehicleDbId, owner_id: userId } });
     }
 
     /**

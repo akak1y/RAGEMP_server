@@ -1,4 +1,4 @@
-const Vehicle = require('../models/Vehicle');
+const { getVehicleModel } = require('../models/Vehicle');
 const { TuningConfig, CarCustomPos } = require('../config');
 const vehicleService = require('./VehicleService');
 const moneyService = require('./MoneyService');
@@ -82,7 +82,7 @@ class TuningService {
         const vehicleDbId = veh.vehicleDbId;
 
         if (categoryKey === 'color') {
-            await Vehicle.update({
+            await getVehicleModel().update({
                 color_r: option.r, color_g: option.g, color_b: option.b
             }, { where: { id: vehicleDbId } });
             veh.setVariable("customColor", { r: option.r, g: option.g, b: option.b });
@@ -92,13 +92,13 @@ class TuningService {
             const modFields = { 11: 'engine_mod', 12: 'brakes_mod', 13: 'transmission_mod', 18: 'turbo_mod' };
             const dbField = modFields[option.type];
             if (dbField) {
-                await Vehicle.update({ [dbField]: option.id }, { where: { id: vehicleDbId } });
+                await getVehicleModel().update({ [dbField]: option.id }, { where: { id: vehicleDbId } });
                 veh.setVariable(`customMod_${option.type}`, option.id);
             }
         }
 
         if (categoryKey === 'wheels') {
-            await Vehicle.update({ wheel_type: option.type, wheel_mod: option.id }, { where: { id: vehicleDbId } });
+            await getVehicleModel().update({ wheel_type: option.type, wheel_mod: option.id }, { where: { id: vehicleDbId } });
             veh.setVariable("customWheels", { type: option.type, id: option.id });
         }
     }
