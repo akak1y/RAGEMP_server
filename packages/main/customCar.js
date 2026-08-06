@@ -1,13 +1,12 @@
 const tuningService = require('./services/TuningService');
-const { CarCustomPos, CustomBoxPos } = require('./config');
+const locationService = require('./services/LocationService');
+const { CustomBoxPos } = require('./config');
 const logger = require('./logger');
 
-mp.blips.new(402, CarCustomPos, { name: "LSC", color: 1, scale: 1.0, shortRange: true }); // иконка на карте
-mp.markers.new(44, new mp.Vector3(CarCustomPos.x, CarCustomPos.y, CarCustomPos.z - 1.0), 2.0, { color: [255, 100, 100, 150]}); // чекпоинт
 
 mp.events.add('server:customCar:requestPos', (player) => {
     if (!player.isLoggedIn) return;
-    player.call('client:customCar:setPos', [CarCustomPos])
+    player.call('client:customCar:setPos', [locationService.getPosition('lsc')])
 });
 
 mp.events.add('server:custom:buyUpgrade', async (player, categoryKey, optionJson, price) => { // покупка тюнинга

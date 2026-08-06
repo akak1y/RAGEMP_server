@@ -1,9 +1,7 @@
 const vehicleService = require('./services/VehicleService');
 const inventoryService = require('./services/InventoryService');
-const { VehicleConfig, DealershipPos, PhoneConfig, GaragePos } = require('./config');
-
-mp.blips.new(225, DealershipPos, { name: "Автосалон", color: 2, scale: 1.0, shortRange: true }); // иконка на карте
-mp.markers.new(1, new mp.Vector3(DealershipPos.x, DealershipPos.y, DealershipPos.z - 1.0), 1.5, { color: [0, 200, 0, 150]}); // чекпоинт
+const locationService = require('./services/LocationService');
+const { VehicleConfig, PhoneConfig, GaragePos } = require('./config');
 
 mp.events.add('server:dealership:buy', async (player, model) => {
     if (!player.isLoggedIn || !VehicleConfig[model]) return;
@@ -74,7 +72,7 @@ mp.events.add('server:dealership:requestConfig', (player) => { // отправк
 
 mp.events.add('server:dealership:requestPos', (player) => {
     if (!player.isLoggedIn) return;
-    player.call('client:dealership:setPos', [DealershipPos])
+    player.call('client:dealership:setPos', [locationService.getPosition('dealership')])
 });
 
 mp.events.add('server:phone:requestPriceDeliveryCar', (player) => {

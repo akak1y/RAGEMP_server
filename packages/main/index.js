@@ -13,6 +13,7 @@ const { performance } = require('perf_hooks');
 
 const accountService = require('./services/AccountService'); // подключён сервис аккаунтов
 const inventoryService = require('./services/InventoryService'); // подключён сервис инвентаря
+const locationService = require('./services/LocationService'); // подключён сервис локаций
 
 (async () => {
     try {
@@ -26,6 +27,7 @@ const inventoryService = require('./services/InventoryService'); // подклю
         require('./dealership');
         require('./garage');
         require('./customCar');
+        locationService.initialize();
         console.log('[System] Все системы сервера RAGE MP успешно запущены и готовы!');
         
         const totalCount = await accountService.getTotalCount();
