@@ -1,6 +1,7 @@
 const accountService = require('./services/AccountService');
 const authService = require('./services/AuthService');
 const moneyService = require('./services/MoneyService');
+const vehicleService = require('./services/VehicleService');
 const logger = require('./logger');
 const profile = require('./profiler');
 
@@ -95,17 +96,8 @@ mp.events.add('playerQuit', async (player) => {
         if (saved) logger.info(`[Sequelize Save] Позиция игрока "${player.accountName}" успешно обновлена.`);
     } catch (err) { console.error(`[Sequelize Save Error]: ${err.message}`) }
 
-    const accountId = player.accountId;
-    const playerCarsSet = global.playerOwnedVehicles.get(accountId);
-    if (playerCarsSet && playerCarsSet.size > 0) {
-        for (const vehicleDbId of playerCarsSet) { // проходимся по каждому авто игрока
-            const vehicleObj = global.spawnedVehicles.get(vehicleDbId);
-            if (vehicleObj && mp.vehicles.exists(vehicleObj)) vehicleObj.destroy();// проверяем существует ли авто и удаляем
-            global.spawnedVehicles.delete(vehicleDbId) // удаляем из карты машину
-        }
-        global.playerOwnedVehicles.delete(accountId)
-    }
-});
+    vehicleService.destroyPlayerVehicles(player.accountId);
+})
 
 mp.events.add("server:requestRedisStats", async (player) => { // мост для обновления счётчиков акк-ов
     if (!player.isLoggedIn) return; // защита
