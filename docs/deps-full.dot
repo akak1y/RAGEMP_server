@@ -1,0 +1,95 @@
+strict digraph "dependency-cruiser output"{
+rankdir="LR" splines="true" overlap="false" nodesep="0.16" ranksep="0.18" fontname="Helvetica-bold" fontsize="9" style="rounded,bold,filled" fillcolor="#ffffff" compound="true"
+node [shape="box" style="rounded, filled" height="0.2" color="black" fillcolor="#ffffcc" fontcolor="black" fontname="Helvetica" fontsize="9"]
+edge [arrowhead="normal" arrowsize="0.7" penwidth="2.0" color="#00000033" fontname="Helvetica" fontsize="9"]
+
+"fs" [label=<fs> tooltip="fs" URL="https://nodejs.org/api/fs.html" color="grey" fontcolor="grey"]
+"module" [label=<module> tooltip="module" URL="https://nodejs.org/api/module.html" color="grey" fontcolor="grey"]
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" "packages/main/config.js" [label=<config.js> tooltip="config.js" URL="packages/main/config.js" ] } }
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" subgraph "cluster_packages/main/controllers" {label="controllers" "packages/main/controllers/dealershipController.js" [label=<dealershipController.js> tooltip="dealershipController.js" URL="packages/main/controllers/dealershipController.js" ] } } }
+"packages/main/controllers/dealershipController.js" -> "packages/main/config.js"
+"packages/main/controllers/dealershipController.js" -> "packages/main/middleware/isLoggedIn.js"
+"packages/main/controllers/dealershipController.js" -> "packages/main/middleware/withGuards.js"
+"packages/main/controllers/dealershipController.js" -> "packages/main/services/InventoryService.js"
+"packages/main/controllers/dealershipController.js" -> "packages/main/services/LocationService.js"
+"packages/main/controllers/dealershipController.js" -> "packages/main/services/VehicleService.js"
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" subgraph "cluster_packages/main/controllers" {label="controllers" "packages/main/controllers/playerController.js" [label=<playerController.js> tooltip="playerController.js" URL="packages/main/controllers/playerController.js" ] } } }
+"packages/main/controllers/playerController.js" -> "packages/main/logger.js"
+"packages/main/controllers/playerController.js" -> "packages/main/middleware/isAdmin.js"
+"packages/main/controllers/playerController.js" -> "packages/main/middleware/isLoggedIn.js"
+"packages/main/controllers/playerController.js" -> "packages/main/middleware/withGuards.js"
+"packages/main/controllers/playerController.js" -> "packages/main/profiler.js"
+"packages/main/controllers/playerController.js" -> "packages/main/redis.js"
+"packages/main/controllers/playerController.js" -> "packages/main/services/AccountService.js"
+"packages/main/controllers/playerController.js" -> "packages/main/services/AuthService.js"
+"packages/main/controllers/playerController.js" -> "packages/main/services/InventoryService.js"
+"packages/main/controllers/playerController.js" -> "packages/main/services/MoneyService.js"
+"packages/main/controllers/playerController.js" -> "packages/main/services/VehicleService.js"
+"packages/main/controllers/playerController.js" -> "perf_hooks" [style="dashed" penwidth="1.0"]
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" subgraph "cluster_packages/main/controllers" {label="controllers" "packages/main/controllers/tuningController.js" [label=<tuningController.js> tooltip="tuningController.js" URL="packages/main/controllers/tuningController.js" ] } } }
+"packages/main/controllers/tuningController.js" -> "packages/main/config.js"
+"packages/main/controllers/tuningController.js" -> "packages/main/middleware/isLoggedIn.js"
+"packages/main/controllers/tuningController.js" -> "packages/main/middleware/withGuards.js"
+"packages/main/controllers/tuningController.js" -> "packages/main/services/LocationService.js"
+"packages/main/controllers/tuningController.js" -> "packages/main/services/TuningService.js"
+"packages/main/controllers/tuningController.js" -> "packages/main/services/VehicleService.js"
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" "packages/main/db.js" [label=<db.js> tooltip="db.js" URL="packages/main/db.js" ] } }
+"packages/main/db.js" -> "packages/main/settings.json"
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" "packages/main/index.js" [label=<index.js> tooltip="index.js" URL="packages/main/index.js" ] } }
+"packages/main/index.js" -> "packages/main/controllers/dealershipController.js"
+"packages/main/index.js" -> "packages/main/controllers/playerController.js"
+"packages/main/index.js" -> "packages/main/controllers/tuningController.js"
+"packages/main/index.js" -> "packages/main/db.js"
+"packages/main/index.js" -> "packages/main/redis.js"
+"packages/main/index.js" -> "packages/main/services/AccountService.js"
+"packages/main/index.js" -> "packages/main/services/LocationService.js"
+"packages/main/index.js" -> "module" [style="dashed" penwidth="1.0"]
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" "packages/main/logger.js" [label=<logger.js> tooltip="logger.js" URL="packages/main/logger.js" ] } }
+"packages/main/logger.js" -> "fs" [style="dashed" penwidth="1.0"]
+"packages/main/logger.js" -> "path" [style="dashed" penwidth="1.0"]
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" subgraph "cluster_packages/main/middleware" {label="middleware" "packages/main/middleware/isAdmin.js" [label=<isAdmin.js> tooltip="isAdmin.js" URL="packages/main/middleware/isAdmin.js" ] } } }
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" subgraph "cluster_packages/main/middleware" {label="middleware" "packages/main/middleware/isLoggedIn.js" [label=<isLoggedIn.js> tooltip="isLoggedIn.js" URL="packages/main/middleware/isLoggedIn.js" ] } } }
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" subgraph "cluster_packages/main/middleware" {label="middleware" "packages/main/middleware/withGuards.js" [label=<withGuards.js> tooltip="withGuards.js" URL="packages/main/middleware/withGuards.js" ] } } }
+"packages/main/middleware/withGuards.js" -> "packages/main/logger.js"
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" subgraph "cluster_packages/main/models" {label="models" "packages/main/models/Item.js" [label=<Item.js> tooltip="Item.js" URL="packages/main/models/Item.js" ] } } }
+"packages/main/models/Item.js" -> "packages/main/db.js"
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" subgraph "cluster_packages/main/models" {label="models" "packages/main/models/Users.js" [label=<Users.js> tooltip="Users.js" URL="packages/main/models/Users.js" ] } } }
+"packages/main/models/Users.js" -> "packages/main/db.js"
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" subgraph "cluster_packages/main/models" {label="models" "packages/main/models/Vehicle.js" [label=<Vehicle.js> tooltip="Vehicle.js" URL="packages/main/models/Vehicle.js" ] } } }
+"packages/main/models/Vehicle.js" -> "packages/main/db.js"
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" "packages/main/profiler.js" [label=<profiler.js> tooltip="profiler.js" URL="packages/main/profiler.js" ] } }
+"packages/main/profiler.js" -> "packages/main/logger.js"
+"packages/main/profiler.js" -> "perf_hooks" [style="dashed" penwidth="1.0"]
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" "packages/main/redis.js" [label=<redis.js> tooltip="redis.js" URL="packages/main/redis.js" ] } }
+"packages/main/redis.js" -> "packages/main/settings.json"
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" subgraph "cluster_packages/main/services" {label="services" "packages/main/services/AccountService.js" [label=<AccountService.js> tooltip="AccountService.js" URL="packages/main/services/AccountService.js" ] } } }
+"packages/main/services/AccountService.js" -> "packages/main/logger.js"
+"packages/main/services/AccountService.js" -> "packages/main/models/Users.js"
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" subgraph "cluster_packages/main/services" {label="services" "packages/main/services/AuthService.js" [label=<AuthService.js> tooltip="AuthService.js" URL="packages/main/services/AuthService.js" ] } } }
+"packages/main/services/AuthService.js" -> "packages/main/logger.js"
+"packages/main/services/AuthService.js" -> "packages/main/services/AccountService.js"
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" subgraph "cluster_packages/main/services" {label="services" "packages/main/services/InventoryService.js" [label=<InventoryService.js> tooltip="InventoryService.js" URL="packages/main/services/InventoryService.js" ] } } }
+"packages/main/services/InventoryService.js" -> "packages/main/config.js"
+"packages/main/services/InventoryService.js" -> "packages/main/logger.js"
+"packages/main/services/InventoryService.js" -> "packages/main/models/Item.js"
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" subgraph "cluster_packages/main/services" {label="services" "packages/main/services/LocationService.js" [label=<LocationService.js> tooltip="LocationService.js" URL="packages/main/services/LocationService.js" ] } } }
+"packages/main/services/LocationService.js" -> "packages/main/config.js"
+"packages/main/services/LocationService.js" -> "packages/main/logger.js"
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" subgraph "cluster_packages/main/services" {label="services" "packages/main/services/MoneyService.js" [label=<MoneyService.js> tooltip="MoneyService.js" URL="packages/main/services/MoneyService.js" ] } } }
+"packages/main/services/MoneyService.js" -> "packages/main/logger.js"
+"packages/main/services/MoneyService.js" -> "packages/main/services/AccountService.js"
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" subgraph "cluster_packages/main/services" {label="services" "packages/main/services/TuningService.js" [label=<TuningService.js> tooltip="TuningService.js" URL="packages/main/services/TuningService.js" ] } } }
+"packages/main/services/TuningService.js" -> "packages/main/config.js"
+"packages/main/services/TuningService.js" -> "packages/main/logger.js"
+"packages/main/services/TuningService.js" -> "packages/main/models/Vehicle.js"
+"packages/main/services/TuningService.js" -> "packages/main/services/MoneyService.js"
+"packages/main/services/TuningService.js" -> "packages/main/services/VehicleService.js"
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" subgraph "cluster_packages/main/services" {label="services" "packages/main/services/VehicleService.js" [label=<VehicleService.js> tooltip="VehicleService.js" URL="packages/main/services/VehicleService.js" ] } } }
+"packages/main/services/VehicleService.js" -> "packages/main/config.js"
+"packages/main/services/VehicleService.js" -> "packages/main/logger.js"
+"packages/main/services/VehicleService.js" -> "packages/main/models/Vehicle.js"
+"packages/main/services/VehicleService.js" -> "packages/main/services/MoneyService.js"
+subgraph "cluster_packages" {label="packages" subgraph "cluster_packages/main" {label="main" "packages/main/settings.json" [label=<settings.json> tooltip="settings.json" URL="packages/main/settings.json" fillcolor="#ffee44"] } }
+"path" [label=<path> tooltip="path" URL="https://nodejs.org/api/path.html" color="grey" fontcolor="grey"]
+"perf_hooks" [label=<perf_hooks> tooltip="perf_hooks" URL="https://nodejs.org/api/perf_hooks.html" color="grey" fontcolor="grey"]
+}
