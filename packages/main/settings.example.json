@@ -1,8 +1,8 @@
 {
   "bd": {
     "host": "localhost",
-    "user": "root",
-    "password": "akak"
+    "user": "your_mysql_username",
+    "password": "your_mysql_password"
   },
   "redis": {
     "url": "redis://localhost:6379"

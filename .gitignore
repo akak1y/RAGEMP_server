@@ -6,6 +6,7 @@ graph.dot
 conf.json
 .listcache
 .dependency-cruiser.js
+/packages/main/settings.json
 
 *.log
 *.tmp
