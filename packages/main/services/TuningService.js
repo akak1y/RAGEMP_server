@@ -15,110 +15,163 @@ class TuningService {
     }
 
     /**
-     * Серверная цена опции
-     * @param {string} categoryKey - color | wheels | performance
-     * @param {Object} option - Опция тюнинга
+     * Поиск цвета в палитре
+     * @private
+     */
+    _findColorOption(option) {
+        return TuningConfig.colors.find(c =>
+            c.value.r === option.r && c.value.g === option.g && c.value.b === option.b
+        ) || null;
+    }
+
+    /**
+     * Поиск комплекта дисков в каталоге
+     * @private
+     */
+    _findWheelOption(option) {
+        return TuningConfig.wheels.options.find(o =>
+            o.wheelType === option.wheelType && o.wheelId === option.wheelId
+        ) || null;
+    }
+
+    /**
+     * Серверная цена категории/опции
+     * @param {string} categoryKey - color | engine | brakes | transmission | turbo | wheels
+     * @param {Object} [option] - Опция (для color и wheels)
      * @returns {number} Цена
      */
-    getPrice(categoryKey, option) {
-        if (categoryKey === 'color') return TuningConfig.color;
-        if (categoryKey === 'wheels') return TuningConfig.wheels;
-        if (categoryKey === 'performance') return TuningConfig.performance[option.type] || 0;
+    getPrice(categoryKey, option = {}) {
+        if (categoryKey === 'color') return TuningConfig.colorPrice;
+
+        const perf = TuningConfig.performanceMods[categoryKey];
+        if (perf) return perf.price;
+
+        if (categoryKey === 'wheels') {
+            const opt = this._findWheelOption(option);
+            return opt ? opt.price : 0;
+        }
         return 0;
     }
 
     /**
-     * Валидация опции тюнинга
+     * Проверка "уже установлено"
+     * @param {Object} carData - Запись машины из БД
      * @param {string} categoryKey - Категория
-     * @param {Object} option - Опция
+     * @param {Object} [option] - Опция (для color и wheels)
      * @returns {boolean}
      */
-    validateOption(categoryKey, option) {
-        if (!option || typeof option !== 'object') return false;
-
-        if (categoryKey === 'color') return [option.r, option.g, option.b].every(v => Number.isInteger(v) && v >= 0 && v <= 255);
-        if (categoryKey === 'wheels') return Number.isInteger(option.type) && Number.isInteger(option.id);
-        if (categoryKey === 'performance') {
-            const allowedTypes = Object.keys(TuningConfig.performance).map(Number);
-            return allowedTypes.includes(Number(option.type)) && Number.isInteger(option.id);
-        }
+    isInstalled(carData, categoryKey, option = {}) {
+        if (categoryKey === 'color') return carData.color_r === option.r && carData.color_g === option.g && carData.color_b === option.b;
+        const perf = TuningConfig.performanceMods[categoryKey];
+        if (perf)  return carData[perf.currentField] === perf.topLevel;
+        if (categoryKey === 'wheels') return carData.wheel_type === option.wheelType && carData.wheel_mod === option.wheelId;
         return false;
     }
 
     /**
      * Покупка и применение тюнинга
      * @param {mp.Player} player - Игрок
-     * @param {mp.Vehicle} veh - Машина
-     * @param {string} categoryKey - Категория
-     * @param {Object} option - Опция (распарсенный JSON)
-     * @param {number} clientPrice - Цена, присланная клиентом
+     * @param {mp.Vehicle} veh - Машина (с vehicleDbId)
+     * @param {string} categoryKey - color | engine | brakes | transmission | turbo | wheels
+     * @param {Object} [option] - { r, g, b } для color, { wheelType, wheelId } для wheels
+     * @param {number} [clientPrice] - Цена от клиента
      * @returns {Promise<{success: boolean, error: string|null}>}
      */
-    async buyUpgrade(player, veh, categoryKey, option, clientPrice) {
-        if (!this.validateOption(categoryKey, option)) {
-            logger.warn(`[TuningService] Некорректная опция "${categoryKey}" от игрока ${player.accountName}`);
+    async buyUpgrade(player, veh, categoryKey, option = {}, clientPrice = 0) {
+        const carData = await vehicleService.getVehicleForOwner(veh.vehicleDbId, player.accountId);
+        if (!carData) return { success: false, error: 'not_owner' };
+
+        if (categoryKey === 'color' && !this._findColorOption(option)) {
+            logger.warn(`[TuningService] Некорректный цвет от игрока ${player.accountName}`);
             return { success: false, error: 'invalid_option' };
         }
+        if (categoryKey === 'wheels' && !this._findWheelOption(option)) {
+            logger.warn(`[TuningService] Некорректный комплект дисков от игрока ${player.accountName}`);
+            return { success: false, error: 'invalid_option' };
+        }
+        if (categoryKey !== 'color' && categoryKey !== 'wheels' && !TuningConfig.performanceMods[categoryKey]) {
+            logger.warn(`[TuningService] Некорректная категория "${categoryKey}" от игрока ${player.accountName}`);
+            return { success: false, error: 'invalid_category' };
+        }
+
+        if (this.isInstalled(carData, categoryKey, option))  return { success: false, error: 'already_installed' };
 
         const realPrice = this.getPrice(categoryKey, option);
         if (clientPrice !== realPrice) logger.warn(`[Cheat Detect] Игрок ${player.accountName} прислал цену $${clientPrice} за ${categoryKey}, серверная цена $${realPrice}`);
 
-        const carData = await vehicleService.getVehicleForOwner(veh.vehicleDbId, player.accountId);
-        if (!carData) return { success: false, error: 'not_owner' };
-
         const paid = await moneyService.takeMoney(player.accountId, realPrice, `тюнинг: ${categoryKey}`);
         if (!paid) return { success: false, error: 'not_enough_money' };
-
         player.applyMoneyDelta(-realPrice);
-        logger.info(`[TuningService] Игрок ${player.accountName} купил ${categoryKey} за $${realPrice}`);
+
+        await this._applyUpgrade(veh, categoryKey, option);
+        logger.info(`[TuningService] Игрок ${player.accountName} установил ${categoryKey} за $${realPrice}`);
         return { success: true, error: null };
     }
 
     /**
-     * Внутреннее применение тюнинга
+     * Внутреннее применение тюнинга: БД + синхронизация с клиентами
      * @private
      */
     async _applyUpgrade(veh, categoryKey, option) {
+        const VehicleModel = getVehicleModel();
         const vehicleDbId = veh.vehicleDbId;
 
         if (categoryKey === 'color') {
-            await getVehicleModel().update({
+            await VehicleModel.update({
                 color_r: option.r, color_g: option.g, color_b: option.b
             }, { where: { id: vehicleDbId } });
             veh.setVariable("customColor", { r: option.r, g: option.g, b: option.b });
+            return;
         }
 
-        if (categoryKey === 'performance') {
-            const modFields = { 11: 'engine_mod', 12: 'brakes_mod', 13: 'transmission_mod', 18: 'turbo_mod' };
-            const dbField = modFields[option.type];
-            if (dbField) {
-                await getVehicleModel().update({ [dbField]: option.id }, { where: { id: vehicleDbId } });
-                veh.setVariable(`customMod_${option.type}`, option.id);
-            }
+        const perf = TuningConfig.performanceMods[categoryKey];
+        if (perf) {
+            // [ИЗМЕНЕНО] записываем ТОПОВЫЙ уровень в БД (не 0, а topLevel) — задел на будущее расширение
+            await VehicleModel.update({ [perf.currentField]: perf.topLevel }, { where: { id: vehicleDbId } });
+            veh.setVariable(`customMod_${perf.modType}`, perf.topLevel);
+            return;
         }
 
         if (categoryKey === 'wheels') {
-            await getVehicleModel().update({ wheel_type: option.type, wheel_mod: option.id }, { where: { id: vehicleDbId } });
-            veh.setVariable("customWheels", { type: option.type, id: option.id });
+            await VehicleModel.update({
+                wheel_type: option.wheelType, wheel_mod: option.wheelId
+            }, { where: { id: vehicleDbId } });
+            veh.setVariable("customWheels", { type: option.wheelType, id: option.wheelId });
         }
+    }
+
+    /**
+     * Текущее состояние тюнинга машины
+     * @param {Object} carData - Запись машины из БД
+     * @returns {Object}
+     */
+    getTuningState(carData) {
+        return {
+            color: { r: carData.color_r, g: carData.color_g, b: carData.color_b },
+            engine: carData.engine_mod,
+            brakes: carData.brakes_mod,
+            transmission: carData.transmission_mod,
+            turbo: carData.turbo_mod,
+            wheels: { wheelType: carData.wheel_type, wheelId: carData.wheel_mod }
+        };
     }
 
     /**
      * Вход в тюнинг-зону
      * @param {mp.Player} player - Игрок
-     * @returns {Promise<{success: boolean, error: string|null}>}
+     * @returns {Promise<{success: boolean, error: string|null, carData: Object|null}>}
      */
     async enterTuning(player) {
         const veh = player.vehicle;
-        if (!veh || !veh.vehicleDbId) return { success: false, error: 'no_vehicle' };
+        if (!veh || !veh.vehicleDbId) return { success: false, error: 'no_vehicle', carData: null };
 
         const carData = await vehicleService.getVehicleForOwner(veh.vehicleDbId, player.accountId);
-        if (!carData) return { success: false, error: 'not_owner' };
+        if (!carData) return { success: false, error: 'not_owner', carData: null };
 
         this.tuningVehicles.set(player.accountId, veh);
         player.dimension = player.id;
         veh.dimension = player.id;
-        return { success: true, error: null };
+        return { success: true, error: null, carData };
     }
 
     /**

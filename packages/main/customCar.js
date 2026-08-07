@@ -1,6 +1,7 @@
 const tuningService = require('./services/TuningService');
 const locationService = require('./services/LocationService');
-const { CustomBoxPos } = require('./config');
+const vehicleService = require('./services/VehicleService');
+const { CustomBoxPos, TuningConfig } = require('./config');
 const logger = require('./logger');
 
 
@@ -23,6 +24,11 @@ mp.events.add('server:custom:buyUpgrade', async (player, categoryKey, optionJson
         const result = await tuningService.buyUpgrade(player, veh, categoryKey, option, price);
 
         if (!result.success && result.error === 'not_enough_money') player.outputChatBox("!{#FF3333}[LSC] Недостаточно средств для покупки этой модификации");
+        if (!result.success && result.error === 'already_installed') player.outputChatBox("!{#FFaa00}[LSC] Эта модификация уже установлена на автомобиле");
+        if (result.success) {
+            const freshCar = await vehicleService.getVehicleForOwner(veh.vehicleDbId, player.accountId);
+            if (freshCar) player.call('client:customCar:setTuningState', [JSON.stringify(tuningService.getTuningState(freshCar))]);
+        }
     } catch (err) { logger.error(`Ошибка при покупке тюнинга: ${err.message}`) }
 });
 
@@ -36,6 +42,8 @@ mp.events.add('server:customCar:enterTuning', async (player) => { // вход в
 
     const result = await tuningService.enterTuning(player);
     if (!result.success) return;
+    player.call('client:customCar:setTuningConfig', [JSON.stringify(TuningConfig)]);
+    player.call('client:customCar:setTuningState', [JSON.stringify(tuningService.getTuningState(result.carData))]);
 
     player.call('client:custom:startTuning', [CustomBoxPos.x, CustomBoxPos.y, CustomBoxPos.z, CustomBoxPos.h]); // отправляем триггер для фиксации авто
 })

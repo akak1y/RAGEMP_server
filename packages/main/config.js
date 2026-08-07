@@ -10,19 +10,36 @@ module.exports = {
         "faggio": { name: "Pegassi Faggio", price: 5000 },
         "oppressor2": { name: "Oppressor", price: 10000 },
         "blazer5": { name: "Blazer", price: 15000 },
-        "kamacho": { name: "Canis Kamacho", price: 9000 }
+        "kamacho": { name: "Canis Kamacho", price: 9000 },
+        "guardian": { name: "Guardian", price: 2000 },
+        "monster3": { name: "Monster3", price: 3000 },
+        "pigalle": { name: "Pigalle", price: 4000 },
+        "futo": { name: "Futo", price: 5000 }
     },
     PhoneConfig: {
         deliveryCar: 200
     },
     TuningConfig: {
-        color: 1000,
-        wheels: 5000,
-        performance: {
-            11: 15000, // двигатель
-            12: 10000, // тормоза
-            13: 12000, // коробка передач
-            18: 25000  // турбина
+        colorPrice: 1000, // цена покраски
+        colors: [ // палитра цветов
+            { name: 'Черный', value: { r: 0, g: 0, b: 0 } },
+            { name: 'Белый', value: { r: 255, g: 255, b: 255 } },
+            { name: 'Красный', value: { r: 200, g: 0, b: 0 } },
+            { name: 'Желтый', value: { r: 255, g: 215, b: 0 } }
+        ],
+        performanceMods: { // технические моды
+            engine: { title: 'Двигатель', modType: 11, topLevel: 3, price: 15000, currentField: 'engine_mod' },
+            brakes: { title: 'Тормоза', modType: 12, topLevel: 2, price: 10000, currentField: 'brakes_mod' },
+            transmission: { title: 'Коробка передач', modType: 13, topLevel: 2, price: 12000, currentField: 'transmission_mod' },
+            turbo: { title: 'Турбо-наддув', modType: 18, topLevel: 0, price: 25000, currentField: 'turbo_mod' }
+        },
+        wheels: { // диски
+            title: 'Диски',
+            options: [
+                { name: 'Сток', wheelType: 0, wheelId: -1, price: 100 },
+                { name: 'Спортивные', wheelType: 0, wheelId: 5, price: 1000 },
+                { name: 'Внедорожные', wheelType: 2, wheelId: 8, price: 2000 }
+            ]
         }
     },
     DealershipPos: { x: -474.0, y: -95.0, z: 39.0 },

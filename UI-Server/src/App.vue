@@ -28,7 +28,11 @@
       @close="closeWindow('dealership')"
     />
     <!--тюнинг-->
-    <CarCustom v-if="windows.carCustom" />
+    <CarCustom
+      v-if="windows.carCustom"
+      :config="tuningConfig"
+      :state="tuningState"
+    />
     <!--перехватываем нажатие клавиш-->
     <input
       ref="focusTrap" 
@@ -84,6 +88,8 @@ const myCars = ref([]);
 const dealershipCars = ref({});
 const payDeliveryCar = ref(true);
 const priceDeliveryCar = ref(0);
+const tuningConfig = ref(null);
+const tuningState = ref(null);
 const windows = ref({ inventory: false, phone: false, dealership: false, carCustom: false });
 const focusTrap = ref(null);
 
@@ -241,5 +247,17 @@ onMounted(() => { // CEF мост
 
   window.setPayDeliveryCar = (pay) => { payDeliveryCar.value = pay }
   window.setPriceDeliveryCar = (price) => { priceDeliveryCar.value = price }
+
+  window.setTuningConfig = (json) => {
+    try {
+      tuningConfig.value = typeof json === 'string' ? JSON.parse(json) : json
+    } catch (e) { console.error("[Vue Error] Не удалось распарсить каталог тюнинга:", e) }
+  };
+
+  window.setTuningState = (json) => {
+    try {
+      tuningState.value = typeof json === 'string' ? JSON.parse(json) : json
+    } catch (e) { console.error("[Vue Error] Не удалось распарсить состояние тюнинга:", e) }
+  };
 });
 </script>

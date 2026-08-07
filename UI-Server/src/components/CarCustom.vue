@@ -5,8 +5,13 @@
         <h1>LSC</h1>
         <p class="subtitle">Модификация транспорта</p>
       </div>
-      <div v-if="currentCategory === 'main'" class="items-list">
-        <button 
+      <!-- загрузка каталога с сервера -->
+      <div v-if="!config" class="loading-hint">
+        <span>Загрузка каталога...</span>
+      </div>
+      <!-- главное меню: категории -->
+      <div v-else-if="currentCategory === 'main'" class="items-list">
+        <button
           v-for="(cat, key) in categories"
           :key="key"
           class="menu-btn"
@@ -16,7 +21,7 @@
           <span class="arrow">➔</span>
         </button>
       </div>
-      <!-- перечисление общих названий -->
+      <!-- подменю: опции конкретной категории -->
       <div v-else class="items-list">
         <button class="menu-btn back-btn" @click="currentCategory = 'main'">
           <span>⬅ Назад</span>
@@ -24,15 +29,15 @@
         <div class="category-title">
           {{ categories[currentCategory].title }}
         </div>
-        <!-- перечисление опций тюнинга -->
         <button 
           v-for="(option, idx) in categories[currentCategory].options"
           :key="idx"
           class="menu-btn option-btn"
-          @click="buyUpgrade(currentCategory, option)"
+          :class="{ installed: option.installed, disabled: option.installed }"
+          @click="!option.installed && buyUpgrade(currentCategory, option)"
         >
-          <span>{{ option.name }}</span>
-          <span class="price-tag">{{ option.price }}$</span>
+          <span>{{ option.installed ? `✓ ${option.name}` : option.name }}</span>
+          <span class="price-tag">{{ option.installed ? 'Установлено' : `${option.price}$` }}</span>
         </button>
       </div>
     </div>
@@ -44,47 +49,75 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+const props = defineProps({
+  config: { type: Object, default: null },
+  state: { type: Object, default: null }
+});
 
 const currentCategory = ref('main');
 
-const categories = ref({
-  color: {
-    title: 'Цвет кузова',
-    options: [
-      { name: 'Черный', value: { r: 0, g: 0, b: 0 }, price: 1000 },
-      { name: 'Белый', value: { r: 255, g: 255, b: 255 }, price: 1000 },
-      { name: 'Красный', value: { r: 200, g: 0, b: 0 }, price: 1000 },
-      { name: 'Желтый', value: { r: 255, g: 215, b: 0 }, price: 1000 }
-    ]
-  },
-  performance: {
-    title: 'Технический тюнинг',
-    options: [
-      { name: 'Двигатель', value: { type: 11, id: 3 }, price: 1000 },
-      { name: 'Тормоза', value: { type: 12, id: 2 }, price: 2000 },
-      { name: 'Коробка передач', value: { type: 13, id: 2 }, price: 3000 },
-      { name: 'Турбо-наддув', value: { type: 18, id: 0 }, price: 4000 }
-    ]
-  },
-  wheels: {
-    title: 'Диски',
-    options: [
-      { name: 'Сток', value: { type: 0, id: -1 }, price: 100 },
-      { name: 'Спортивные', value: { type: 0, id: 5 }, price: 1000 },
-      { name: 'Внедорожные', value:{ type: 2, id: 8 }, price: 2000 }
-    ]
+const categories = computed(() => {
+  if (!props.config) return {};
+  const cfg = props.config;
+  const st = props.state || {};
+  const result = {};
+
+  if (cfg.colors && Array.isArray(cfg.colors)) {
+    result.color = {
+      title: 'Цвет кузова',
+      options: cfg.colors.map(c => ({
+        name: c.name,
+        price: cfg.colorPrice,
+        value: { r: c.value.r, g: c.value.g, b: c.value.b },
+        installed: st.color && st.color.r === c.value.r && st.color.g === c.value.g && st.color.b === c.value.b
+      }))
+    };
   }
+
+  if (cfg.performanceMods) {
+    for (const [key, mod] of Object.entries(cfg.performanceMods)) {
+      const current = st[key];
+      result[key] = {
+        title: mod.title,
+        options: [{
+          name: mod.title,
+          price: mod.price,
+          value: {},
+          installed: typeof current === 'number' && current >= mod.topLevel
+        }]
+      };
+    }
+  }
+
+  if (cfg.wheels && Array.isArray(cfg.wheels.options)) {
+    const currentWheels = st.wheels || {};
+    result.wheels = {
+      title: cfg.wheels.title,
+      options: cfg.wheels.options.map(opt => ({
+        name: opt.name,
+        price: opt.price,
+        value: { wheelType: opt.wheelType, wheelId: opt.wheelId },
+        installed: currentWheels.wheelType === opt.wheelType && currentWheels.wheelId === opt.wheelId
+      }))
+    };
+  }
+
+  return result;
 });
 
-const selectCategory = (key) => { // выбор категории меню
+const selectCategory = (key) => {
   currentCategory.value = key;
   const trap = document.querySelector('.hidden-focus-trap');
   if (trap) trap.focus();
 };
 
 const buyUpgrade = (categoryKey, option) => {
-  if (typeof mp !== 'undefined') { mp.trigger("client:custom:applyUpgrade", categoryKey, JSON.stringify(option.value), option.price) }
+  if (option.installed) return;
+  if (typeof mp === 'undefined') return;
+
+  mp.trigger("client:custom:applyUpgrade", categoryKey, JSON.stringify(option.value), option.price);
+
   const trap = document.querySelector('.hidden-focus-trap');
   if (trap) trap.focus();
 };

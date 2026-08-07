@@ -103,10 +103,35 @@
   border-color: #555;
 }
 
-.exit-btn:hover {
-  background: #ff3333;
-  color: #fff;
-  border-color: #ff3333;
+.option-btn.installed {
+  opacity: 0.6;
+  cursor: default;
+  border-color: #4CAF50;
+}
+
+.option-btn.installed:hover {
+  background: rgba(40, 40, 40, 0.8);
+  color: #eee;
+  border-color: #4CAF50;
+  font-weight: normal;
+}
+
+.option-btn.installed .price-tag {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4CAF50;
+}
+
+.option-btn.installed:hover .price-tag {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4CAF50;
+}
+
+.loading-hint {
+  color: rgba(255, 255, 255, 0.6);
+  font-family: 'Verdana', sans-serif;
+  font-size: 14px;
+  text-align: center;
+  padding: 40px 20px;
 }
 
 /* Подсказка внизу */

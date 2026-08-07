@@ -224,6 +224,18 @@ mp.events.add("client:phone:requestPriceDeliveryCar", (price) => {
     }
 });
 
+mp.events.add("client:customCar:setTuningConfig", (json) => {
+    if (uiBrowser) {
+        uiBrowser.execute(`if(window.setTuningConfig) window.setTuningConfig('${json}');`)
+    }
+});
+
+mp.events.add("client:customCar:setTuningState", (json) => {
+    if (uiBrowser) {
+        uiBrowser.execute(`if(window.setTuningState) window.setTuningState('${json}');`)
+    }
+});
+
 mp.events.add("client:phone:updateCars", () => { mp.events.callRemote("server:phone:requestCars") });
 mp.events.add("client:ui:requestStatsUpdate", () => { mp.events.callRemote("server:requestRedisStats") });
 mp.events.add("client:toggleCursor", (toggle) => { mp.gui.cursor.show(toggle, toggle) });
@@ -257,11 +269,15 @@ mp.events.add('client:custom:applyUpgrade', (categoryKey, optionJson, price) => 
         veh.setCustomSecondaryColour(option.r, option.g, option.b)
     }
     if (categoryKey === 'wheels') {
-        veh.setWheelType(option.type);
-        veh.setMod(23, option.id); 
+        veh.setWheelType(option.wheelType);
+        veh.setMod(23, option.wheelId); 
     }
-    if (categoryKey === 'performance') {
-        veh.setMod(Number(option.type), Number(option.id));
+    if (categoryKey === 'engine' || categoryKey === 'brakes' || 
+        categoryKey === 'transmission' || categoryKey === 'turbo') {
+        const modTypeMap = { engine: 11, brakes: 12, transmission: 13, turbo: 18 };
+        const modType = modTypeMap[categoryKey];
+        const maxLevels = { 11: 3, 12: 2, 13: 2, 18: 0 };
+        veh.setMod(modType, maxLevels[modType]);
     }
     mp.events.callRemote('server:custom:buyUpgrade', categoryKey, optionJson, price) // запрос для списания денег и сохранения изменений
 });
@@ -272,6 +288,7 @@ mp.events.addDataHandler("customColor", (entity, value) => { // триггеры
         entity.setCustomSecondaryColour(value.r, value.g, value.b)
     }
 });
+
 mp.events.addDataHandler("customWheels", (entity, value) => {
     if (mp.vehicles.exists(entity) && value) {
         entity.setWheelType(Number(value.type));
@@ -302,7 +319,7 @@ mp.events.add("entityStreamIn", (entity) => { // синхронизация ст
         const technicalMods = [11, 12, 13, 18];
         technicalMods.forEach(modType => {
             const modValue = entity.getVariable(`customMod_${modType}`);
-            if (modValue !== undefined && modValue !== null) entity.setMod(modType, Number(modValue));
+            if (modValue !== undefined && modValue !== null && modValue !== -1) entity.setMod(modType, Number(modValue));
         });
     }
 })
