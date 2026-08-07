@@ -1,5 +1,7 @@
 # Игровой сервер RAGE MP с чистой архитектурой (Node.js / Vue 3 / Sequelize / Redis)
 
+![CI](https://github.com/akak1y/RAGEMP_server/actions/workflows/ci.yml/badge.svg)
+
 Привет! Это каркас игрового сервера для **RAGE Multiplayer (GTA V)**. Проект построен на современном стеке и решает типичные боли платформы: зависание HUD, конфликты клавиш с чатом, лишняя нагрузка на БД и «спагетти-код» без слоёв.
 
 ---
