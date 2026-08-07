@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  syntax-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Синтаксическая проверка бэкенда
+        run: |
+          for f in $(find packages/main -name '*.js'); do
+            node --check "$f" || exit 1
+          done
+          echo "OK: все файлы бэкенда валидны"
