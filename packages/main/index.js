@@ -24,9 +24,8 @@ const locationService = require('./services/LocationService'); // подключ
         console.log('[System] Базы данных и кэш успешно запущены.');
 
         require('./player');
-        require('./dealership');
-        require('./garage');
-        require('./customCar');
+        require('./controllers/dealershipController');
+        require('./controllers/tuningController');
         locationService.initialize();
         console.log('[System] Все системы сервера RAGE MP успешно запущены и готовы!');
         
