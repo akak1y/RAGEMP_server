@@ -4,6 +4,7 @@ const inventoryService = require('../services/InventoryService');
 const vehicleService = require('../services/VehicleService');
 const statsService = require('../services/StatsService');
 const healthService = require('../services/HealthService');
+const auditService = require('../services/AuditService');
 const { getRedis } = require('../redis');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const isAdmin = require('../middleware/isAdmin');
@@ -190,8 +191,10 @@ registerCommand('givemoney', {
         const amount = parseInt(args);
         if (isNaN(amount)) return player.outputChatBox("Использование: /givemoney [количество]");
         const success = await player.addMoney(amount);
-        if (success) { player.outputChatBox(`[Админ] Вы выдали себе $${amount}`) }
-        else { player.outputChatBox("!{#FF3333}[Ошибка] Некорректная сумма. Нужно целое число больше 0.") }
+        if (success) {
+            player.outputChatBox(`[Админ] Вы выдали себе $${amount}`);
+            auditService.logPlayer(player, 'givemoney', { category: 'money', amount });
+        } else { player.outputChatBox("!{#FF3333}[Ошибка] Некорректная сумма. Нужно целое число больше 0.") }
     }
 });
 
@@ -279,4 +282,21 @@ registerCommand('heal', {
 registerCommand('kill', {
     guards: [isLoggedIn],
     run: (player) => { player.health = 0 }
+});
+
+registerCommand('audit', {
+    guards: [adminOnly],
+    run: async (player, args) => {
+        const limit = Math.min(Number(args[0]) || 10, 50);
+        const rows = await auditService.getRecent(limit, args[1] || null);
+        player.outputChatBox(`!{#FFFF00}[Audit] Записей: ${rows.length}`);
+        rows.forEach(r => {
+            const date = new Date(r.created_at).toLocaleString('ru-RU');
+            const amount = r.amount != null ? ` $${r.amount}` : '';
+            const repeats = r.repeats ? ` x${r.repeats}` : '';
+            const target = r.target ? ` → ${r.target}` : '';
+            const ok = r.success ? '' : ' [FAIL]';
+            player.outputChatBox(`!{#B0C4DE}[${date}] ${r.actor}: ${r.action}${target}${amount}${repeats}${ok}`);
+        });
+    }
 });
