@@ -3,5 +3,8 @@
     "redis": "^4.6.10",
     "sequelize": "^6.37.8",
     "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2"
   }
 }

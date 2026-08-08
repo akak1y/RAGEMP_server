@@ -19,3 +19,18 @@ jobs:
             node --check "$f" || exit 1
           done
           echo "OK: все файлы бэкенда валидны"
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Установка зависимостей
+        run: npm ci
+        working-directory: packages/main
+
+      - name: Запуск Jest-тестов
+        run: npm test
+        working-directory: packages/main
