@@ -2,6 +2,7 @@ const accountService = require('../services/AccountService');
 const authService = require('../services/AuthService');
 const inventoryService = require('../services/InventoryService');
 const vehicleService = require('../services/VehicleService');
+const statsService = require('../services/StatsService');
 const { getRedis } = require('../redis');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const isAdmin = require('../middleware/isAdmin');
@@ -200,7 +201,7 @@ registerCommand('giveitem', {
     }
 });
 
-registerCommand('test', {
+registerCommand('bd', {
     guards: [adminOnly],
     run: async (player, args) => {
         const cachedTotal = await getRedis().get('server:stats:total_accounts');
@@ -230,4 +231,23 @@ registerCommand('delacc', {
             })
         } else { player.outputChatBox("Ошибка: Данный логин не найден в базе.") }
     }
-})
+});
+
+registerCommand('stats', {
+    guards: [adminOnly],
+    run: async (player) => {
+        const economy = await statsService.getEconomyStats();
+        const online = statsService.getOnlineStats();
+        const top = await statsService.getTopPlayers(3);
+
+        const lines = [
+            `!{#00FFFF}[Stats] Онлайн: ${online.online} | Машин в мире: ${online.vehicles} | Аккаунтов: ${economy.total}`,
+            `!{#00FFFF}[Stats] В экономике: $${economy.totalMoney} | В среднем: $${economy.avgMoney} | Максимум: $${economy.maxMoney}`,
+            `!{#00FFFF}[Stats] Источник: ${economy.source === 'redis' ? 'Redis' : 'MySQL'} (${economy.ms} мс)`,
+            `!{#00FFFF}[Stats] Топ: ` + top.map(t => `${t.username} ($${t.money})`).join(', ')
+        ];
+        lines.forEach(line => player.outputChatBox(line));
+
+        player.call('client:ui:debugLog', [`[Stats] economy from ${economy.source} in ${economy.ms}ms`, 'cpp-event']);
+    }
+});
