@@ -12,13 +12,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
       - name: Синтаксическая проверка бэкенда
         run: |
           for f in $(find packages/main -name '*.js'); do
             node --check "$f" || exit 1
           done
-          echo "OK: все файлы бэкенда валидны"
+          echo "OK"
+
   unit-tests:
     runs-on: ubuntu-latest
     steps:
@@ -26,11 +26,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Установка зависимостей
+      - name: Зависимости корня
+        run: npm ci
+      - name: Зависимости пакета
         run: npm ci
         working-directory: packages/main
-
       - name: Запуск Jest-тестов
         run: npm test
         working-directory: packages/main
