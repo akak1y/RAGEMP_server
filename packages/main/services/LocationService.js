@@ -1,4 +1,4 @@
-const { DealershipPos, GaragePos, CarCustomPos } = require('../config');
+const { DealershipPos, GaragePos, CarCustomPos, HospitalPos } = require('../config');
 const logger = require('../logger');
 
 /**
@@ -21,6 +21,11 @@ class LocationService {
                 pos: CarCustomPos,
                 blip: { sprite: 402, color: 1, name: 'LSC', scale: 1.0 },
                 marker: { type: 44, size: 2.0, color: [255, 100, 100, 150], zOffset: -1.0 }
+            },
+            hospital: {
+                pos: HospitalPos,
+                blip: { sprite: 61, color: 49, name: 'Больница', scale: 1.0 },
+                marker: { type: 1, size: 1.5, color: [255, 80, 80, 120], zOffset: -1.0 }
             }
         };
     }

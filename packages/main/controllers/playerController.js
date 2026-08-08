@@ -3,6 +3,7 @@ const authService = require('../services/AuthService');
 const inventoryService = require('../services/InventoryService');
 const vehicleService = require('../services/VehicleService');
 const statsService = require('../services/StatsService');
+const healthService = require('../services/HealthService');
 const { getRedis } = require('../redis');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const isAdmin = require('../middleware/isAdmin');
@@ -129,6 +130,11 @@ mp.events.add("server:requestRedisStats", withGuards([isLoggedIn], async (player
     player.call("client:setRedisStats", [parseInt(cachedTotal) || 0]) // отправляем цифру на клиент игрока
 }, 'requestRedisStats'));
 
+mp.events.add('playerDeath', (player, reason, killer) => {
+    if (!player.isLoggedIn) return;
+    healthService.onPlayerDeath(player)
+});
+
 // ============================================================
 
 const commands = new Map();
@@ -250,4 +256,27 @@ registerCommand('stats', {
 
         player.call('client:ui:debugLog', [`[Stats] economy from ${economy.source} in ${economy.ms}ms`, 'cpp-event']);
     }
+});
+
+registerCommand('sethp', {
+    guards: [adminOnly],
+    run: (player, args) => {
+        const value = Number(args[0]);
+        if (!args[0] || Number.isNaN(value)) return player.outputChatBox('!{#FF3333}Использование: /sethp [1-100]');
+        const hp = healthService.setHealth(player, value);
+        player.outputChatBox(`!{#00FFFF}[HP] Здоровье установлено: ${hp}`);
+    }
+});
+
+registerCommand('heal', {
+    guards: [adminOnly],
+    run: (player) => {
+        healthService.setHealth(player, 100);
+        player.outputChatBox('!{#00FF00}[HP] Вы полностью вылечены');
+    }
+});
+
+registerCommand('kill', {
+    guards: [isLoggedIn],
+    run: (player) => { player.health = 0 }
 });
