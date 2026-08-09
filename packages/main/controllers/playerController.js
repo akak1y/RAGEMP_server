@@ -5,6 +5,8 @@ const vehicleService = require('../services/VehicleService');
 const statsService = require('../services/StatsService');
 const healthService = require('../services/HealthService');
 const auditService = require('../services/AuditService');
+const moneyService = require('../services/MoneyService');
+const botService = require('../services/BotService');
 const { getRedis } = require('../redis');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const isAdmin = require('../middleware/isAdmin');
@@ -322,3 +324,41 @@ registerCommand('pay', {
         auditService.logPlayer(player, 'pay', { category: 'money', amount, target: target.accountName });
     }
 });
+
+registerCommand('pay', {
+    guards: [isLoggedIn],
+    run: async (player, args) => {
+        const [arg, amountRaw] = args;
+        const amount = Number(amountRaw);
+        if (!arg || !Number.isInteger(amount) || amount <= 0) return player.outputChatBox('!{#FF3333}Использование: /pay [ник или ID аккаунта] [сумма]');
+
+        let targetPlayer = null, targetName = null, targetAccountId = null;
+
+        if (/^\d+$/.test(arg)) {
+            targetAccountId = Number(arg);
+            targetPlayer = mp.players.toArray().find(p => p.isLoggedIn && p.accountId === targetAccountId);
+            if (targetPlayer) targetName = targetPlayer.accountName;
+            else targetName = botService.getNameByAccountId(targetAccountId);
+        } else {
+            targetPlayer = mp.players.toArray().find(p =>
+                p.isLoggedIn && (p.accountName || '').toLowerCase() === arg.toLowerCase());
+            if (targetPlayer) {
+                targetName = targetPlayer.accountName;
+                targetAccountId = targetPlayer.accountId;
+            } else {
+                targetName = botService.findBotName(arg);
+                if (targetName) targetAccountId = botService.getAccountId(targetName);
+            }
+        }
+
+        if (!targetName) return player.outputChatBox('!{#FF3333}Игрок не найден или не в сети');
+        if (targetAccountId === player.accountId) return player.outputChatBox('!{#FF3333}Нельзя перевести самому себе');
+
+        const ok = await moneyService.transfer(player.accountId, targetAccountId, amount, 'pay');
+        if (!ok) return player.outputChatBox('!{#FF3333}Недостаточно средств');
+
+        player.outputChatBox(`!{#00FF00}Вы перевели $${amount} → ${targetName}`);
+        if (targetPlayer) targetPlayer.outputChatBox(`!{#00FF00}Вам перевод $${amount} от ${player.accountName}`);
+        auditService.logPlayer(player, 'pay', { category: 'money', amount, target: targetAccountId, details: { target_name: targetName } });
+    }
+})

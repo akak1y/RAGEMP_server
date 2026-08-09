@@ -63,6 +63,20 @@ class BotService {
     }
 
     isBot(name) { return this.bots.has(name) }
+
+    findBotName(nick) {
+        for (const [name] of this.bots) {
+            if (name.toLowerCase() === nick.toLowerCase()) return name;
+        }
+        return null;
+    }
+
+    getNameByAccountId(accountId) {
+        for (const [name, bot] of this.bots) {
+            if (bot.accountId === accountId) return name;
+        }
+        return null;
+    }
 }
 
 module.exports = new BotService()
