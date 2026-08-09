@@ -78,6 +78,44 @@ class MoneyService {
     }
 
     /**
+     * Перевод между аккаунтами в ОДНОЙ транзакции
+     */
+    async transfer(fromId, toId, amount, reason = '') {
+        if (!Number.isInteger(amount) || amount <= 0) {
+            logger.warn(`[MoneyService] transfer отклонена: некорректная сумма ${amount}`);
+            return false;
+        }
+        if (fromId === toId) {
+            logger.warn(`[MoneyService] transfer отклонена: самому себе (ID ${fromId})`);
+            return false;
+        }
+
+        const User = this._getModel();
+        const t = await User.sequelize.transaction();
+        try {
+            const [taken] = await User.update(
+                { money: Sequelize.literal(`money - ${amount}`) },
+                { where: { id: fromId, money: { [Op.gte]: amount } }, transaction: t }
+            );
+            if (!taken) { await t.rollback(); return false; } // недостаточно средств
+
+            const [added] = await User.update(
+                { money: Sequelize.literal(`money + ${amount}`) },
+                { where: { id: toId }, transaction: t }
+            );
+            if (!added) { await t.rollback(); return false; } // получатель исчез из БД
+
+            await t.commit();
+            logger.info(`[MoneyService] Перевод $${amount}: ID ${fromId} → ID ${toId}${reason ? ` (${reason})` : ''}`);
+            return true;
+        } catch (err) {
+            await t.rollback();
+            logger.error(`[MoneyService] Ошибка transfer: ${err.message}`);
+            throw err;
+        }
+    }
+
+    /**
      * Получить текущий баланс из БД
      * @param {number} userId - ID аккаунта
      * @returns {Promise<number|null>} Баланс или null, если аккаунт не найден

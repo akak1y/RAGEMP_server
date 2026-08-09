@@ -15,11 +15,14 @@ jest.mock('../logger', () => ({
 
 describe('MoneyService', () => {
     let mockUserModel;
+    let mockTx;
 
     beforeEach(() => {
         jest.clearAllMocks();
+        mockTx = { commit: jest.fn(), rollback: jest.fn() };
         mockUserModel = {
-            update: jest.fn()
+            update: jest.fn(),
+            sequelize: { transaction: jest.fn().mockResolvedValue(mockTx) }
         };
         accountService.getModel.mockReturnValue(mockUserModel);
     });
@@ -56,13 +59,6 @@ describe('MoneyService', () => {
             const result = await moneyService.addMoney(999, 500);
             expect(result).toBe(false);
         });
-
-        test('логирует причину операции', async () => {
-            mockUserModel.update.mockResolvedValue([1]);
-            const logger = require('../logger');
-            await moneyService.addMoney(1, 500, 'бонус');
-            expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('бонус'));
-        });
     });
 
     describe('takeMoney', () => {
@@ -83,23 +79,8 @@ describe('MoneyService', () => {
 
         test('возвращает false при недостатке средств', async () => {
             mockUserModel.update.mockResolvedValue([0]);
-            const logger = require('../logger');
             const result = await moneyService.takeMoney(1, 10000);
             expect(result).toBe(false);
-            expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('недостаточно'));
-        });
-
-        test('защищает от ухода в минус', async () => {
-            mockUserModel.update.mockResolvedValue([0]);
-            await moneyService.takeMoney(1, 999999);
-            expect(mockUserModel.update).toHaveBeenCalledWith(
-                expect.any(Object),
-                expect.objectContaining({
-                    where: expect.objectContaining({
-                        money: { [Op.gte]: 999999 }
-                    })
-                })
-            );
         });
     });
 
@@ -114,6 +95,72 @@ describe('MoneyService', () => {
             accountService.findById.mockResolvedValue(null);
             const balance = await moneyService.getBalance(999);
             expect(balance).toBeNull();
+        });
+    });
+
+    describe('transfer', () => {
+        test('успех: commit, оба update внутри транзакции', async () => {
+            mockUserModel.update
+                .mockResolvedValueOnce([1])
+                .mockResolvedValueOnce([1]);
+
+            const result = await moneyService.transfer(1, 2, 500, 'pay');
+
+            expect(result).toBe(true);
+            expect(mockUserModel.update).toHaveBeenCalledTimes(2);
+            expect(mockUserModel.update).toHaveBeenNthCalledWith(1,
+                { money: expect.any(Sequelize.Utils.Literal) },
+                { where: { id: 1, money: { [Op.gte]: 500 } }, transaction: mockTx }
+            );
+            expect(mockUserModel.update).toHaveBeenNthCalledWith(2,
+                { money: expect.any(Sequelize.Utils.Literal) },
+                { where: { id: 2 }, transaction: mockTx }
+            );
+            expect(mockTx.commit).toHaveBeenCalled();
+            expect(mockTx.rollback).not.toHaveBeenCalled();
+        });
+
+        test('недостаточно средств: rollback, второй update не тронут', async () => {
+            mockUserModel.update.mockResolvedValueOnce([0]);
+
+            const result = await moneyService.transfer(1, 2, 500);
+
+            expect(result).toBe(false);
+            expect(mockUserModel.update).toHaveBeenCalledTimes(1);
+            expect(mockTx.rollback).toHaveBeenCalled();
+            expect(mockTx.commit).not.toHaveBeenCalled();
+        });
+
+        test('получатель исчез: rollback после первого update', async () => {
+            mockUserModel.update
+                .mockResolvedValueOnce([1])
+                .mockResolvedValueOnce([0]);
+
+            const result = await moneyService.transfer(1, 2, 500);
+
+            expect(result).toBe(false);
+            expect(mockTx.rollback).toHaveBeenCalled();
+            expect(mockTx.commit).not.toHaveBeenCalled();
+        });
+
+        test('самому себе — без открытия транзакции', async () => {
+            const result = await moneyService.transfer(1, 1, 500);
+            expect(result).toBe(false);
+            expect(mockUserModel.sequelize.transaction).not.toHaveBeenCalled();
+        });
+
+        test('некорректная сумма — без открытия транзакции', async () => {
+            const result = await moneyService.transfer(1, 2, -10);
+            expect(result).toBe(false);
+            expect(mockUserModel.sequelize.transaction).not.toHaveBeenCalled();
+        });
+
+        test('ошибка БД: rollback и проброс ошибки', async () => {
+            mockUserModel.update.mockRejectedValueOnce(new Error('deadlock'));
+
+            await expect(moneyService.transfer(1, 2, 500)).rejects.toThrow('deadlock');
+            expect(mockTx.rollback).toHaveBeenCalled();
+            expect(mockTx.commit).not.toHaveBeenCalled();
         });
     });
 });

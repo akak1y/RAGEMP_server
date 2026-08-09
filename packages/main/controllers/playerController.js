@@ -300,3 +300,25 @@ registerCommand('audit', {
         });
     }
 });
+
+registerCommand('pay', {
+    guards: [isLoggedIn],
+    run: async (player, args) => {
+        const [name, amountRaw] = args;
+        const amount = Number(amountRaw);
+        if (!name || !Number.isInteger(amount) || amount <= 0) return player.outputChatBox('!{#FF3333}Использование: /pay [ник] [сумма]');
+
+        const target = mp.players.toArray().find(p =>
+            p.isLoggedIn && (p.accountName || '').toLowerCase() === name.toLowerCase()
+        );
+        if (!target) return player.outputChatBox('!{#FF3333}Игрок не найден или не в сети');
+        if (target.id === player.id) return player.outputChatBox('!{#FF3333}Нельзя перевести самому себе');
+
+        const ok = await moneyService.transfer(player.accountId, target.accountId, amount, 'pay');
+        if (!ok) return player.outputChatBox('!{#FF3333}Недостаточно средств');
+
+        player.outputChatBox(`!{#00FF00}Вы перевели $${amount} игроку ${target.accountName}`);
+        target.outputChatBox(`!{#00FF00}Вам перевод $${amount} от ${player.accountName}`);
+        auditService.logPlayer(player, 'pay', { category: 'money', amount, target: target.accountName });
+    }
+});
