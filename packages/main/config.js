@@ -46,5 +46,6 @@ module.exports = {
     GaragePos: { x: -439.2, y: -102.7, z: 40.5, h: 33.0 },
     CarCustomPos: { x: -403.5, y: -71.6, z: 44.5, h: 52.0 },
     CustomBoxPos: { x: -401.3, y: -84.2, z: 53.9, h: 298.0 },
-    HospitalPos: { x: -449.6, y: -133.1, z: 39.1, h: 120.6 }
+    HospitalPos: { x: -449.6, y: -133.1, z: 39.1, h: 120.6 },
+    BotSpawnPos: { x: -453.3, y: -85.1, z: 40.0, h: 215.6 },
 }

@@ -24,6 +24,10 @@ const locationService = require('./services/LocationService'); // подключ
         require('./controllers/tuningController');
         locationService.initialize();
         console.log('[System] Все системы сервера RAGE MP успешно запущены и готовы!');
+
+        const botService = require('./services/BotService');
+        await botService.spawn('Ignat');
+        console.log('[System] Бот заспавнен');
         
         const totalCount = await accountService.getTotalCount();
         await getRedis().set('server:stats:total_accounts', totalCount, { EX: 600 }); // сохранение числа и обновление кэша redis каждые 10 мин
