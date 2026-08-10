@@ -6,10 +6,36 @@ const logger = require('../logger');
 /**
  * BotService — тестовый бот для мультиплеер-тестов
  */
+const GREETINGS = [
+    'Привет, путник! Как дела?',
+    'Здравствуй! Хороший день для прогулки.',
+    'О, гости! Рад тебя видеть.'
+];
+
 class BotService {
     constructor() {
-        this.bots = new Map(); // name → { ped, label, accountId }
+        this.bots = new Map();   // name → { ped, label, accountId, shape, greeted }
+        this.shapes = new Map(); // colshape → botName
         mp.events.add('playerReady', (player) => this.sendBotsTo(player));
+
+        // речь: приветствие при входе в радиус бота
+        mp.events.add('playerEnterColshape', (player, shape) => {
+            const botName = this.shapes.get(shape);
+            if (!botName || !player.isLoggedIn) return;
+            const bot = this.bots.get(botName);
+            if (!bot || bot.greeted.has(player.accountId)) return;
+            bot.greeted.add(player.accountId);
+            const phrase = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+            player.outputChatBox(`!{#FFD700}[${botName}] ${phrase}`);
+        });
+
+        // вышел из радиуса — при следующем подходе приветствуем снова
+        mp.events.add('playerExitColshape', (player, shape) => {
+            const botName = this.shapes.get(shape);
+            if (!botName) return;
+            const bot = this.bots.get(botName);
+            if (bot) bot.greeted.delete(player.accountId);
+        });
     }
 
     async spawn(botName = 'TestBot') {
@@ -47,7 +73,10 @@ class BotService {
                 { color: [255, 255, 255, 255], drawDistance: 50, los: true }
             );
 
-            this.bots.set(botName, { ped, label, accountId: account.id });
+            const shape = mp.colshapes.newSphere(BotSpawnPos.x, BotSpawnPos.y, BotSpawnPos.z, 5);
+            this.shapes.set(shape, botName);
+
+            this.bots.set(botName, { ped, label, accountId: account.id, shape, greeted: new Set() });
             mp.players.forEach(p => p.call('client:bot:setup', [ped.id, BotSpawnPos.h]));
             logger.info(`[BotService] Бот ${botName} заспавнен`);
         } catch (err) { logger.error(`[BotService] Ошибка спавна: ${err.message}`) }
