@@ -7,7 +7,13 @@
   />
   <div v-else class="game-ui">
     <!--худ-->
-    <Hud :money="money" :totalPlayers="totalAccounts" />
+    <Hud
+      :money="money"
+      :totalPlayers="totalAccounts"
+      :speed="speed"
+      :vehicleModel="vehicleModel"
+      :inVehicle="inVehicle"
+    />
     <!--инвентарь-->
     <Inventory
       v-if="windows.inventory"
@@ -17,7 +23,9 @@
     <!--телефон-->
     <Phone
       v-if="windows.phone"
-      :cars="myCars" :pay="payDeliveryCar" :price="priceDeliveryCar"
+      :cars="myCars"
+      :pay="payDeliveryCar"
+      :price="priceDeliveryCar"
       @spawn-car="onSpawnCar"
     />
     <!--автосалон-->
@@ -92,6 +100,9 @@ const tuningConfig = ref(null);
 const tuningState = ref(null);
 const windows = ref({ inventory: false, phone: false, dealership: false, carCustom: false });
 const focusTrap = ref(null);
+const speed = ref(0);
+const vehicleModel = ref('');
+const inVehicle = ref(false);
 
 const addDebugLog = (text, type = 'info') => {
   const now = new Date();
@@ -258,6 +269,12 @@ onMounted(() => { // CEF мост
     try {
       tuningState.value = typeof json === 'string' ? JSON.parse(json) : json
     } catch (e) { console.error("[Vue Error] Не удалось распарсить состояние тюнинга:", e) }
+  };
+
+  window.updateSpeedometer = (kmh, model, inVeh) => {
+    speed.value = Number(kmh) || 0;
+    vehicleModel.value = model || '';
+    inVehicle.value = !!inVeh;
   };
 });
 </script>
