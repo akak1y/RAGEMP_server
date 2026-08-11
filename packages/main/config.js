@@ -51,4 +51,16 @@ module.exports = {
     FuelStationPos: { x: -374.4, y: -87.4, z: 45.7 },
     FuelPricePerLiter: 3, // цена за литр
     FuelInteractionRadius: 5, // расстояние заправки
+    CourierConfig: {
+        vehicleModel: 'vindicator',
+        payPerDelivery: 300,
+        interactRadius: 3,
+        pickupPos: { x: -404.8, y: -123, z: 38.5 },
+        vehicleSpawnPos: { x: -402, y: -125, z: 38.4, h: 299 },
+        deliveryPoints: [
+            { x: -533.1, y: -165.1, z: 37.3 },
+            { x: -367.7, y: -239.9, z: 35.08 },
+            { x: -273.7, y: 26.9, z: 53.75 }
+        ]
+    }
 }

@@ -11,8 +11,12 @@ let openWindowsState = { // состояние интерфесов
 let isAnyUiWindowOpen = false; // для заморозки игрока если открыто любое окно
 let dealershipPos = null;
 let garagePos = null;
-let CarCustomPos = null;
+let сarCustomPos = null;
 let fuelStationPos = null;
+let courierPickupPos = null;
+let courierTargetPos = null;
+let courierMarker = null;
+let courierBlip = null;
 let playerIsDeveloper = false;
 let isCameraRotateActive = false;
 
@@ -87,6 +91,7 @@ mp.events.add("client:account:hideAuth", (developer) => { // успешная а
     mp.events.callRemote("server:garage:requestPos");
     mp.events.callRemote("server:customCar:requestPos");
     mp.events.callRemote("server:fuel:requestPos");
+    mp.events.callRemote("server:courier:requestPos");
     mp.events.callRemote("server:phone:requestPriceDeliveryCar");
     if (uiBrowser) uiBrowser.execute(`window.changeScreen("game");`); // меняем окно авторизации на игровой худ
     playerIsDeveloper = developer
@@ -138,7 +143,7 @@ mp.keys.bind(0x50, true, () => { // P - телефон
 });
 
 mp.keys.bind(0x45, true, () => { // E - взаимодействие с маркером
-    if (!isAuthorized || globalKeyBlock || isAnyUiWindowOpen || !dealershipPos || !garagePos || !CarCustomPos) return;
+    if (!isAuthorized || globalKeyBlock || isAnyUiWindowOpen || !dealershipPos || !garagePos || !сarCustomPos) return;
 
     const playerPos = mp.players.local.position;
     const interactionRadius = 2.5;
@@ -167,7 +172,7 @@ mp.keys.bind(0x45, true, () => { // E - взаимодействие с марк
         },
         {
             name: 'customCar',
-            position: CarCustomPos,
+            position: сarCustomPos,
             onInteract: () => {
                 mp.events.callRemote('server:customCar:enterTuning'); // входим в LSC
             }
@@ -182,6 +187,16 @@ mp.keys.bind(0x45, true, () => { // E - взаимодействие с марк
                 if (!dbId) return mp.gui.chat.push('!{#FF3333}[Заправка] Это не ваша машина.');
                 mp.events.callRemote('server:fuel:refuel', dbId)
             }
+        },
+        {
+            name: 'courierPickup',
+            position: courierPickupPos,
+            onInteract: () => { mp.events.callRemote('server:courier:interact'); }
+        },
+        {
+            name: 'courierTarget',
+            position: courierTargetPos,
+            onInteract: () => { mp.events.callRemote('server:courier:interact'); }
         },
     ];
     for (const zone of interactionZones) { // проверяем каждую зону
@@ -284,10 +299,12 @@ mp.events.add("client:ui:requestStatsUpdate", () => { mp.events.callRemote("serv
 mp.events.add("client:toggleCursor", (toggle) => { mp.gui.cursor.show(toggle, toggle) });
 mp.events.add("client:server:buyCar", (model) => { mp.events.callRemote("server:dealership:buy", model) }); // информация в бэк о покупке авто
 mp.events.add("client:server:spawnCar", (vehDbId, pay) => { mp.events.callRemote("server:phone:spawnVehicle", vehDbId, pay) });
+
 mp.events.add("client:dealership:setPos", (pos) => { dealershipPos = new mp.Vector3(pos.x, pos.y, pos.z) }); // получение xyz из конфига сервера
 mp.events.add("client:garage:setPos", (pos) => { garagePos = new mp.Vector3(pos.x, pos.y, pos.z) });
-mp.events.add("client:customCar:setPos", (pos) => { CarCustomPos = new mp.Vector3(pos.x, pos.y, pos.z) });
+mp.events.add("client:customCar:setPos", (pos) => { сarCustomPos = new mp.Vector3(pos.x, pos.y, pos.z) });
 mp.events.add('client:fuel:setPos', (pos) => { fuelStationPos = new mp.Vector3(pos.x, pos.y, pos.z); });
+mp.events.add("client:courier:setPos", (pos) => { courierPickupPos = new mp.Vector3(pos.x, pos.y, pos.z); });
 
 mp.events.add('client:custom:startTuning', (boxX, boxY, boxZ, boxH) => { // при заезде в LSC - фиксируем авто
     if (!isAuthorized || !mp.players.local.vehicle) return;
@@ -324,6 +341,27 @@ mp.events.add('client:custom:applyUpgrade', (categoryKey, optionJson, price) => 
         veh.setMod(modType, maxLevels[modType]);
     }
     mp.events.callRemote('server:custom:buyUpgrade', categoryKey, optionJson, price) // запрос для списания денег и сохранения изменений
+});
+
+mp.events.add('client:courier:target', (x, y, z) => {
+    if (courierMarker) {
+        courierMarker.destroy();
+        courierMarker = null;
+    }
+    if (courierBlip) {
+        courierBlip.destroy();
+        courierBlip = null;
+    }
+    courierTargetPos = null;
+    if (x === null || x === undefined) return;
+
+    courierTargetPos = new mp.Vector3(x, y, z);
+    courierMarker = mp.markers.new(1, courierTargetPos, 1.0, { color: [255, 200, 0, 150] });
+    courierBlip = mp.blips.new(478, courierTargetPos);
+    try {
+        courierBlip.shortRange = false; // видна на всей карте
+        courierBlip.name = 'Доставка';
+    } catch (e) {}
 });
 
 mp.events.addDataHandler("customColor", (entity, value) => { // триггеры тюнинга

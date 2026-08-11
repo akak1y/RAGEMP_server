@@ -146,6 +146,7 @@ class VehicleService {
 
         for (const [dbId, veh] of this.spawnedVehicles) {
             try {
+                if (veh.getVariable('courierWork')) continue;
                 if (!veh || !mp.vehicles.exists(veh)) continue;
                 const driver = veh.getOccupants().find(p => p.seat === 0);
                 if (!driver) continue;

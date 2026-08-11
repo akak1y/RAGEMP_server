@@ -7,10 +7,12 @@ const healthService = require('../services/HealthService');
 const auditService = require('../services/AuditService');
 const moneyService = require('../services/MoneyService');
 const botService = require('../services/BotService');
+const courierService = require('../services/CourierService');
 const { getRedis } = require('../redis');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const isAdmin = require('../middleware/isAdmin');
 const withGuards = require('../middleware/withGuards');
+const { CourierConfig } = require('../config');
 const logger = require('../logger');
 const profile = require('../profiler');
 const { performance } = require('perf_hooks');
@@ -119,6 +121,7 @@ mp.events.add('playerQuit', withGuards([], async (player) => {
     } catch (err) { console.error(`[Sequelize Save Error]: ${err.message}`) }
 
     vehicleService.destroyPlayerVehicles(player.accountId);
+    courierService.endWork(player.accountId, true);
 }, 'playerQuit'));
 
 mp.events.add("server:requestRedisStats", withGuards([isLoggedIn], async (player) => { // мост для обновления счётчиков акк-ов
@@ -132,6 +135,14 @@ mp.events.add("server:requestRedisStats", withGuards([isLoggedIn], async (player
     }
     player.call("client:setRedisStats", [parseInt(cachedTotal) || 0]) // отправляем цифру на клиент игрока
 }, 'requestRedisStats'));
+
+mp.events.add('server:courier:interact', withGuards([isLoggedIn], (player) => {
+    courierService.interact(player);
+}, 'courier:interact'));
+
+mp.events.add('server:courier:requestPos', withGuards([isLoggedIn], (player) => {
+    player.call('client:courier:setPos', [CourierConfig.pickupPos]);
+}, 'courier:requestPos'));
 
 mp.events.add('playerDeath', (player, reason, killer) => {
     if (!player.isLoggedIn) return;
@@ -361,4 +372,12 @@ registerCommand('pay', {
         if (targetPlayer) targetPlayer.outputChatBox(`!{#00FF00}Вам перевод $${amount} от ${player.accountName}`);
         auditService.logPlayer(player, 'pay', { category: 'money', amount, target: targetAccountId, details: { target_name: targetName } });
     }
-})
+});
+
+registerCommand('endwork', {
+    guards: [isLoggedIn],
+    run: (player) => {
+        if (!courierService.isWorking(player.accountId)) return player.outputChatBox('!{#FF3333}[Курьер] Вы не работаете курьером.');
+        courierService.endWork(player.accountId);
+    }
+});
