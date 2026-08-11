@@ -43,11 +43,12 @@ class CourierService {
         veh.setVariable('courierWork', player.accountId);
         veh.setVariable('fuel', 100);
 
-        const st = { stage: 'delivery', pointIdx: this.randomPoint(-1), vehicleId: veh.id };
+        const pointIdx = this.randomPoint(-1);
+        const st = { stage: 'delivery', pointIdx, vehicleId: veh.id, pay: this.calcPay(pointIdx) };
         this.states.set(player.accountId, st);
 
         this.sendTarget(player, st);
-        player.outputChatBox('!{#00FF00}[Курьер] Работа начата. Транспорт выдан, точка доставки на карте.');
+        player.outputChatBox(`!{#00FF00}[Курьер] Работа начата. Заказ: ~${Math.round(this.distTo(pointIdx))} м, награда $${st.pay}.`);
         logger.info(`[CourierService] Игрок ${player.accountName} начал работу курьером`);
     }
 
@@ -58,16 +59,18 @@ class CourierService {
     }
 
     completeOrder(player, st) {
-        player.addMoney(CourierConfig.payPerDelivery, 'курьерская доставка');
+        player.addMoney(st.pay, 'курьерская доставка');
         auditService.logPlayer(player, 'courier', {
-            category: 'money', amount: CourierConfig.payPerDelivery,
-            details: { point: st.pointIdx }
+            category: 'money', amount: st.pay,
+            details: { point: st.pointIdx, dist: Math.round(this.distTo(st.pointIdx)) }
         });
-        player.outputChatBox(`!{#00FF00}[Курьер] Заказ выполнен: +$${CourierConfig.payPerDelivery}. Новый заказ!`);
+        player.outputChatBox(`!{#00FF00}[Курьер] Заказ выполнен: +$${st.pay}.`);
 
         st.stage = 'delivery';
         st.pointIdx = this.randomPoint(st.pointIdx);
+        st.pay = this.calcPay(st.pointIdx);
         this.sendTarget(player, st);
+        player.outputChatBox(`!{#00FFFF}[Курьер] Новый заказ: ~${Math.round(this.distTo(st.pointIdx))} м, награда $${st.pay}.`);
     }
 
     endWork(accountId, silent = false) {
@@ -106,6 +109,16 @@ class CourierService {
         if (!pos || !point) return false;
         const dx = pos.x - point.x, dy = pos.y - point.y, dz = pos.z - point.z;
         return Math.sqrt(dx * dx + dy * dy + dz * dz) <= radius;
+    }
+
+    distTo(pointIdx) {
+        const p = CourierConfig.deliveryPoints[pointIdx];
+        const w = CourierConfig.pickupPos;
+        return Math.hypot(p.x - w.x, p.y - w.y, p.z - w.z);
+    }
+
+    calcPay(pointIdx) {
+        return Math.round((CourierConfig.payBase + this.distTo(pointIdx) * CourierConfig.payPerMeter) / 10) * 10;
     }
 }
 

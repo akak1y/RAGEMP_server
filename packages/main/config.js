@@ -53,7 +53,8 @@ module.exports = {
     FuelInteractionRadius: 5, // расстояние заправки
     CourierConfig: {
         vehicleModel: 'vindicator',
-        payPerDelivery: 300,
+        payBase: 50, // базовая ставка заказа
+        payPerMeter: 1.5,
         interactRadius: 3,
         pickupPos: { x: -404.8, y: -123, z: 38.5 },
         vehicleSpawnPos: { x: -402, y: -125, z: 38.4, h: 299 },
