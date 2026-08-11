@@ -141,7 +141,7 @@ mp.events.add('server:courier:interact', withGuards([isLoggedIn], (player) => {
 }, 'courier:interact'));
 
 mp.events.add('server:courier:requestPos', withGuards([isLoggedIn], (player) => {
-    player.call('client:courier:setPos', [CourierConfig.pickupPos]);
+    player.call('client:courier:setPos', [CourierConfig.startPos]);
 }, 'courier:requestPos'));
 
 mp.events.add('playerDeath', (player, reason, killer) => {

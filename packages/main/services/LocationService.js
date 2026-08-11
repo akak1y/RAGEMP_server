@@ -33,7 +33,7 @@ class LocationService {
                 marker: { type: 1, size: 1.0, color: [0, 165, 165, 120], zOffset: -1.0 }
             },
             courier: {
-                pos: CourierConfig.pickupPos,
+                pos: CourierConfig.startPos,
                 blip: { sprite: 478, color: 5, name: 'Курьер', scale: 1.0 },
                 marker: { type: 1, size: 1.5, color: [255, 200, 0, 150], zOffset: -1.0 }
             },
@@ -45,9 +45,9 @@ class LocationService {
      */
     initialize() {
         for (const [key, loc] of Object.entries(this.locations)) {
-            mp.blips.new(loc.blip.sprite, loc.pos, {
-                name: loc.blip.name, color: loc.blip.color, scale: loc.blip.scale, shortRange: true
-            });
+            if (loc.blip) { // blip: null — локация только с маркером
+                mp.blips.new(loc.blip.sprite, loc.pos, { name: loc.blip.name, color: loc.blip.color, scale: loc.blip.scale, shortRange: true })
+            }
             mp.markers.new(loc.marker.type, new mp.Vector3(loc.pos.x, loc.pos.y, loc.pos.z + loc.marker.zOffset), loc.marker.size, {
                 color: loc.marker.color
             });

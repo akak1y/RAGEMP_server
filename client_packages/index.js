@@ -13,7 +13,7 @@ let dealershipPos = null;
 let garagePos = null;
 let сarCustomPos = null;
 let fuelStationPos = null;
-let courierPickupPos = null;
+let courierStartPos = null;
 let courierTargetPos = null;
 let courierMarker = null;
 let courierBlip = null;
@@ -189,8 +189,8 @@ mp.keys.bind(0x45, true, () => { // E - взаимодействие с марк
             }
         },
         {
-            name: 'courierPickup',
-            position: courierPickupPos,
+            name: 'courierStart',
+            position: courierStartPos,
             onInteract: () => { mp.events.callRemote('server:courier:interact'); }
         },
         {
@@ -304,7 +304,7 @@ mp.events.add("client:dealership:setPos", (pos) => { dealershipPos = new mp.Vect
 mp.events.add("client:garage:setPos", (pos) => { garagePos = new mp.Vector3(pos.x, pos.y, pos.z) });
 mp.events.add("client:customCar:setPos", (pos) => { сarCustomPos = new mp.Vector3(pos.x, pos.y, pos.z) });
 mp.events.add('client:fuel:setPos', (pos) => { fuelStationPos = new mp.Vector3(pos.x, pos.y, pos.z); });
-mp.events.add("client:courier:setPos", (pos) => { courierPickupPos = new mp.Vector3(pos.x, pos.y, pos.z); });
+mp.events.add("client:courier:setPos", (pos) => { courierStartPos = new mp.Vector3(pos.x, pos.y, pos.z); });
 
 mp.events.add('client:custom:startTuning', (boxX, boxY, boxZ, boxH) => { // при заезде в LSC - фиксируем авто
     if (!isAuthorized || !mp.players.local.vehicle) return;
@@ -343,25 +343,24 @@ mp.events.add('client:custom:applyUpgrade', (categoryKey, optionJson, price) => 
     mp.events.callRemote('server:custom:buyUpgrade', categoryKey, optionJson, price) // запрос для списания денег и сохранения изменений
 });
 
-mp.events.add('client:courier:target', (x, y, z) => {
-    if (courierMarker) {
-        courierMarker.destroy();
-        courierMarker = null;
-    }
-    if (courierBlip) {
-        courierBlip.destroy();
-        courierBlip = null;
-    }
+mp.events.add('client:courier:target', (x, y, z, stage) => {
+    if (courierMarker) { courierMarker.destroy(); courierMarker = null; }
+    if (courierBlip) { courierBlip.destroy(); courierBlip = null; }
     courierTargetPos = null;
     if (x === null || x === undefined) return;
 
     courierTargetPos = new mp.Vector3(x, y, z);
-    courierMarker = mp.markers.new(1, courierTargetPos, 1.0, { color: [255, 200, 0, 150] });
-    courierBlip = mp.blips.new(478, courierTargetPos);
-    try {
-        courierBlip.shortRange = false; // видна на всей карте
-        courierBlip.name = 'Доставка';
-    } catch (e) {}
+    const isDelivery = stage === 'delivery';
+    courierMarker = mp.markers.new(1, courierTargetPos, isDelivery ? 1.0 : 2.5, {
+        color: isDelivery ? [255, 200, 0, 150] : [100, 150, 255, 150]
+    });
+    if (isDelivery) {
+        courierBlip = mp.blips.new(477, courierTargetPos);
+        try {
+            courierBlip.shortRange = false;
+            courierBlip.name = 'Доставка';
+        } catch (e) {}
+    }
 });
 
 mp.events.addDataHandler("customColor", (entity, value) => { // триггеры тюнинга

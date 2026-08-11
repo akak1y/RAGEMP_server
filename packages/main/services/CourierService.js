@@ -7,7 +7,7 @@ const logger = require('../logger');
  */
 class CourierService {
     constructor() {
-        this.states = new Map(); // accountId → { stage, pointIdx, vehicleId }
+        this.states = new Map(); // accountId → { stage, pointIdx, vehicleId, pay }
     }
 
     isWorking(accountId) {
@@ -19,7 +19,7 @@ class CourierService {
 
         const st = this.states.get(player.accountId);
         if (!st) {
-            if (this.isNear(player.position, CourierConfig.pickupPos)) this.startWork(player);
+            if (this.isNear(player.position, CourierConfig.startPos)) this.startWork(player);
             return;
         }
 
@@ -29,26 +29,31 @@ class CourierService {
             return player.outputChatBox('!{#FF3333}[Курьер] Рабочий транспорт потерян. Работа завершена.');
         }
 
-        if (st.stage === 'delivery') {
+        if (this.isNear(player.position, CourierConfig.startPos)) return this.endWork(player.accountId);
+
+        if (st.stage === 'pickup') {
+            if (this.isNear(player.position, CourierConfig.warehousePos)) this.takePackage(player, st);
+        } else if (st.stage === 'delivery') {
             const point = CourierConfig.deliveryPoints[st.pointIdx];
             if (this.isNear(player.position, point)) this.dropOff(player, st);
         } else if (st.stage === 'return') {
-            if (this.isNear(player.position, CourierConfig.pickupPos)) this.completeOrder(player, st);
+            if (this.isNear(player.position, CourierConfig.warehousePos)) this.completeOrder(player, st);
         }
     }
 
     startWork(player) {
-        const spawn = CourierConfig.vehicleSpawnPos;
+        const points = CourierConfig.vehicleSpawnPoints;
+        const spawn = points[Math.floor(Math.random() * points.length)];
         const veh = mp.vehicles.new(mp.joaat(CourierConfig.vehicleModel), new mp.Vector3(spawn.x, spawn.y, spawn.z), { heading: spawn.h });
         veh.setVariable('courierWork', player.accountId);
         veh.setVariable('fuel', 100);
 
         const pointIdx = this.randomPoint(-1);
-        const st = { stage: 'delivery', pointIdx, vehicleId: veh.id, pay: this.calcPay(pointIdx) };
+        const st = { stage: 'pickup', pointIdx, vehicleId: veh.id, pay: this.calcPay(pointIdx) };
         this.states.set(player.accountId, st);
 
         this.sendTarget(player, st);
-        player.outputChatBox(`!{#00FF00}[Курьер] Работа начата. Заказ: ~${Math.round(this.distTo(pointIdx))} м, награда $${st.pay}.`);
+        player.outputChatBox(`!{#00FF00}[Курьер] Работа начата. Транспорт рядом. Возьмите посылку на складе.`);
         logger.info(`[CourierService] Игрок ${player.accountName} начал работу курьером`);
     }
 
@@ -56,6 +61,12 @@ class CourierService {
         st.stage = 'return';
         this.sendTarget(player, st);
         player.outputChatBox('!{#00FFFF}[Курьер] Посылка доставлена. Возвращайся на склад.');
+    }
+
+    takePackage(player, st) {
+        st.stage = 'delivery';
+        this.sendTarget(player, st);
+        player.outputChatBox(`!{#00FFFF}[Курьер] Посылка взята. Точка доставки: ~${Math.round(this.distTo(st.pointIdx))} м, награда $${st.pay}.`);
     }
 
     completeOrder(player, st) {
@@ -70,7 +81,7 @@ class CourierService {
         st.pointIdx = this.randomPoint(st.pointIdx);
         st.pay = this.calcPay(st.pointIdx);
         this.sendTarget(player, st);
-        player.outputChatBox(`!{#00FFFF}[Курьер] Новый заказ: ~${Math.round(this.distTo(st.pointIdx))} м, награда $${st.pay}.`);
+        player.outputChatBox(`!{#00FFFF}[Курьер] Новая посылка взята. Точка доставки: ~${Math.round(this.distTo(st.pointIdx))} м, награда $${st.pay}.`);
     }
 
     endWork(accountId, silent = false) {
@@ -91,9 +102,10 @@ class CourierService {
     sendTarget(player, st) {
         if (st.stage === 'delivery') {
             const p = CourierConfig.deliveryPoints[st.pointIdx];
-            player.call('client:courier:target', [p.x, p.y, p.z]);
+            player.call('client:courier:target', [p.x, p.y, p.z, 'delivery']);
         } else {
-            player.call('client:courier:target', [null]);
+            const w = CourierConfig.warehousePos;
+            player.call('client:courier:target', [w.x, w.y, w.z, st.stage]);
         }
     }
 
@@ -113,7 +125,7 @@ class CourierService {
 
     distTo(pointIdx) {
         const p = CourierConfig.deliveryPoints[pointIdx];
-        const w = CourierConfig.pickupPos;
+        const w = CourierConfig.warehousePos;
         return Math.hypot(p.x - w.x, p.y - w.y, p.z - w.z);
     }
 
