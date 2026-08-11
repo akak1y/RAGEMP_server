@@ -20,7 +20,8 @@ function initVehicleModel() {
         wheel_mod: { type: DataTypes.INTEGER, allowNull: true, defaultValue: -1 },
         brakes_mod: { type: DataTypes.INTEGER, allowNull: true, defaultValue: -1 },
         transmission_mod: { type: DataTypes.INTEGER, allowNull: true, defaultValue: -1 },
-        turbo_mod: { type: DataTypes.INTEGER, allowNull: true, defaultValue: -1 }
+        turbo_mod: { type: DataTypes.INTEGER, allowNull: true, defaultValue: -1 },
+        fuel: { type: DataTypes.DECIMAL(5, 2), allowNull: false, defaultValue: 100.00 }
     }, { tableName: 'vehicles', timestamps: false });
     return Vehicle
 }

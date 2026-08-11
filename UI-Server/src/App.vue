@@ -13,6 +13,7 @@
       :speed="speed"
       :vehicleModel="vehicleModel"
       :inVehicle="inVehicle"
+      :fuel="fuel"
     />
     <!--инвентарь-->
     <Inventory
@@ -103,6 +104,7 @@ const focusTrap = ref(null);
 const speed = ref(0);
 const vehicleModel = ref('');
 const inVehicle = ref(false);
+const fuel = ref(100);
 
 const addDebugLog = (text, type = 'info') => {
   const now = new Date();
@@ -271,10 +273,11 @@ onMounted(() => { // CEF мост
     } catch (e) { console.error("[Vue Error] Не удалось распарсить состояние тюнинга:", e) }
   };
 
-  window.updateSpeedometer = (kmh, model, inVeh) => {
+  window.updateSpeedometer = (kmh, model, inVeh, fuelVal) => {
     speed.value = Number(kmh) || 0;
     vehicleModel.value = model || '';
     inVehicle.value = !!inVeh;
+    fuel.value = Number(fuelVal) || 0
   };
 });
 </script>

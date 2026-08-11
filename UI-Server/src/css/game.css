@@ -271,3 +271,30 @@
   border-radius: 3px;
   transition: width 0.1s ease-out;
 }
+
+.hud-fuel {
+    margin-top: 12px;
+    text-align: center;
+    color: #fff;
+    text-shadow: 0 0 6px rgba(0,0,0,0.8);
+}
+.fuel-label {
+    font-size: 13px;
+    opacity: 0.85;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.fuel-bar {
+    width: 220px;
+    height: 6px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.fuel-bar-fill {
+    height: 100%;
+    background: #4abcde;
+    border-radius: 3px;
+    transition: width 0.3s;
+}

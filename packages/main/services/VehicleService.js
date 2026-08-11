@@ -12,6 +12,9 @@ class VehicleService {
     constructor() {
         this.spawnedVehicles = new Map();
         this.playerOwnedVehicles = new Map();
+        this.lastFuelTick = Date.now();
+        this.fuelTimer = null;
+        this.startFuelTick();
     }
 
     /**
@@ -73,6 +76,8 @@ class VehicleService {
         const veh = mp.vehicles.new(mp.joaat(carData.model), coords, {
             heading: heading, engine: true, locked: false, dimension: dimension
         });
+        veh.setVariable('fuel', Number(carData.fuel || 100));
+        veh.prevPos = veh.position;
         veh.vehicleDbId = carData.id;
         veh.setVariable("customColor", {
             r: carData.color_r,
@@ -110,16 +115,64 @@ class VehicleService {
      * Деспаун всех машин игрока
      * @param {number} accountId - ID аккаунта
      */
-    destroyPlayerVehicles(accountId) {
+    async destroyPlayerVehicles(accountId) {
         const playerCarsSet = this.playerOwnedVehicles.get(accountId);
         if (!playerCarsSet || playerCarsSet.size === 0) return;
 
         for (const vehicleDbId of playerCarsSet) {
             const vehicleObj = this.spawnedVehicles.get(vehicleDbId);
+            try {
+                await getVehicleModel().update(
+                    { fuel: vehicleObj.getVariable('fuel') },
+                    { where: { id: vehicleDbId } }
+                )
+            } catch (e) {}
             if (vehicleObj && mp.vehicles.exists(vehicleObj)) { vehicleObj.destroy() }
             this.spawnedVehicles.delete(vehicleDbId);
         }
         this.playerOwnedVehicles.delete(accountId);
+    }
+
+    getConsumptionRate(kmh) {
+        return 0.01 + 0.003 * Math.max(0, kmh);
+    }
+
+    tickFuel() {
+        const now = Date.now();
+        const dt = (now - this.lastFuelTick) / 1000;
+        this.lastFuelTick = now;
+        if (dt <= 0) return;
+
+        for (const [dbId, veh] of this.spawnedVehicles) {
+            try {
+                if (!veh || !mp.vehicles.exists(veh)) continue;
+                const driver = veh.getOccupants().find(p => p.seat === 0);
+                if (!driver) continue;
+
+                const pos = veh.position;
+                let kmh = 0;
+                const prev = veh.prevPos;
+                if (prev) kmh = Math.hypot(pos.x - prev.x, pos.y - prev.y, pos.z - prev.z) / dt * 3.6;
+                veh.prevPos = pos;
+
+                const rate = this.getConsumptionRate(kmh);
+                const delta = rate * dt;
+                const current = Number(veh.getVariable('fuel') || 0);
+                const next = Math.max(0, current - delta);
+                veh.setVariable('fuel', next);
+
+                if (next <= 0 && current > 0) {
+                    veh.engine = false;
+                    if (driver && driver.outputChatBox) driver.outputChatBox('!{#FF3333}[Топливо] Бак пуст — нужна заправка!');
+                }
+            } catch (e) {}
+        }
+    }
+
+    startFuelTick() {
+        if (this.fuelTimer) return;
+        this.lastFuelTick = Date.now();
+        this.fuelTimer = setInterval(() => this.tickFuel(), 1000)
     }
 }
 

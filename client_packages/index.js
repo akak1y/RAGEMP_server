@@ -191,7 +191,7 @@ setInterval(() => {
     if (!veh) {
         spdLastPos = null;
         spdLastTime = 0;
-        uiBrowser.execute(`if(window.updateSpeedometer) window.updateSpeedometer(0, '', false);`);
+        uiBrowser.execute(`if(window.updateSpeedometer) window.updateSpeedometer(0, '', false, 0);`);
         return;
     }
 
@@ -207,7 +207,8 @@ setInterval(() => {
 
     let name = '';
     try { name = mp.game.vehicle.getDisplayNameFromVehicleModel(veh.model).toLowerCase(); } catch (e) {}
-    uiBrowser.execute(`if(window.updateSpeedometer) window.updateSpeedometer(${kmh}, '${name}', true);`);
+    const fuel = typeof veh.getVariable === 'function' ? Number(veh.getVariable('fuel') || 0) : 0;
+    uiBrowser.execute(`if(window.updateSpeedometer) window.updateSpeedometer(${kmh}, '${name}', true, ${fuel});`);
 }, 100);
 
 // мосты для vue
