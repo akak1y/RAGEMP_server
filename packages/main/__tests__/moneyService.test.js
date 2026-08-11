@@ -34,7 +34,7 @@ describe('MoneyService', () => {
             expect(result).toBe(true);
             expect(mockUserModel.update).toHaveBeenCalledWith(
                 { money: expect.any(Sequelize.Utils.Literal) },
-                { where: { id: 1 } }
+                { where: { id: 1 }, transaction: null }
             );
         });
 
@@ -59,6 +59,16 @@ describe('MoneyService', () => {
             const result = await moneyService.addMoney(999, 500);
             expect(result).toBe(false);
         });
+
+        test('прокидывает внешнюю транзакцию в update', async () => {
+            mockUserModel.update.mockResolvedValue([1]);
+            const result = await moneyService.addMoney(1, 500, 'тест', mockTx);
+            expect(result).toBe(true);
+            expect(mockUserModel.update).toHaveBeenCalledWith(
+                { money: expect.any(Sequelize.Utils.Literal) },
+                { where: { id: 1 }, transaction: mockTx }
+            );
+        });
     });
 
     describe('takeMoney', () => {
@@ -68,7 +78,7 @@ describe('MoneyService', () => {
             expect(result).toBe(true);
             expect(mockUserModel.update).toHaveBeenCalledWith(
                 { money: expect.any(Sequelize.Utils.Literal) },
-                { where: { id: 1, money: { [Op.gte]: 300 } } }
+                { where: { id: 1, money: { [Op.gte]: 300 } }, transaction: null }
             );
         });
 
@@ -81,6 +91,16 @@ describe('MoneyService', () => {
             mockUserModel.update.mockResolvedValue([0]);
             const result = await moneyService.takeMoney(1, 10000);
             expect(result).toBe(false);
+        });
+
+        test('прокидывает внешнюю транзакцию в update', async () => {
+            mockUserModel.update.mockResolvedValue([1]);
+            const result = await moneyService.takeMoney(1, 300, 'покупка', mockTx);
+            expect(result).toBe(true);
+            expect(mockUserModel.update).toHaveBeenCalledWith(
+                { money: expect.any(Sequelize.Utils.Literal) },
+                { where: { id: 1, money: { [Op.gte]: 300 } }, transaction: mockTx }
+            );
         });
     });
 
