@@ -23,15 +23,12 @@ class VehicleService {
      * @param {string} model - Модель из VehicleConfig
      * @returns {Promise<{success: boolean, error: string|null}>}
      */
-    async buyVehicle(userId, model) {
+    async buyVehicle(userId, model, transaction = null) {
         const config = VehicleConfig[model];
         if (!config) return { success: false, error: 'unknown_model' };
 
-        const paid = await moneyService.takeMoney(userId, config.price, `покупка ${config.name}`);
-        if (!paid) return { success: false, error: 'not_enough_money' };
-
-        await getVehicleModel().create({ owner_id: userId, model: model });
-        logger.info(`[VehicleService] Игрок ID ${userId} купил ${config.name} за $${config.price}`);
+        await getVehicleModel().create( { owner_id: userId, model: model, fuel: 100 }, { transaction } );
+        logger.info(`[VehicleService] Игрок ID ${userId} купил ${config.name}`);
         return { success: true, error: null };
     }
 

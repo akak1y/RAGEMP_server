@@ -1,10 +1,12 @@
 const vehicleService = require('../services/VehicleService');
 const inventoryService = require('../services/InventoryService');
 const locationService = require('../services/LocationService');
+const auditService = require('../services/AuditService');
+const moneyService = require('../services/MoneyService');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
 const { VehicleConfig, PhoneConfig, GaragePos, FuelStationPos, FuelPricePerLiter, FuelInteractionRadius } = require('../config');
-const auditService = require('../services/AuditService');
+const { getSequelize } = require('../db');
 
 mp.events.add('server:dealership:buy', withGuards([isLoggedIn], async (player, model) => {
     if (!VehicleConfig[model]) return;
@@ -12,10 +14,16 @@ mp.events.add('server:dealership:buy', withGuards([isLoggedIn], async (player, m
 
     if (player.money < config.price) return player.outputChatBox("!{#FF3333}[Ошибка] Недостаточно денег."); // проверка баланса
 
-    const result = await vehicleService.buyVehicle(player.accountId, model);
-    if (!result.success) return;
-    player.applyMoneyDelta(-config.price);
+    const sequelize = getSequelize();
+    await sequelize.transaction(async (t) => {
+        const paid = await moneyService.takeMoney(player.accountId, config.price, `покупка ${config.name}`, t);
+        if (!paid) throw new Error('not_enough_money');
 
+        const result = await vehicleService.buyVehicle(player.accountId, model, t);
+        if (!result.success) throw new Error('vehicle_failed');
+    });
+
+    player.applyMoneyDelta(-config.price);
     player.outputChatBox(`!{#33FF33}[Успех] Вы купили ${config.name}!`);
     player.call('client:phone:updateCars') // обновляем телефон
 }, 'dealership:buy'));
