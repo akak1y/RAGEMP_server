@@ -79,6 +79,7 @@ class VehicleService {
         veh.setVariable('fuel', Number(carData.fuel || 100));
         veh.prevPos = veh.position;
         veh.vehicleDbId = carData.id;
+        veh.setVariable('dbId', carData.id);
         veh.setVariable("customColor", {
             r: carData.color_r,
             g: carData.color_g,
@@ -173,6 +174,25 @@ class VehicleService {
         if (this.fuelTimer) return;
         this.lastFuelTick = Date.now();
         this.fuelTimer = setInterval(() => this.tickFuel(), 1000)
+    }
+
+    /**
+     * Заправить машину до 100
+     * @param {number} vehicleDbId
+     * @param {number} ownerId
+     */
+    async refuelVehicle(vehicleDbId, ownerId) {     
+        const veh = await this.getVehicleForOwner(vehicleDbId, ownerId);
+        if (!veh) return { success: false, error: 'not_found' };
+
+        const current = Number(veh.fuel);
+        if (current >= 100) return { success: false, error: 'full' };
+
+        await getVehicleModel().update({ fuel: 100 }, { where: { id: vehicleDbId } });
+
+        const spawned = this.spawnedVehicles.get(vehicleDbId);
+        if (spawned && mp.vehicles.exists(spawned)) spawned.setVariable('fuel', 100);
+        return { success: true, liters: 100 - current }
     }
 }
 

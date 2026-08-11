@@ -12,6 +12,7 @@ let isAnyUiWindowOpen = false; // для заморозки игрока есл�
 let dealershipPos = null;
 let garagePos = null;
 let CarCustomPos = null;
+let fuelStationPos = null;
 let playerIsDeveloper = false;
 let isCameraRotateActive = false;
 
@@ -85,6 +86,7 @@ mp.events.add("client:account:hideAuth", (developer) => { // успешная а
     mp.events.callRemote("server:dealership:requestPos");
     mp.events.callRemote("server:garage:requestPos");
     mp.events.callRemote("server:customCar:requestPos");
+    mp.events.callRemote("server:fuel:requestPos");
     mp.events.callRemote("server:phone:requestPriceDeliveryCar");
     if (uiBrowser) uiBrowser.execute(`window.changeScreen("game");`); // меняем окно авторизации на игровой худ
     playerIsDeveloper = developer
@@ -168,6 +170,17 @@ mp.keys.bind(0x45, true, () => { // E - взаимодействие с марк
             position: CarCustomPos,
             onInteract: () => {
                 mp.events.callRemote('server:customCar:enterTuning'); // входим в LSC
+            }
+        },
+        {
+            name: 'fuel',
+            position: fuelStationPos,
+            onInteract: () => {
+                const veh = mp.players.local.vehicle;
+                if (!veh) return mp.gui.chat.push('!{#FF3333}[Заправка] Сначала сядьте в машину.');
+                const dbId = veh.getVariable('dbId');
+                if (!dbId) return mp.gui.chat.push('!{#FF3333}[Заправка] Это не ваша машина.');
+                mp.events.callRemote('server:fuel:refuel', dbId)
             }
         },
     ];
@@ -272,8 +285,9 @@ mp.events.add("client:toggleCursor", (toggle) => { mp.gui.cursor.show(toggle, to
 mp.events.add("client:server:buyCar", (model) => { mp.events.callRemote("server:dealership:buy", model) }); // информация в бэк о покупке авто
 mp.events.add("client:server:spawnCar", (vehDbId, pay) => { mp.events.callRemote("server:phone:spawnVehicle", vehDbId, pay) });
 mp.events.add("client:dealership:setPos", (pos) => { dealershipPos = new mp.Vector3(pos.x, pos.y, pos.z) }); // получение xyz из конфига сервера
-mp.events.add("client:garage:setPos", (pos) => { garagePos = new mp.Vector3(pos.x, pos.y, pos.z) })
+mp.events.add("client:garage:setPos", (pos) => { garagePos = new mp.Vector3(pos.x, pos.y, pos.z) });
 mp.events.add("client:customCar:setPos", (pos) => { CarCustomPos = new mp.Vector3(pos.x, pos.y, pos.z) });
+mp.events.add('client:fuel:setPos', (pos) => { fuelStationPos = new mp.Vector3(pos.x, pos.y, pos.z); });
 
 mp.events.add('client:custom:startTuning', (boxX, boxY, boxZ, boxH) => { // при заезде в LSC - фиксируем авто
     if (!isAuthorized || !mp.players.local.vehicle) return;
