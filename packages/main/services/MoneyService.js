@@ -21,7 +21,7 @@ class MoneyService {
      * @param {string} [reason] - Причина для лога
      * @returns {Promise<boolean>} Успешность операции
      */
-    async addMoney(userId, amount, reason = '') {
+    async addMoney(userId, amount, reason = '', transaction = null) {
         if (!Number.isInteger(amount) || amount <= 0) {
             logger.warn(`[MoneyService] addMoney отклонена: некорректная сумма ${amount}`);
             return false;
@@ -31,7 +31,7 @@ class MoneyService {
             const User = this._getModel();
             const [affected] = await User.update(
                 { money: Sequelize.literal(`money + ${amount}`) },
-                { where: { id: userId } }
+                { where: { id: userId }, transaction }
             );
 
             if (affected > 0) {
@@ -52,7 +52,7 @@ class MoneyService {
      * @param {string} [reason] - Причина для лога
      * @returns {Promise<boolean>} Успешность (false — недостаточно средств)
      */
-    async takeMoney(userId, amount, reason = '') {
+    async takeMoney(userId, amount, reason = '', transaction = null) {
         if (!Number.isInteger(amount) || amount <= 0) {
             logger.warn(`[MoneyService] takeMoney отклонена: некорректная сумма ${amount}`);
             return false;
@@ -62,7 +62,7 @@ class MoneyService {
             const User = this._getModel();
             const [affected] = await User.update(
                 { money: Sequelize.literal(`money - ${amount}`) },
-                { where: { id: userId, money: { [Op.gte]: amount } } }
+                { where: { id: userId, money: { [Op.gte]: amount } }, transaction }
             );
 
             if (affected > 0) {
