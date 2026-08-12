@@ -75,9 +75,10 @@ class TuningService {
      * @param {string} categoryKey - color | engine | brakes | transmission | turbo | wheels
      * @param {Object} [option] - { r, g, b } для color, { wheelType, wheelId } для wheels
      * @param {number} [clientPrice] - Цена от клиента
-     * @returns {Promise<{success: boolean, error: string|null}>}
+     * @param {Object} [transaction] - Sequelize-транзакция (если null — автокоммит)
+     * @returns {Promise<{success: boolean, error: string|null, realPrice: number|null}>}
      */
-    async buyUpgrade(player, veh, categoryKey, option = {}, clientPrice = 0) {
+    async buyUpgrade(player, veh, categoryKey, option = {}, clientPrice = 0, transaction = null) {
         const carData = await vehicleService.getVehicleForOwner(veh.vehicleDbId, player.accountId);
         if (!carData) return { success: false, error: 'not_owner' };
 
@@ -99,27 +100,26 @@ class TuningService {
         const realPrice = this.getPrice(categoryKey, option);
         if (clientPrice !== realPrice) logger.warn(`[Cheat Detect] Игрок ${player.accountName} прислал цену $${clientPrice} за ${categoryKey}, серверная цена $${realPrice}`);
 
-        const paid = await moneyService.takeMoney(player.accountId, realPrice, `тюнинг: ${categoryKey}`);
+        const paid = await moneyService.takeMoney(player.accountId, realPrice, `тюнинг: ${categoryKey}`, transaction);
         if (!paid) return { success: false, error: 'not_enough_money' };
-        player.applyMoneyDelta(-realPrice);
 
-        await this._applyUpgrade(veh, categoryKey, option);
+        await this._applyUpgrade(veh, categoryKey, option, transaction);
         logger.info(`[TuningService] Игрок ${player.accountName} установил ${categoryKey} за $${realPrice}`);
-        return { success: true, error: null };
+        return { success: true, error: null, realPrice };
     }
 
     /**
      * Внутреннее применение тюнинга: БД + синхронизация с клиентами
      * @private
      */
-    async _applyUpgrade(veh, categoryKey, option) {
+    async _applyUpgrade(veh, categoryKey, option, transaction = null) {
         const VehicleModel = getVehicleModel();
         const vehicleDbId = veh.vehicleDbId;
 
         if (categoryKey === 'color') {
             await VehicleModel.update({
                 color_r: option.r, color_g: option.g, color_b: option.b
-            }, { where: { id: vehicleDbId } });
+            }, { where: { id: vehicleDbId }, transaction });
             veh.setVariable("customColor", { r: option.r, g: option.g, b: option.b });
             return;
         }
@@ -127,7 +127,7 @@ class TuningService {
         const perf = TuningConfig.performanceMods[categoryKey];
         if (perf) {
             // [ИЗМЕНЕНО] записываем ТОПОВЫЙ уровень в БД (не 0, а topLevel) — задел на будущее расширение
-            await VehicleModel.update({ [perf.currentField]: perf.topLevel }, { where: { id: vehicleDbId } });
+            await VehicleModel.update({ [perf.currentField]: perf.topLevel }, { where: { id: vehicleDbId }, transaction });
             veh.setVariable(`customMod_${perf.modType}`, perf.topLevel);
             return;
         }
@@ -135,7 +135,7 @@ class TuningService {
         if (categoryKey === 'wheels') {
             await VehicleModel.update({
                 wheel_type: option.wheelType, wheel_mod: option.wheelId
-            }, { where: { id: vehicleDbId } });
+            }, { where: { id: vehicleDbId }, transaction });
             veh.setVariable("customWheels", { type: option.wheelType, id: option.wheelId });
         }
     }

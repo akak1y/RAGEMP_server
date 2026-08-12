@@ -19,6 +19,7 @@ class MoneyService {
      * @param {number} userId - ID аккаунта
      * @param {number} amount - Сумма (целое число, больше 0)
      * @param {string} [reason] - Причина для лога
+     * @param {Object} [transaction] - Внешняя Sequelize-транзакция (если null — автокоммит)
      * @returns {Promise<boolean>} Успешность операции
      */
     async addMoney(userId, amount, reason = '', transaction = null) {
@@ -50,6 +51,7 @@ class MoneyService {
      * @param {number} userId - ID аккаунта
      * @param {number} amount - Сумма (целое число, больше 0)
      * @param {string} [reason] - Причина для лога
+     * @param {Object} [transaction] - Внешняя Sequelize-транзакция (если null — автокоммит)
      * @returns {Promise<boolean>} Успешность (false — недостаточно средств)
      */
     async takeMoney(userId, amount, reason = '', transaction = null) {

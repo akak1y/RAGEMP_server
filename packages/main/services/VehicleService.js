@@ -21,6 +21,7 @@ class VehicleService {
      * Покупка машины
      * @param {number} userId - ID аккаунта
      * @param {string} model - Модель из VehicleConfig
+     * @param {Object} [transaction] - Sequelize-транзакция (если null — автокоммит)
      * @returns {Promise<{success: boolean, error: string|null}>}
      */
     async buyVehicle(userId, model, transaction = null) {
