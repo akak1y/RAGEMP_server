@@ -132,10 +132,20 @@ class VehicleService {
         this.playerOwnedVehicles.delete(accountId);
     }
 
+    /**
+     * Расход топлива: литров в секунду в зависимости от скорости
+     * @param {number} kmh - Скорость, км/ч
+     * @returns {number} Литров в секунду
+     */
     getConsumptionRate(kmh) {
         return 0.01 + 0.003 * Math.max(0, kmh);
     }
 
+    /**
+     * Тик расхода (раз в секунду): у машин с водителем списывает топливо,
+     * при нуле глушит двигатель. Рабочий транспорт (courierWork) не тратит.
+     * @private
+     */
     tickFuel() {
         const now = Date.now();
         const dt = (now - this.lastFuelTick) / 1000;
@@ -169,6 +179,9 @@ class VehicleService {
         }
     }
 
+    /**
+     * Запускает интервал тика топлива (повторный вызов игнорируется)
+     */
     startFuelTick() {
         if (this.fuelTimer) return;
         this.lastFuelTick = Date.now();
@@ -179,15 +192,17 @@ class VehicleService {
      * Заправить машину до 100
      * @param {number} vehicleDbId
      * @param {number} ownerId
+     * @param {Object} [transaction] - Sequelize-транзакция (если null — автокоммит)
+     * @returns {Promise<{success: boolean, error?: string, liters?: number}>}
      */
-    async refuelVehicle(vehicleDbId, ownerId) {     
+    async refuelVehicle(vehicleDbId, ownerId, transaction = null) {
         const veh = await this.getVehicleForOwner(vehicleDbId, ownerId);
         if (!veh) return { success: false, error: 'not_found' };
 
         const current = Number(veh.fuel);
         if (current >= 100) return { success: false, error: 'full' };
 
-        await getVehicleModel().update({ fuel: 100 }, { where: { id: vehicleDbId } });
+        await getVehicleModel().update({ fuel: 100 }, { where: { id: vehicleDbId }, transaction });
 
         const spawned = this.spawnedVehicles.get(vehicleDbId);
         if (spawned && mp.vehicles.exists(spawned)) spawned.setVariable('fuel', 100);
