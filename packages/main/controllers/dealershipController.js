@@ -23,6 +23,10 @@ mp.events.add('server:dealership:buy', withGuards([isLoggedIn], async (player, m
         if (!result.success) throw new Error('vehicle_failed');
     });
 
+    auditService.logPlayer(player, 'buy_vehicle', {
+        category: 'money', amount: config.price,
+        details: { model }
+    });
     player.applyMoneyDelta(-config.price);
     player.outputChatBox(`!{#33FF33}[Успех] Вы купили ${config.name}!`);
     player.call('client:phone:updateCars') // обновляем телефон
@@ -48,12 +52,23 @@ mp.events.add('server:phone:spawnVehicle', withGuards([isLoggedIn], async (playe
     if (vehicleService.isSpawned(vehicleDbId)) {
         return player.outputChatBox(`!{#FF1111}[Телефон] Машина ${config.name} уже заспавнена.`)
     }
+
+    let cost = 0;
     if (fromPhone) {
-        const payment = await player.takeMoney(PhoneConfig.deliveryCar, 'доставка авто'); // если платно - списываем деньги
-        if (!payment) return player.outputChatBox("!{#FF3333}[Ошибка] У вас недостаточно денег!")
+        cost = PhoneConfig.deliveryCar;
+        try {
+            const sequelize = getSequelize();
+            await sequelize.transaction(async (t) => {
+                const paid = await moneyService.takeMoney(player.accountId, cost, 'доставка авто', t);
+                if (!paid) throw new Error('not_enough_money');
+            });
+        } catch (err) {
+            if (err.message === 'not_enough_money') return player.outputChatBox("!{#FF3333}[Ошибка] У вас недостаточно денег!");
+            throw err;
+        }
     }
-    
-    const posCar = new Object();;
+
+    const posCar = {};
     if (!fromPhone) {
         posCar.coords = new mp.Vector3(GaragePos.x, GaragePos.y, GaragePos.z); // спавним на метке гаража
         posCar.heading = GaragePos.h;
@@ -68,6 +83,14 @@ mp.events.add('server:phone:spawnVehicle', withGuards([isLoggedIn], async (playe
         setTimeout(() => {
             if (mp.players.exists(player) && mp.vehicles.exists(veh)) { player.putIntoVehicle(veh, 0) } // садим игрока за руль с задержкой
         }, 150)
+    }
+
+    if (cost > 0) {
+        player.applyMoneyDelta(-cost);
+        auditService.logPlayer(player, 'spawn_vehicle', {
+            category: 'money', amount: cost,
+            details: { vehicleDbId, model: carData.model }
+        });
     }
     player.outputChatBox(`!{#00FFFF}[Телефон] Ваша машина ${config.name} доставлена.`)
 }, 'phone:spawnVehicle'));
