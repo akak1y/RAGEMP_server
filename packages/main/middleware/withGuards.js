@@ -11,7 +11,7 @@ const logger = require('../logger');
 function withGuards(guards, handler, label = '') {
     return async (player, ...args) => {
         for (const guard of guards) {
-            if (!guard(player)) return;
+            if (!(await guard(player))) return;
         }
         try { await handler(player, ...args) }
         catch (err) { logger.error(`[Handler${label ? ' ' + label : ''}] ${err.message}\nStack: ${err.stack}`) }

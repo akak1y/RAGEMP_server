@@ -2,13 +2,14 @@ const tuningService = require('../services/TuningService');
 const locationService = require('../services/LocationService');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
+const rateLimit = require('../middleware/rateLimit');
 const { CustomBoxPos, TuningConfig } = require('../config');
 
 mp.events.add('server:customCar:requestPos', withGuards([isLoggedIn], (player) => {
     player.call('client:customCar:setPos', [locationService.getPosition('lsc')])
 }, 'customCar:requestPos'));
 
-mp.events.add('server:custom:buyUpgrade', withGuards([isLoggedIn], async (player, categoryKey, optionJson, price) => { // покупка тюнинга
+mp.events.add('server:custom:buyUpgrade', withGuards([isLoggedIn, rateLimit('buy_upgrade', 1, 5)], async (player, categoryKey, optionJson, price) => { // покупка тюнинга
     let option;
     try { option = JSON.parse(optionJson) }
     catch { return }
@@ -44,7 +45,7 @@ mp.events.add('server:custom:exitShop', withGuards([isLoggedIn], (player) => { /
     tuningService.exitTuning(player);
 }, 'custom:exitShop'));
 
-mp.events.add('server:customCar:enterTuning', withGuards([isLoggedIn], async (player) => { // вход в LSC
+mp.events.add('server:customCar:enterTuning', withGuards([isLoggedIn, rateLimit('enter_tuning', 1, 5)], async (player) => { // вход в LSC
     if (!player.vehicle) return;
 
     const result = await tuningService.enterTuning(player);

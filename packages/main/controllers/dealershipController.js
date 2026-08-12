@@ -5,10 +5,11 @@ const auditService = require('../services/AuditService');
 const moneyService = require('../services/MoneyService');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
+const rateLimit = require('../middleware/rateLimit');
 const { VehicleConfig, PhoneConfig, GaragePos, FuelStationPos, FuelPricePerLiter, FuelInteractionRadius } = require('../config');
 const { getSequelize } = require('../db');
 
-mp.events.add('server:dealership:buy', withGuards([isLoggedIn], async (player, model) => {
+mp.events.add('server:dealership:buy', withGuards([isLoggedIn, rateLimit('buy_car', 1, 5)], async (player, model) => {
     if (!VehicleConfig[model]) return;
     const config = VehicleConfig[model];
 
@@ -40,7 +41,7 @@ mp.events.add('server:phone:requestCars', withGuards([isLoggedIn], async (player
     ]);
 }, 'phone:requestCars'));
 
-mp.events.add('server:phone:spawnVehicle', withGuards([isLoggedIn], async (player, vehicleDbId, fromPhone) => { // доставка авто
+mp.events.add('server:phone:spawnVehicle', withGuards([isLoggedIn, rateLimit('spawn_vehicle', 1, 3)], async (player, vehicleDbId, fromPhone) => { // доставка авто
     if (!vehicleDbId) return;
 
     const hasPhone = inventoryService.hasItem(player, 'phone');
@@ -115,7 +116,7 @@ mp.events.add('server:fuel:requestPos', withGuards([isLoggedIn], (player) => {
     player.call('client:fuel:setPos', [locationService.getPosition('fuel')]);
 }, 'fuel:requestPos'));
 
-mp.events.add('server:fuel:refuel', withGuards([isLoggedIn], async (player, vehicleDbId) => {
+mp.events.add('server:fuel:refuel', withGuards([isLoggedIn, rateLimit('refuel', 1, 5)], async (player, vehicleDbId) => {
     if (!vehicleDbId) return;
 
     const veh = vehicleService.spawnedVehicles.get(vehicleDbId);

@@ -56,6 +56,7 @@ module.exports = {
         payBase: 50, // базовая ставка заказа
         payPerMeter: 1.5,
         interactRadius: 3,
+        minDeliverySpeed: 30,
         startPos: { x: -404.8, y: -123, z: 38.5 },
         warehousePos: { x: -393, y: -141.3, z: 37.5 },
         vehicleSpawnPoints: [

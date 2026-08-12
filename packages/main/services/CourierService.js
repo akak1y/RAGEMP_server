@@ -58,6 +58,18 @@ class CourierService {
     }
 
     dropOff(player, st) {
+        const dist = this.distTo(st.pointIdx);
+        const minTimeMs = (dist / CourierConfig.minDeliverySpeed) * 1000;
+        const elapsed = Date.now() - (st.deliveryStart || 0);
+
+        if (elapsed < minTimeMs) {
+            auditService.logPlayer(player, 'courier_cheat', {
+                category: 'security', success: false, withPosition: true,
+                details: { dist: Math.round(dist), elapsed: Math.round(elapsed / 1000), min: Math.round(minTimeMs / 1000) }
+            });
+            return player.outputChatBox('!{#FF3333}[Курьер] Слишком быстро! Пройди маршрут честно.');
+        }
+
         st.stage = 'return';
         this.sendTarget(player, st);
         player.outputChatBox('!{#00FFFF}[Курьер] Посылка доставлена. Возвращайся на склад.');
@@ -65,6 +77,7 @@ class CourierService {
 
     takePackage(player, st) {
         st.stage = 'delivery';
+        st.deliveryStart = Date.now();
         this.sendTarget(player, st);
         player.outputChatBox(`!{#00FFFF}[Курьер] Посылка взята. Точка доставки: ~${Math.round(this.distTo(st.pointIdx))} м, награда $${st.pay}.`);
     }

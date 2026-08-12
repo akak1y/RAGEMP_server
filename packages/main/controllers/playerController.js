@@ -12,6 +12,7 @@ const { getRedis } = require('../redis');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const isAdmin = require('../middleware/isAdmin');
 const withGuards = require('../middleware/withGuards');
+const rateLimit = require('../middleware/rateLimit');
 const { CourierConfig } = require('../config');
 const logger = require('../logger');
 const profile = require('../profiler');
@@ -368,8 +369,11 @@ registerCommand('pay', {
         const ok = await moneyService.transfer(player.accountId, targetAccountId, amount, 'pay');
         if (!ok) return player.outputChatBox('!{#FF3333}Недостаточно средств');
 
-        player.outputChatBox(`!{#00FF00}Вы перевели $${amount} → ${targetName}`);
+        player.applyMoneyDelta(-amount);
+        if (targetPlayer) targetPlayer.applyMoneyDelta(amount);
+        player.outputChatBox(`!{#00FF00}Вы перевели $${amount} игроку ${targetName}`);
         if (targetPlayer) targetPlayer.outputChatBox(`!{#00FF00}Вам перевод $${amount} от ${player.accountName}`);
+        
         auditService.logPlayer(player, 'pay', { category: 'money', amount, target: targetAccountId, details: { target_name: targetName } });
     }
 });

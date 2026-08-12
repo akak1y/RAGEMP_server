@@ -10,12 +10,15 @@ class AuditService {
         try {
             await ensureAuditReady();
             const { details, ...rest } = entry;
-            await getAuditModel().create({
+            return await getAuditModel().create({
                 ...rest,
                 details: details === undefined ? null
                     : (typeof details === 'string' ? details : JSON.stringify(details))
             });
-        } catch (err) { logger.error(`[AuditService] Не удалось написать в журнал: ${err.message}`) }
+        } catch (err) {
+            logger.error(`[AuditService] Не удалось написать в журнал: ${err.message}`);
+            return null;
+        }
     }
 
     logPlayer(player, action, options = {}) {
@@ -67,6 +70,17 @@ class AuditService {
             limit,
             raw: true
         });
+    }
+
+    /**
+     * Увеличить счётчик repeats у существующей строки журнала
+     * @param {number} rowId - ID строки audit_logs
+     */
+    async bumpRepeats(rowId) {
+        try {
+            await ensureAuditReady();
+            await getAuditModel().increment('repeats', { where: { id: rowId } });
+        } catch (err) { logger.error(`[AuditService] bumpRepeats ошибка: ${err.message}`) }
     }
 }
 
