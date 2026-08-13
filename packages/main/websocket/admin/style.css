@@ -1,0 +1,74 @@
+body{
+    font-family:monospace;
+    background:#111;
+    color:#eee;
+    padding:20px
+}
+table{
+    border-collapse:collapse;
+    margin-top:10px
+}
+td,th{
+    border:1px solid #444;
+    padding:4px 8px;
+    font-size:13px
+}
+th{
+    background:#222
+}
+button{
+    margin:2px;
+    padding:4px 10px;
+    background:#234;
+    color:#eee;
+    border:1px solid #456;
+    cursor:pointer
+}
+button.active{
+    background:#468
+}
+input{
+    background:#222;
+    color:#eee;
+    border:1px solid #444;
+    padding:4px
+}
+#map{
+    background:#0a0f1a
+}
+.leaflet-container{
+    background:#0a0f1a
+}
+.leaflet-layer{
+    filter:saturate(.85) brightness(.8) contrast(1.1)
+}
+.leaflet-marker-icon{
+    transition:transform 2.8s linear
+}
+.map-wrap{
+    position:relative
+}
+.map-btns{
+    position:absolute;
+    top:16px;
+    right:10px;
+    z-index:1000
+}
+.pm{
+    width:10px;
+    height:10px;
+    background:#4f4;
+    border-radius:50%;
+    box-shadow:0 0 10px #4f4,0 0 20px #4f4;
+    position:relative
+}
+.pm span{
+    position:absolute;
+    top:12px;
+    left:50%;
+    transform:translateX(-50%);
+    font:11px monospace;
+    color:#cfc;
+    white-space:nowrap;
+    text-shadow:0 0 4px #000
+}

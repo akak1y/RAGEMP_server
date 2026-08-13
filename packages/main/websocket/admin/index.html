@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Админка RAGE MP</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <div v-if="!token">
+    <h2>Вход</h2>
+    <input v-model="login" placeholder="логин">
+    <input v-model="password" type="password" placeholder="пароль">
+    <button @click="doLogin">Войти</button>
+    <p v-if="error" style="color:#f66">{{error}}</p>
+  </div>
+
+  <div v-else>
+    <h2>Онлайн: {{online}}</h2>
+    <div>
+      <button v-for="t in tabs" :key="t" :class="{active: active===t}" @click="openTab(t)">{{t}}</button>
+    </div>
+
+    <div v-show="active==='map'" class="map-wrap">
+      <div id="map" style="height:520px;margin-top:10px"></div>
+      <div class="map-btns">
+        <button @click="zoomIn">+</button>
+        <button @click="zoomOut">−</button>
+      </div>
+    </div>
+
+    <table v-if="active!=='map' && rows.length">
+      <tr><th v-for="c in columns" :key="c">{{c}}</th></tr>
+      <tr v-for="r in rows" :key="r.id">
+        <td v-for="c in columns" :key="c">
+          <span>{{cell(r, c)}}</span>
+        </td>
+      </tr>
+    </table>
+    <p v-if="active!=='map' && !rows.length">Нет данных</p>
+  </div>
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

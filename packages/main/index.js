@@ -25,6 +25,9 @@ const locationService = require('./services/LocationService'); // подключ
         locationService.initialize();
         console.log('[System] Все системы сервера RAGE MP успешно запущены и готовы!');
 
+        const adminServer = require('./websocket/adminServer');
+        adminServer.start();
+
         const botService = require('./services/BotService');
         await botService.spawn('Ignat');
         console.log('[System] Бот заспавнен');

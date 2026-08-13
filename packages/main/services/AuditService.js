@@ -6,15 +6,32 @@ const logger = require('../logger');
  * AuditService — журнал бизнес-событий
  */
 class AuditService {
+    constructor() {
+        this._listeners = [];
+    }
+
+    subscribe(fn) {
+        this._listeners.push(fn);
+        return () => { this._listeners = this._listeners.filter(f => f !== fn); };
+    }
+
+    _emit(row) {
+        for (const fn of this._listeners) {
+            try { fn(row); } catch {}
+        }
+    }
+
     async log(entry) {
         try {
             await ensureAuditReady();
             const { details, ...rest } = entry;
-            return await getAuditModel().create({
+            const row = await getAuditModel().create({
                 ...rest,
                 details: details === undefined ? null
                     : (typeof details === 'string' ? details : JSON.stringify(details))
             });
+            this._emit(row);
+            return row;
         } catch (err) {
             logger.error(`[AuditService] Не удалось написать в журнал: ${err.message}`);
             return null;

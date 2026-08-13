@@ -11,8 +11,10 @@
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "jsonwebtoken": "^9.0.3",
     "mysql2": "^2.3.3",
-    "winston": "^3.3.3"
+    "winston": "^3.3.3",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "dependency-cruiser": "^17.4.3",
