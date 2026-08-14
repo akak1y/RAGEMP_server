@@ -3,6 +3,7 @@ const { getVehicleModel } = require('../models/Vehicle');
 const { getItemModel } = require('../models/Item');
 const { getUserModel } = require('../models/Users');
 const auditService = require('../services/AuditService');
+const healthService = require('../services/HealthService');
 const logger = require('../logger');
 
 const TABLES = {
@@ -56,6 +57,11 @@ async function handleMessage(socket, msg, broadcast) {
             return;
         }
 
+        if (msg.type === 'player_action') {
+            await handlePlayerAction(socket, msg, broadcast);
+            return;
+        }
+
         if (msg.type === 'update_cell') {
             const editor = (EDITORS[msg.table] || {})[msg.field];
             const getModel = MODELS[msg.table];
@@ -81,6 +87,56 @@ async function handleMessage(socket, msg, broadcast) {
             if (broadcast) broadcast({ type: 'table', table: msg.table, rows: await TABLES[msg.table]() });
         }
     } catch (err) { logger.error(`[Admin] protocol error: ${err.message}`) }
+}
+
+async function handlePlayerAction(socket, msg, broadcast) {
+    try {
+        const { action, targetId } = msg;
+        const id = Number(targetId);
+        if (!Number.isInteger(id)) return;
+
+        const player = mp.players.toArray().find(p => p.accountId === id);
+        
+        const UserModel = getUserModel();
+        const account = await UserModel.findByPk(id);
+        if (!account) return;
+
+        let result = { success: true };
+        let auditDetails = { action, targetId };
+
+        if (action === 'heal') {
+            if (player) { await healthService.setHealth(player, 100) }
+            else { await UserModel.update({ hp: 100 }, { where: { id } }) }
+            result.message = 'Игрок вылечен';
+        } else if (action === 'kill') {
+            if (player) { await healthService.setHealth(player, 0) }
+            else { await UserModel.update({ hp: 0 }, { where: { id } }) }
+            result.message = 'Игрок убит';
+        } else if (action === 'delete') {
+            if (id === socket.admin.accountId) { result = { success: false, message: 'Нельзя удалить себя' } }
+            else if (account.admin_level > socket.admin.adminLevel) { result = { success: false, message: 'Нет прав удалять админа выше уровнем' } }
+            else {
+                await UserModel.destroy({ where: { id } });
+                if (player) player.kick('Аккаунт удалён администратором');
+                result.message = 'Аккаунт удалён';
+            }
+        } else { return }
+
+        await auditService.log({
+            success: result.success ? 1 : 0,
+            category: 'web_action',
+            action: `player_${action}`,
+            actor: socket.admin.username,
+            actor_id: socket.admin.accountId,
+            target: id,
+            ip: socket.admin.ip,
+            details: { ...auditDetails, result: result.message }
+        });
+        if (broadcast) broadcast({ type: 'table', table: 'accounts', rows: await TABLES.accounts() });
+        
+        if (result.success) result.message += ` → ${account.username} [${account.id}]`;
+        socket.send(JSON.stringify({ type: 'action_result', result }));
+    } catch (err) { logger.error(`[Admin] player_action error: ${err.message}`) }
 }
 
 module.exports = { handleMessage }

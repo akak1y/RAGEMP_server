@@ -24,6 +24,7 @@ createApp({
             vehicles: ['fuel'],
             items: ['count']
         },
+        actionResult: null,
     }),
     computed: {
         rows() { return this.tables[this.active] || []; },
@@ -121,6 +122,13 @@ createApp({
                     this.staticMarkers = m.markers;
                     this.$nextTick(() => this.drawStaticMarkers());
                 }
+                if (m.type === 'action_result') {
+                    this.actionResult = m.result;
+                    clearTimeout(this._actionTimer); 
+                    this._actionTimer = setTimeout(() => {
+                        this.actionResult = null;
+                    }, 5000)
+                }
             };
         },
         drawStaticMarkers() {
@@ -157,5 +165,9 @@ createApp({
             }));
             this.editing = null;
         },
+        playerAction(action, id) {
+            if (!confirm(`Вы уверены? Действие: ${action}`)) return;
+            this.ws.send(JSON.stringify({ type: 'player_action', action, targetId: id }));
+        }
     }
 }).mount('#app');

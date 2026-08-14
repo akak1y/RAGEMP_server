@@ -27,7 +27,7 @@ class HealthService {
     }
 
     setHealth(player, value) {
-        const hp = Math.max(1, Math.min(MAX_HEALTH, Number(value))); // защита от 100+ hp
+        const hp = Math.max(0, Math.min(MAX_HEALTH, Number(value))); // защита от 100+ hp
         player.health = hp;
         return hp;
     }
