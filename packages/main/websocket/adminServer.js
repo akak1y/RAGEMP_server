@@ -7,6 +7,7 @@ const authService = require('../services/AuthService');
 const auditService = require('../services/AuditService');
 const logger = require('../logger');
 const { handleMessage } = require('./protocol');
+const config = require('../config');
 
 let settings = {};
 try { settings = require('../settings.json') } catch { settings = {} }
@@ -14,6 +15,24 @@ const ADMIN_PORT = (settings.admin && settings.admin.port) || 8081;
 const JWT_SECRET = (settings.admin && settings.admin.jwtSecret) || 'dev-secret-key';
 
 const MIME = { '.html':'text/html;charset=utf-8', '.js':'application/javascript', '.css':'text/css', '.jpg':'image/jpeg', '.png':'image/png', '.svg':'image/svg+xml' };
+
+const MAP_MARKER_DEFS = [
+    { path: 'DealershipPos', name: 'Автосалон', icon: '🚗' },
+    { path: 'HospitalPos', name: 'Больница', icon: '🏥' },
+    { path: 'CarCustomPos', name: 'LSC', icon: '🔧' },
+    { path: 'FuelStationPos',name: 'Заправка', icon: '⛽' },
+    { path: 'CourierConfig.startPos', name: 'Курьер', icon: '📦' },
+    { path: 'GaragePos', name: 'Гараж', icon: '🅿️' }
+];
+
+const MAP_MARKERS = MAP_MARKER_DEFS
+    .map(def => {
+        if (def._coords) return { name: def.name, icon: def.icon, x: def._coords.x, y: def._coords.y };
+        const obj = def.path.split('.').reduce((o, k) => o && o[k], config);
+        if (!obj || typeof obj.x !== 'number' || typeof obj.y !== 'number') return null;
+        return { name: def.name, icon: def.icon, x: obj.x, y: obj.y };
+    })
+    .filter(Boolean);
 
 const clients = new Set();
 
@@ -49,9 +68,15 @@ function start() {
         }
 
         if (req.method === 'GET') {
-            const urlPath = req.url === '/' ? '/index.html' : req.url.split('?')[0];
-            const filePath = path.join(__dirname, 'admin', urlPath);
-            if (!filePath.startsWith(path.join(__dirname, 'admin'))) res.writeHead(403); return res.end('forbidden');
+            const urlPath = req.url.split('?')[0] === '/' ? '/index.html' : req.url.split('?')[0];
+            const adminDir = path.resolve(__dirname, 'admin');
+            const filePath = path.resolve(adminDir, '.' + urlPath);
+
+            if (filePath !== adminDir && !filePath.startsWith(adminDir + path.sep)) {
+                res.writeHead(403);
+                return res.end('forbidden')
+            }
+
             fs.readFile(filePath, (err, buf) => {
                 if (err) {
                     res.writeHead(404);
@@ -80,10 +105,11 @@ function start() {
         clients.add(socket);
         socket.on('close', () => clients.delete(socket));
         socket.send(JSON.stringify({ type: 'hello', admin: payload.username, online: mp.players.length }));
+        socket.send(JSON.stringify({ type: 'markers', markers: MAP_MARKERS }));
         
         socket.on('message', (data) => {
             let msg;
-            try { msg = JSON.parse(data); } catch { return; }
+            try { msg = JSON.parse(data) } catch { return }
             handleMessage(socket, msg, broadcast);
         });
     });

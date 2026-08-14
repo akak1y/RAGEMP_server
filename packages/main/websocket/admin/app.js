@@ -10,7 +10,8 @@ createApp({
         online: 0, players: [],
         active: 'accounts', tables: {},
         tabs: ['accounts', 'vehicles', 'items', 'audit', 'map'],
-        GAME_BOUNDS: { minX: -5693, minY: -4045, maxX: 6729, maxY: 8392 }
+        GAME_BOUNDS: { minX: -5693, minY: -4045, maxX: 6729, maxY: 8392 },
+        staticMarkers: []
     }),
     computed: {
         rows() { return this.tables[this.active] || []; },
@@ -61,6 +62,7 @@ createApp({
             img.onload = () => L.imageOverlay('map.jpg', bounds).addTo(this.map);
             img.src = 'map.jpg';
             this.markerObjs = {};
+            this.drawStaticMarkers();
         },
         toMap(x, y) {
             const B = this.GAME_BOUNDS;
@@ -106,7 +108,24 @@ createApp({
                     this.tables.audit.unshift(m.row);
                     if (this.tables.audit.length > 50) this.tables.audit.pop();
                 }
+                if (m.type === 'markers') {
+                    this.staticMarkers = m.markers;
+                    this.$nextTick(() => this.drawStaticMarkers());
+                }
             };
-        }
+        },
+        drawStaticMarkers() {
+            if (!this.map || this.staticDrawn || !this.staticMarkers.length) return;
+            for (const mk of this.staticMarkers) {
+                const icon = L.divIcon({
+                    className: '', iconSize: [22, 22],
+                    html: `<div class="sm">${mk.icon}</div>`
+                });
+                L.marker(this.toMap(mk.x, mk.y), { icon })
+                    .addTo(this.map)
+                    .bindTooltip(mk.name, { direction: 'top', offset: [0, -10] });
+            }
+            this.staticDrawn = true
+        },
     }
 }).mount('#app');

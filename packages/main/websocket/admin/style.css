@@ -72,3 +72,23 @@ input{
     white-space:nowrap;
     text-shadow:0 0 4px #000
 }
+.pm::before{
+    content:'';
+    position:absolute;
+    inset:-6px;
+    border:1px solid rgba(68,255,68,.5);
+    border-radius:50%;
+    animation:pulse 1.6s infinite;
+    pointer-events:none
+}
+@keyframes pulse{
+    0%{transform:scale(.6);opacity:1}
+    100%{transform:scale(1.6);opacity:0}
+}
+.sm{
+    font-size:18px;
+    text-align:center;
+    line-height:22px;
+    filter:drop-shadow(0 0 3px #000);
+    cursor:pointer
+}
