@@ -92,3 +92,10 @@ input{
     filter:drop-shadow(0 0 3px #000);
     cursor:pointer
 }
+.editable{
+    cursor:pointer;
+    background:#1a2a1a
+}
+.editable:hover{
+    background:#2a4a2a
+}

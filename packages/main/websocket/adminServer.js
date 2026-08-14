@@ -101,7 +101,7 @@ function start() {
         catch { return socket.close(4001, 'bad token'); }
         if (!payload || payload.adminLevel < 1) return socket.close(4003, 'not admin');
         
-        socket.admin = payload;
+        socket.admin = { ...payload, ip: req.socket.remoteAddress };
         clients.add(socket);
         socket.on('close', () => clients.delete(socket));
         socket.send(JSON.stringify({ type: 'hello', admin: payload.username, online: mp.players.length }));

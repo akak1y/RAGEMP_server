@@ -33,8 +33,13 @@
     <table v-if="active!=='map' && rows.length">
       <tr><th v-for="c in columns" :key="c">{{c}}</th></tr>
       <tr v-for="r in rows" :key="r.id">
-        <td v-for="c in columns" :key="c">
-          <span>{{cell(r, c)}}</span>
+        <td v-for="c in columns" :key="c"
+            :class="{editable: isEditable(c)}"
+            @click="startEdit(r,c)">
+          <input v-if="editing && editing.id===r.id && editing.field===c"
+                 ref="editInput" v-model="editValue"
+                 @keyup.enter="commitEdit" @blur="commitEdit" @keyup.esc="editing=null">
+          <span v-else>{{cell(r, c)}}</span>
         </td>
       </tr>
     </table>

@@ -6,12 +6,24 @@ const TABLE_COLUMNS = {
 
 createApp({
     data: () => ({
-        login: '', password: '', token: '', error: '',
-        online: 0, players: [],
-        active: 'accounts', tables: {},
+        login: '',
+        password: '',
+        token: '',
+        error: '',
+        online: 0,
+        players: [],
+        active: 'accounts',
+        tables: {},
         tabs: ['accounts', 'vehicles', 'items', 'audit', 'map'],
         GAME_BOUNDS: { minX: -5693, minY: -4045, maxX: 6729, maxY: 8392 },
-        staticMarkers: []
+        staticMarkers: [],
+        editing: null,
+        editValue: '',
+        editable: {
+            accounts: ['money', 'admin_level'],
+            vehicles: ['fuel'],
+            items: ['count']
+        },
     }),
     computed: {
         rows() { return this.tables[this.active] || []; },
@@ -32,8 +44,8 @@ createApp({
             if (c === 'success') return (v === true || v === 1) ? '✔' : '✖';
             return this.fmt(v);
         },
-
         openTab(t) {
+            this.editing = null;
             this.active = t;
             if (t === 'map') {
                 this.$nextTick(() => {
@@ -45,14 +57,12 @@ createApp({
             }
             this.ws.send(JSON.stringify({ type: 'get_table', table: t }));
         },
-
         zoomIn() {
             if (this.map) this.map.zoomIn();
         },
         zoomOut() {
             if (this.map) this.map.zoomOut();
         },
-
         initMap() {
             if (this.map) return;
             this.map = L.map('map', { crs: L.CRS.Simple, minZoom: -2, maxZoom: 5, attributionControl: false, zoomControl: false });
@@ -88,7 +98,6 @@ createApp({
                 }
             }
         },
-
         async doLogin() {
             const r = await fetch('/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: this.login, password: this.password }) });
             if (!r.ok) { this.error = 'Отказано'; return; }
@@ -126,6 +135,27 @@ createApp({
                     .bindTooltip(mk.name, { direction: 'top', offset: [0, -10] });
             }
             this.staticDrawn = true
+        },
+        isEditable(c) {
+            return (this.editable[this.active] || []).includes(c)
+        },
+        startEdit(r, c) {
+            if (!this.isEditable(c)) return;
+            this.editing = { id: r.id, field: c };
+            this.editValue = r[c];
+            this.$nextTick(() => {
+                const el = this.$refs.editInput;
+                const input = Array.isArray(el) ? el[0] : el;
+                if (input) input.focus();
+            });
+        },
+        commitEdit() {
+            if (!this.editing) return;
+            this.ws.send(JSON.stringify({
+                type: 'update_cell', table: this.active,
+                id: this.editing.id, field: this.editing.field, value: this.editValue
+            }));
+            this.editing = null;
         },
     }
 }).mount('#app');
