@@ -4,6 +4,7 @@ const { getItemModel } = require('../models/Item');
 const { getUserModel } = require('../models/Users');
 const auditService = require('../services/AuditService');
 const healthService = require('../services/HealthService');
+const vehicleService = require('../services/VehicleService');
 const logger = require('../logger');
 
 const TABLES = {
@@ -13,6 +14,12 @@ const TABLES = {
     audit: () => auditService.getRecent(50)
 };
 
+const int = (v, min, max, name) => {
+    const n = Number(v);
+    if (!Number.isInteger(n) || n < min || n > max) throw new Error(`${name} ${min}..${max}`);
+    return n;
+};
+
 const EDITORS = {
     accounts: {
         money: v => {
@@ -20,25 +27,23 @@ const EDITORS = {
             if (!Number.isFinite(n) || n < 0) throw new Error('money >= 0');
             return Math.floor(n);
         },
-        admin_level: v => {
-            const n = Number(v);
-            if (!Number.isInteger(n) || n < 0 || n > 10) throw new Error('admin_level 0..10');
-            return n;
-        }
+        admin_level: v => int(v, 0, 10, 'admin_level')
     },
     vehicles: {
-        fuel: v => {
-            const n = Number(v);
-            if (!Number.isFinite(n) || n < 0 || n > 100) throw new Error('fuel 0..100');
-            return Math.round(n);
-        }
+        owner_id: v => int(v, 1, 999999, 'owner_id'),
+        color_r: v => int(v, 0, 255, 'color_r'),
+        color_g: v => int(v, 0, 255, 'color_g'),
+        color_b: v => int(v, 0, 255, 'color_b'),
+        engine_mod: v => int(v, 0, 3, 'engine_mod'),
+        wheel_type: v => int(v, 0, 11, 'wheel_type'),
+        wheel_mod: v => int(v, -1, 50, 'wheel_mod'),
+        brakes_mod: v => int(v, 0, 2, 'brakes_mod'),
+        transmission_mod: v => int(v, 0, 2, 'transmission_mod'),
+        turbo_mod: v => int(v, 0, 1, 'turbo_mod'),
+        fuel: v => int(v, 0, 100, 'fuel')
     },
     items: {
-        amount: v => {
-            const n = Number(v);
-            if (!Number.isInteger(n) || n < 1 || n > 9999) throw new Error('amount 1..9999');
-            return n;
-        }
+        count: v => int(v, 1, 9999, 'amount')
     }
 };
 
@@ -62,6 +67,11 @@ async function handleMessage(socket, msg, broadcast) {
             return;
         }
 
+        if (msg.type === 'vehicle_action') {
+            await handleVehicleAction(socket, msg, broadcast);
+            return;
+        }
+
         if (msg.type === 'update_cell') {
             const editor = (EDITORS[msg.table] || {})[msg.field];
             const getModel = MODELS[msg.table];
@@ -72,6 +82,8 @@ async function handleMessage(socket, msg, broadcast) {
 
             const [affected] = await getModel().update({ [msg.field]: value }, { where: { id } });
             if (!affected) return;
+
+            if (msg.table === 'vehicles' && msg.field === 'fuel') vehicleService.setFuel(id, value);
 
             await auditService.log({
                 success: 1,
@@ -137,6 +149,44 @@ async function handlePlayerAction(socket, msg, broadcast) {
         if (result.success) result.message += ` → ${account.username} [${account.id}]`;
         socket.send(JSON.stringify({ type: 'action_result', result }));
     } catch (err) { logger.error(`[Admin] player_action error: ${err.message}`) }
+}
+
+async function handleVehicleAction(socket, msg, broadcast) {
+    try {
+        const { action, targetId } = msg;
+        const id = Number(targetId);
+        if (!Number.isInteger(id)) return;
+
+        const VehicleModel = getVehicleModel();
+        const vehicle = await VehicleModel.findByPk(id);
+        if (!vehicle) return;
+
+        let result = { success: true };
+
+        if (action === 'respawn') {
+            const done = await vehicleService.respawnVehicle(id);
+            result.message = done ? 'Авто переспавнено' : 'Авто не заспавнено — изменения применятся при следующем спавне';
+        } else if (action === 'delete') {
+            await VehicleModel.destroy({ where: { id } });
+            result.message = 'Авто удалено';
+        } else return;
+
+        result.message += ` → ${vehicle.model} (id ${id})`;
+
+        await auditService.log({
+            success: 1,
+            category: 'web_action',
+            action: `vehicle_${action}`,
+            actor: socket.admin.username,
+            actor_id: socket.admin.accountId,
+            target: id,
+            ip: socket.admin.ip,
+            details: { model: vehicle.model, owner_id: vehicle.owner_id }
+        });
+
+        if (broadcast) broadcast({ type: 'table', table: 'vehicles', rows: await TABLES.vehicles() });
+        socket.send(JSON.stringify({ type: 'action_result', result }));
+    } catch (err) { logger.error(`[Admin] vehicle_action error: ${err.message}`) }
 }
 
 module.exports = { handleMessage }

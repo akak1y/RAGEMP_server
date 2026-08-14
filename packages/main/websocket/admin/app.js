@@ -21,7 +21,7 @@ createApp({
         editValue: '',
         editable: {
             accounts: ['money', 'admin_level'],
-            vehicles: ['fuel'],
+            vehicles: ['owner_id', 'color_r', 'color_g', 'color_b', 'engine_mod', 'wheel_type', 'wheel_mod', 'brakes_mod', 'transmission_mod', 'turbo_mod', 'fuel'],
             items: ['count']
         },
         actionResult: null,
@@ -168,6 +168,10 @@ createApp({
         playerAction(action, id) {
             if (!confirm(`Вы уверены? Действие: ${action}`)) return;
             this.ws.send(JSON.stringify({ type: 'player_action', action, targetId: id }));
-        }
+        },
+        vehicleAction(action, id) {
+            if (!confirm(`Действие с авто: ${action}?`)) return;
+            this.ws.send(JSON.stringify({ type: 'vehicle_action', action, targetId: id }));
+        },
     }
 }).mount('#app');

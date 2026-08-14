@@ -40,7 +40,7 @@
     <table v-if="active!=='map' && rows.length">
       <tr>
         <th v-for="c in columns" :key="c">{{c}}</th>
-        <th v-if="active==='accounts'">Действия</th>
+        <th v-if="active==='accounts' || active==='vehicles'">Действия</th>
       </tr>
       <tr v-for="r in rows" :key="r.id">
         <td v-for="c in columns" :key="c"
@@ -52,9 +52,13 @@
           <span v-else>{{cell(r, c)}}</span>
         </td>
         <td v-if="active==='accounts'">
-          <button @click="playerAction('heal', r.id)" class="btn-heal">Хил</button>
-          <button @click="playerAction('kill', r.id)" class="btn-kill">Убить</button>
-          <button @click="playerAction('delete', r.id)" class="btn-delete">Удалить</button>
+          <button @click="playerAction('heal', r.id)" class="btn-heal">Heal</button>
+          <button @click="playerAction('kill', r.id)" class="btn-kill">Kill</button>
+          <button @click="playerAction('delete', r.id)" class="btn-delete">Delete</button>
+        </td>
+        <td v-if="active==='vehicles'">
+          <button @click="vehicleAction('respawn', r.id)" class="btn-heal">Respawn</button>
+          <button @click="vehicleAction('delete', r.id)" class="btn-delete">Delete</button>
         </td>
       </tr>
     </table>
