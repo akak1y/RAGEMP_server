@@ -114,7 +114,7 @@ class VehicleService {
      * Деспаун всех машин игрока
      * @param {number} accountId - ID аккаунта
      */
-    async destroyPlayerVehicles(accountId) {
+    async despawnPlayerVehicles(accountId) {
         const playerCarsSet = this.playerOwnedVehicles.get(accountId);
         if (!playerCarsSet || playerCarsSet.size === 0) return;
         for (const vehicleDbId of [...playerCarsSet]) await this.despawnVehicle(vehicleDbId);

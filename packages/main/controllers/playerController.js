@@ -121,7 +121,7 @@ mp.events.add('playerQuit', withGuards([], async (player) => {
         if (saved) logger.info(`[Sequelize Save] Позиция игрока "${player.accountName}" успешно обновлена.`);
     } catch (err) { console.error(`[Sequelize Save Error]: ${err.message}`) }
 
-    vehicleService.destroyPlayerVehicles(player.accountId);
+    vehicleService.despawnPlayerVehicles(player.accountId);
     courierService.endWork(player.accountId, true);
 }, 'playerQuit'));
 
