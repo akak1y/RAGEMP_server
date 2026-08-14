@@ -75,7 +75,7 @@ class VehicleService {
             heading: heading, engine: true, locked: false, dimension: dimension
         });
         veh.setVariable('fuel', Number(carData.fuel || 100));
-        veh.prevPos = veh.position;
+        veh.prevPos = { x: veh.position.x, y: veh.position.y, z: veh.position.z };
         veh.vehicleDbId = carData.id;
         veh.setVariable('dbId', carData.id);
         veh.setVariable("customColor", {
@@ -117,19 +117,7 @@ class VehicleService {
     async destroyPlayerVehicles(accountId) {
         const playerCarsSet = this.playerOwnedVehicles.get(accountId);
         if (!playerCarsSet || playerCarsSet.size === 0) return;
-
-        for (const vehicleDbId of playerCarsSet) {
-            const vehicleObj = this.spawnedVehicles.get(vehicleDbId);
-            try {
-                await getVehicleModel().update(
-                    { fuel: vehicleObj.getVariable('fuel') },
-                    { where: { id: vehicleDbId } }
-                )
-            } catch (e) {}
-            if (vehicleObj && mp.vehicles.exists(vehicleObj)) { vehicleObj.destroy() }
-            this.spawnedVehicles.delete(vehicleDbId);
-        }
-        this.playerOwnedVehicles.delete(accountId);
+        for (const vehicleDbId of [...playerCarsSet]) await this.despawnVehicle(vehicleDbId);
     }
 
     /**
@@ -202,11 +190,68 @@ class VehicleService {
         const current = Number(veh.fuel);
         if (current >= 100) return { success: false, error: 'full' };
 
-        await getVehicleModel().update({ fuel: 100 }, { where: { id: vehicleDbId }, transaction });
+        await this.setFuel(vehicleDbId, 100, transaction);
+        return { success: true, liters: 100 - current };
+    }
 
-        const spawned = this.spawnedVehicles.get(vehicleDbId);
-        if (spawned && mp.vehicles.exists(spawned)) spawned.setVariable('fuel', 100);
-        return { success: true, liters: 100 - current }
+    /**
+     * Установить топливо заспавненной машине
+     * @param {number} dbId - ID машины в БД
+     * @param {number} value - новое топливо 0..100
+     * @param {Object} [transaction] - Sequelize-транзакция
+     * @returns {boolean} true, если машина была в мире
+     */
+    setFuel(dbId, value, transaction = null) {
+        const veh = this.spawnedVehicles.get(dbId);
+        if (veh && mp.vehicles.exists(veh)) {
+            veh.setVariable('fuel', Number(value));
+            return true
+        }
+        return false
+    }
+
+    /**
+     * Деспаун одной машины
+     * @param {number} dbId - ID машины в БД
+     */
+    async despawnVehicle(dbId) {
+        const veh = this.spawnedVehicles.get(dbId);
+        if (!veh) return;
+        const fuel = veh.getVariable('fuel');
+        try { await getVehicleModel().update({ fuel }, { where: { id: dbId } }) } catch (e) {}
+
+        if (mp.vehicles.exists(veh)) veh.destroy();
+
+        this.spawnedVehicles.delete(dbId);
+        for (const [accountId, cars] of this.playerOwnedVehicles) {
+            if (cars.has(dbId)) {
+                cars.delete(dbId);
+                if (cars.size === 0) this.playerOwnedVehicles.delete(accountId);
+                break;
+            }
+        }
+    }
+
+    /**
+     * Респавн машины
+     * @param {number} dbId - id записи машины
+     * @returns {boolean} true, если машина была пересоздана
+     */
+    async respawnVehicle(dbId) {
+        if (!this.isSpawned(dbId)) return false;
+
+        const veh = this.spawnedVehicles.get(dbId);
+        const coords = veh.position;
+        const heading = veh.heading;
+        const dimension = veh.dimension;
+
+        await this.despawnVehicle(dbId);
+
+        const carData = await getVehicleModel().findByPk(dbId);
+        if (!carData) return false;
+
+        this.spawnVehicle(carData, coords, heading, dimension);
+        return true;
     }
 }
 
