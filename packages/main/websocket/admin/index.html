@@ -40,7 +40,7 @@
     <table v-if="active!=='map' && rows.length">
       <tr>
         <th v-for="c in columns" :key="c">{{c}}</th>
-        <th v-if="active==='accounts' || active==='vehicles' || active==='items'">Действия</th>
+        <th v-if="['accounts','vehicles','items'].includes(active)">Действия</th>
       </tr>
       <tr v-for="r in rows" :key="r.id">
         <td v-for="c in columns" :key="c"
@@ -51,17 +51,11 @@
                  @keyup.enter="commitEdit" @blur="commitEdit" @keyup.esc="editing=null">
           <span v-else>{{cell(r, c)}}</span>
         </td>
-        <td v-if="active==='accounts'">
-          <button @click="playerAction('heal', r.id)" class="btn-heal">Heal</button>
-          <button @click="playerAction('kill', r.id)" class="btn-kill">Kill</button>
-          <button @click="playerAction('delete', r.id)" class="btn-delete">Delete</button>
-        </td>
-        <td v-if="active==='vehicles'">
-          <button @click="vehicleAction('respawn', r.id)" class="btn-heal">Respawn</button>
-          <button @click="vehicleAction('delete', r.id)" class="btn-delete">Delete</button>
-        </td>
-        <td v-if="active==='items'">
-          <button @click="deleteRow('items', r.id)" class="btn-delete">Delete</button>
+        <td v-if="['accounts','vehicles','items'].includes(active)">
+          <button v-if="active==='accounts'" @click="playerAction('heal', r.id)" class="btn-heal">Heal</button>
+          <button v-if="active==='accounts'" @click="playerAction('kill', r.id)" class="btn-kill">Kill</button>
+          <button v-if="active==='vehicles'" @click="vehicleAction('respawn', r.id)" class="btn-heal">Respawn</button>
+          <button @click="deleteRow(active, r.id)" class="btn-delete">Delete</button>
         </td>
       </tr>
     </table>

@@ -22,11 +22,7 @@ const int = (v, min, max, name) => {
 
 const EDITORS = {
     accounts: {
-        money: v => {
-            const n = Number(v);
-            if (!Number.isFinite(n) || n < 0) throw new Error('money >= 0');
-            return Math.floor(n);
-        },
+        money: v => int(v, 0, 2147483647, 'admin_level'),
         admin_level: v => int(v, 0, 10, 'admin_level')
     },
     vehicles: {
@@ -129,14 +125,6 @@ async function handlePlayerAction(socket, msg, broadcast) {
             if (player) { await healthService.setHealth(player, 0) }
             else { await UserModel.update({ hp: 0 }, { where: { id } }) }
             result.message = 'Игрок убит';
-        } else if (action === 'delete') {
-            if (id === socket.admin.accountId) { result = { success: false, message: 'Нельзя удалить себя' } }
-            else if (account.admin_level > socket.admin.adminLevel) { result = { success: false, message: 'Нет прав удалять админа выше уровнем' } }
-            else {
-                await UserModel.destroy({ where: { id } });
-                if (player) player.kick('Аккаунт удалён администратором');
-                result.message = 'Аккаунт удалён';
-            }
         } else { return }
 
         await auditService.log({
@@ -171,10 +159,7 @@ async function handleVehicleAction(socket, msg, broadcast) {
         if (action === 'respawn') {
             const done = await vehicleService.respawnVehicle(id);
             result.message = done ? 'Авто переспавнено' : 'Авто не заспавнено — изменения применятся при следующем спавне';
-        } else if (action === 'delete') {
-            await VehicleModel.destroy({ where: { id } });
-            result.message = 'Авто удалено';
-        } else return;
+        } else { return }
 
         result.message += ` → ${vehicle.model} (id ${id})`;
 
@@ -194,7 +179,23 @@ async function handleVehicleAction(socket, msg, broadcast) {
     } catch (err) { logger.error(`[Admin] vehicle_action error: ${err.message}`) }
 }
 
-const DELETABLE = ['items'];
+const DELETABLE = ['accounts', 'vehicles', 'items'];
+
+const DELETE_NAMES = {
+    accounts: 'Аккаунт удалён',
+    vehicles: 'Авто удалено',
+    items: 'Предмет удалён'
+};
+
+const DELETE_HOOKS = {
+    accounts: async (socket, id, row) => {
+        if (id === socket.admin.accountId) throw new Error('Нельзя удалить себя');
+        if ((row.admin_level || 0) > (socket.admin.adminLevel || 0)) throw new Error('Нельзя удалить админа выше уровнем');
+        const player = mp.players.toArray().find(p => p.accountId === id);
+        if (player) player.kick('Аккаунт удалён администратором');
+    },
+    vehicles: async (socket, id) => { await vehicleService.despawnVehicle(id, false) }
+};
 
 async function handleDeleteRow(socket, msg, broadcast) {
     try {
@@ -206,6 +207,9 @@ async function handleDeleteRow(socket, msg, broadcast) {
         const getModel = MODELS[table];
         const row = await getModel().findByPk(id);
         if (!row) return;
+
+        const hook = DELETE_HOOKS[table];
+        if (hook) await hook(socket, id, row);
 
         await getModel().destroy({ where: { id } });
 
@@ -221,8 +225,17 @@ async function handleDeleteRow(socket, msg, broadcast) {
         });
 
         if (broadcast) broadcast({ type: 'table', table, rows: await TABLES[table]() });
-        socket.send(JSON.stringify({ type: 'action_result', result: { success: true, message: `Предмет удалён (id ${id})` } }));
-    } catch (err) { logger.error(`[Admin] delete_row error: ${err.message}`) }
+        socket.send(JSON.stringify({
+            type: 'action_result',
+            result: { success: true, message: `${DELETE_NAMES[table]} (id ${id})` }
+        }));
+    } catch (err) {
+        socket.send(JSON.stringify({
+            type: 'action_result',
+            result: { success: false, message: err.message }
+        }));
+        logger.error(`[Admin] delete_row error: ${err.message}`);
+    }
 }
 
 module.exports = { handleMessage }
