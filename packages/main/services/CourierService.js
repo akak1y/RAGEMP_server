@@ -1,5 +1,6 @@
 const { CourierConfig } = require('../config');
 const auditService = require('./AuditService');
+const { isNear } = require('../utils/distance');
 const logger = require('../logger');
 
 /**
@@ -19,7 +20,7 @@ class CourierService {
 
         const st = this.states.get(player.accountId);
         if (!st) {
-            if (this.isNear(player.position, CourierConfig.startPos)) this.startWork(player);
+            if (isNear(player.position, CourierConfig.startPos)) this.startWork(player);
             return;
         }
 
@@ -29,15 +30,15 @@ class CourierService {
             return player.outputChatBox('!{#FF3333}[Курьер] Рабочий транспорт потерян. Работа завершена.');
         }
 
-        if (this.isNear(player.position, CourierConfig.startPos)) return this.endWork(player.accountId);
+        if (isNear(player.position, CourierConfig.startPos)) return this.endWork(player.accountId);
 
         if (st.stage === 'pickup') {
-            if (this.isNear(player.position, CourierConfig.warehousePos)) this.takePackage(player, st);
+            if (isNear(player.position, CourierConfig.warehousePos)) this.takePackage(player, st);
         } else if (st.stage === 'delivery') {
             const point = CourierConfig.deliveryPoints[st.pointIdx];
-            if (this.isNear(player.position, point)) this.dropOff(player, st);
+            if (isNear(player.position, point)) this.dropOff(player, st);
         } else if (st.stage === 'return') {
-            if (this.isNear(player.position, CourierConfig.warehousePos)) this.completeOrder(player, st);
+            if (isNear(player.position, CourierConfig.warehousePos)) this.completeOrder(player, st);
         }
     }
 
@@ -128,12 +129,6 @@ class CourierService {
         let idx;
         do { idx = Math.floor(Math.random() * n); } while (idx === exceptIdx);
         return idx;
-    }
-
-    isNear(pos, point, radius = CourierConfig.interactRadius) {
-        if (!pos || !point) return false;
-        const dx = pos.x - point.x, dy = pos.y - point.y, dz = pos.z - point.z;
-        return Math.sqrt(dx * dx + dy * dy + dz * dz) <= radius;
     }
 
     distTo(pointIdx) {

@@ -1,4 +1,5 @@
 const { DealershipPos, GaragePos, CarCustomPos, HospitalPos, FuelStationPos, CourierConfig } = require('../config');
+const { isNear } = require('../utils/distance');
 const logger = require('../logger');
 
 /**
@@ -75,10 +76,7 @@ class LocationService {
     isNear(key, position, radius = 2.5) {
         const loc = this.getPosition(key);
         if (!loc || !position) return false;
-        const dx = position.x - loc.x;
-        const dy = position.y - loc.y;
-        const dz = position.z - loc.z;
-        return Math.sqrt(dx * dx + dy * dy + dz * dz) <= radius;
+        return isNear(position, loc, radius)
     }
 }
 
