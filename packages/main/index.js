@@ -5,7 +5,7 @@ Module.prototype.require = function (id) { // перехват для работ
     return originalRequire.apply(this, [id]);
 };
 
-const { initDB, getSequelize } = require('./db');
+const { initDB, syncDB, getSequelize } = require('./db');
 const { initRedis, getRedis } = require('./redis');
 const logger = require('./logger');
 
@@ -23,6 +23,12 @@ async function refreshStatsCache() { // обновление кэша стати
 (async () => {
     try {
         await initDB();
+        require('./models/Users').getUserModel();
+        require('./models/Item').getItemModel();
+        require('./models/Vehicle').getVehicleModel();
+        require('./models/AuditLog').getAuditModel();
+        require('./models/Bot').getBotModel();
+        await syncDB();
         accountService.initialize(); // инициализируем модель аккаунтов
 
         await initRedis(); // запуск RAM-кэш redis

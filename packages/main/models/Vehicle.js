@@ -10,7 +10,12 @@ function initVehicleModel() {
     if (!sequelize) throw new Error('[Vehicle] Sequelize не инициализирован — сначала initDB');
 
     Vehicle = sequelize.define('Vehicle', {
-        owner_id: { type: DataTypes.INTEGER, allowNull: false },
+        owner_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'accounts', key: 'id' },
+            onDelete: 'CASCADE'
+        },
         model: { type: DataTypes.STRING(50), allowNull: false },
         color_r: { type: DataTypes.INTEGER, defaultValue: 255 },
         color_g: { type: DataTypes.INTEGER, defaultValue: 255 },

@@ -10,7 +10,12 @@ function initItemModel() {
     if (!sequelize) throw new Error('[Item] Sequelize не инициализирован — сначала initDB');
 
     Item = sequelize.define('Item', {
-        owner_id: { type: DataTypes.INTEGER, allowNull: false },
+        owner_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: { model: 'accounts', key: 'id' },
+            onDelete: 'CASCADE'
+        },
         item_id: { type: DataTypes.STRING(50), allowNull: false },
         count: { type: DataTypes.INTEGER, defaultValue: 1 },
         slot: { type: DataTypes.INTEGER, allowNull: false }
