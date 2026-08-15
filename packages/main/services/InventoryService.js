@@ -73,32 +73,48 @@ class InventoryService {
         }
         if (space < amount) return false; // инвентарь не вместит
 
+        const planned = player.inventory.map(s => s ? { ...s } : null);
+        const writes = [];
         let remaining = amount;
 
-        for (const slot of player.inventory) {
-            if (remaining <= 0) break;
+        for (let i = 0; i < planned.length && remaining > 0; i++) {
+            const slot = planned[i];
             if (slot && slot.itemId === itemId && slot.count < config.maxStack) {
                 const add = Math.min(config.maxStack - slot.count, remaining);
                 slot.count += add;
                 remaining -= add;
-                await getItemModel().update({ count: slot.count }, { where: { id: slot.dbId } });
+                writes.push({ type: 'update', slot: i, dbId: slot.dbId, count: slot.count });
             }
         }
-
         while (remaining > 0) {
-            const freeSlot = player.inventory.findIndex(s => s === null); // ищем пустую ячейку
+            const freeSlot = planned.findIndex(s => s === null); // ищем пустую ячейку
             if (freeSlot === -1) break; // не случится благодаря проверке вместимости выше
             const add = Math.min(config.maxStack, remaining);
-            const newItem = await getItemModel().create({ // создаём новый предмет
-                owner_id: player.accountId,
-                item_id: itemId,
-                count: add,
-                slot: freeSlot
-            });
-            player.inventory[freeSlot] = { dbId: newItem.id, itemId, count: add };
+            planned[freeSlot] = { dbId: null, itemId, count: add };
             remaining -= add;
+            writes.push({ type: 'create', slot: freeSlot, count: add });
         }
 
+        const Item = getItemModel();
+        const t = await Item.sequelize.transaction();
+        try {
+            for (const w of writes) {
+                if (w.type === 'update') {
+                    await Item.update({ count: w.count }, { where: { id: w.dbId }, transaction: t });
+                } else {
+                    const created = await Item.create({
+                        owner_id: player.accountId, item_id: itemId, count: w.count, slot: w.slot
+                    }, { transaction: t });
+                    planned[w.slot].dbId = created.id;
+                }
+            }
+            await t.commit();
+        } catch (err) {
+            await t.rollback();
+            logger.error(`[InventoryService] giveItem транзакция отменена: ${err.message}`);
+            return false;
+        }
+        player.inventory = planned;
         logger.info(`[InventoryService] Игроку ${player.accountName} выдано: ${itemId} x${amount}`);
         this.syncInventory(player);
         return true;
@@ -114,21 +130,37 @@ class InventoryService {
     async removeItem(player, itemId, amount = 1) {
         if (!this.hasItem(player, itemId, amount)) return false;
 
+        const planned = player.inventory.map(s => s ? { ...s } : null);
+        const writes = [];
         let remaining = amount;
-        for (let i = 0; i < player.inventory.length && remaining > 0; i++) {
-            const slot = player.inventory[i];
+
+        for (let i = 0; i < planned.length && remaining > 0; i++) {
+            const slot = planned[i];
             if (slot && slot.itemId === itemId) {
                 const take = Math.min(slot.count, remaining);
                 slot.count -= take;
                 remaining -= take;
-
                 if (slot.count <= 0) {
-                    await getItemModel().destroy({ where: { id: slot.dbId } });
-                    player.inventory[i] = null;
-                } else { await getItemModel().update({ count: slot.count }, { where: { id: slot.dbId } }) }
+                    planned[i] = null;
+                    writes.push({ type: 'destroy', dbId: slot.dbId });
+                } else { writes.push({ type: 'update', dbId: slot.dbId, count: slot.count }) }
             }
         }
 
+        const Item = getItemModel();
+        const t = await Item.sequelize.transaction();
+        try {
+            for (const w of writes) {
+                if (w.type === 'update') { await Item.update({ count: w.count }, { where: { id: w.dbId }, transaction: t }) }
+                else { await Item.destroy({ where: { id: w.dbId }, transaction: t }) }
+            }
+            await t.commit();
+        } catch (err) {
+            await t.rollback();
+            logger.error(`[InventoryService] removeItem транзакция отменена: ${err.message}`);
+            return false;
+        }
+        player.inventory = planned;
         logger.info(`[InventoryService] У игрока ${player.accountName} удалено: ${itemId} x${amount}`);
         this.syncInventory(player);
         return true;
