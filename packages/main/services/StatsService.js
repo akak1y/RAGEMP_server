@@ -16,10 +16,8 @@ class StatsService {
         const redis = getRedis();
 
         const tRedis = performance.now();
-        const batch = Array.from({ length: 50 }, () => redis.get(ECONOMY_CACHE_KEY));
-        const results = await Promise.all(batch);
-        const redisMs = ((performance.now() - tRedis) / 50).toFixed(2);
-        const cached = results[0];
+        const cached = await redis.get(ECONOMY_CACHE_KEY);   // реальная операция
+        const redisMs = (performance.now() - tRedis).toFixed(2);
 
         if (cached) {
             return { ...JSON.parse(cached), source: 'redis', ms: redisMs };
@@ -49,6 +47,18 @@ class StatsService {
         logger.info(`[Stats] Экономика перечитана из MySQL и закэширована на ${ECONOMY_CACHE_TTL}с`);
 
         return { ...stats, source: 'mysql', ms: sqlMs };
+    }
+
+    /**
+     * Синтетический бенчмарк Redis. НЕ вызывается в hot path
+     * @param {number} [iterations=50] - Число итераций
+     * @returns {Promise<{iterations: number, avgMs: string}>}
+     */
+    async benchmarkRedis(iterations = 50) {
+        const redis = getRedis();
+        const t = performance.now();
+        await Promise.all(Array.from({ length: iterations }, () => redis.get(ECONOMY_CACHE_KEY)));
+        return { iterations, avgMs: ((performance.now() - t) / iterations).toFixed(2) };
     }
 
     async getTopPlayers(limit = 3) {
