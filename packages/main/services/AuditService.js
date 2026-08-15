@@ -17,7 +17,8 @@ class AuditService {
 
     _emit(row) {
         for (const fn of this._listeners) {
-            try { fn(row); } catch {}
+            try { fn(row) }
+            catch (err) { logger.error(`[AuditService] Ошибка подписчика: ${err.message}`) }
         }
     }
 

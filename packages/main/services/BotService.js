@@ -65,7 +65,8 @@ class BotService {
                 new mp.Vector3(BotSpawnPos.x, BotSpawnPos.y, BotSpawnPos.z),
                 BotSpawnPos.h, 0
             );
-            try { ped.rotation = new mp.Vector3(0, 0, BotSpawnPos.h); } catch (e) {}
+            try { ped.rotation = new mp.Vector3(0, 0, BotSpawnPos.h) }
+            catch (err) { logger.error(`[BotService] Ошибка ped.rotation: ${err.message}`) }
 
             const label = mp.labels.new(
                 botName + ' (' + account.id + ')',

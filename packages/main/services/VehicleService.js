@@ -163,7 +163,7 @@ class VehicleService {
                     veh.engine = false;
                     if (driver && driver.outputChatBox) driver.outputChatBox('!{#FF3333}[Топливо] Бак пуст — нужна заправка!');
                 }
-            } catch (e) {}
+            } catch (err) { logger.error(`[VehicleService] tickFuel error: ${err.message}`) }
         }
     }
 
@@ -218,7 +218,8 @@ class VehicleService {
         const veh = this.spawnedVehicles.get(dbId);
         if (!veh) return;
         const fuel = veh.getVariable('fuel');
-        try { await getVehicleModel().update({ fuel }, { where: { id: dbId } }) } catch (e) {}
+        try { await getVehicleModel().update({ fuel }, { where: { id: dbId } }) }
+        catch (err) { logger.error(`[VehicleService] despawnVehicle fuel save error: ${err.message}`) }
 
         if (mp.vehicles.exists(veh)) veh.destroy();
 
