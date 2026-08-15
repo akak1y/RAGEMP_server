@@ -1,16 +1,18 @@
-const accountService = require('../services/AccountService');
 const { getVehicleModel } = require('../models/Vehicle');
 const { getItemModel } = require('../models/Item');
 const { getUserModel } = require('../models/Users');
+const accountService = require('../services/AccountService');
 const auditService = require('../services/AuditService');
 const healthService = require('../services/HealthService');
 const vehicleService = require('../services/VehicleService');
+const authService = require('../services/AuthService');
+const { ItemConfig, VehicleConfig } = require('../config');
 const logger = require('../logger');
 
 const TABLES = {
-    accounts: () => accountService.getAllAccounts(['id', 'username', 'money', 'admin_level']),
-    vehicles: async () => getVehicleModel().findAll({ raw: true }),
-    items: async () => getItemModel().findAll({ raw: true }),
+    accounts: () => getUserModel().findAll({ order: [['id', 'DESC']], raw: true, attributes: ['id', 'username', 'money', 'admin_level'] }),
+    vehicles: async () => getVehicleModel().findAll({ order: [['id', 'DESC']], raw: true }),
+    items: async () => getItemModel().findAll({ order: [['id', 'DESC']], raw: true }),
     audit: () => auditService.getRecent(50)
 };
 
@@ -43,10 +45,101 @@ const EDITORS = {
     }
 };
 
+const CREATORS = {
+    accounts: {
+        fields: ['username', 'password', 'money', 'admin_level'],
+        required: ['username', 'password'],
+        validators: {
+            username: v => {
+                if (!v || v.length < 2 || v.length > 32) throw new Error('username 2..32');
+                return String(v)
+            },
+            password: v => {
+                if (!v || v.length < 3) throw new Error('password >= 3');
+                return String(v)
+            },
+            money: v => int(v, 0, 2147483647, 'money'),
+            admin_level: v => int(v, 0, 10, 'admin_level'),
+        },
+        create: async (data) => {
+            const result = await authService.register(data.username, data.password, {
+                money: data.money ?? 50000,
+                admin_level: data.admin_level ?? 0
+            });
+            if (!result.success) throw new Error(`register: ${result.error}`);
+            return result.user;
+        }
+    },
+    vehicles: {
+        fields: ['owner_id', 'model', 'fuel', 'color_r', 'color_g', 'color_b', 'engine_mod', 'brakes_mod', 'transmission_mod', 'turbo_mod', 'wheel_type', 'wheel_mod'],
+        required: ['owner_id', 'model'],
+        validators: {
+            owner_id: v => int(v, 1, 999999, 'owner_id'),
+            model: v => {
+                if (!VehicleConfig[v]) throw new Error('unknown model');
+                return v
+            },
+            fuel: v => int(v, 0, 100, 'fuel'),
+            color_r: v => int(v, 0, 255, 'color_r'),
+            color_g: v => int(v, 0, 255, 'color_g'),
+            color_b: v => int(v, 0, 255, 'color_b'),
+            engine_mod: v => int(v, 0, 3, 'engine_mod'),
+            brakes_mod: v => int(v, 0, 2, 'brakes_mod'),
+            transmission_mod: v => int(v, 0, 2, 'transmission_mod'),
+            turbo_mod: v => int(v, 0, 1, 'turbo_mod'),
+            wheel_type: v => int(v, 0, 11, 'wheel_type'),
+            wheel_mod: v => int(v, -1, 50, 'wheel_mod'),
+        },
+        create: async (data) => {
+            const owner = await getUserModel().findByPk(data.owner_id);
+            if (!owner) throw new Error('owner not found');
+            return await getVehicleModel().create(data)
+        }
+    },
+    items: {
+        fields: ['owner_id', 'item_id', 'count', 'slot'],
+        required: ['owner_id', 'item_id', 'slot'],
+        validators: {
+            owner_id: v => int(v, 1, 999999, 'owner_id'),
+            item_id: v => {
+                if (!ItemConfig[v]) throw new Error('unknown item');
+                return v
+            },
+            count: v => int(v, 1, 9999, 'count'),
+            slot: v => int(v, 0, 99, 'slot'),
+        },
+        create: async (data) => {
+            const owner = await getUserModel().findByPk(data.owner_id);
+            if (!owner) throw new Error('owner not found');
+            const existing = await getItemModel().findOne({ where: { owner_id: data.owner_id, slot: data.slot } });
+            if (existing) throw new Error(`slot ${data.slot} занят`);
+            return await getItemModel().create(data)
+        }
+    }
+};
+
 const MODELS = {
     accounts: getUserModel,
     vehicles: getVehicleModel,
     items: getItemModel
+};
+
+const DELETABLE = ['accounts', 'vehicles', 'items'];
+
+const DELETE_NAMES = {
+    accounts: 'Аккаунт удалён',
+    vehicles: 'Авто удалено',
+    items: 'Предмет удалён'
+};
+
+const DELETE_HOOKS = {
+    accounts: async (socket, id, row) => {
+        if (id === socket.admin.accountId) throw new Error('Нельзя удалить себя');
+        if ((row.admin_level || 0) > (socket.admin.adminLevel || 0)) throw new Error('Нельзя удалить админа выше уровнем');
+        const player = mp.players.toArray().find(p => p.accountId === id);
+        if (player) player.kick('Аккаунт удалён администратором');
+    },
+    vehicles: async (socket, id) => { await vehicleService.despawnVehicle(id, false) }
 };
 
 async function handleMessage(socket, msg, broadcast) {
@@ -70,6 +163,11 @@ async function handleMessage(socket, msg, broadcast) {
 
         if (msg.type === 'delete_row') {
             await handleDeleteRow(socket, msg, broadcast);
+            return;
+        }
+
+        if (msg.type === 'create_row') {
+            await handleCreateRow(socket, msg, broadcast);
             return;
         }
 
@@ -179,24 +277,6 @@ async function handleVehicleAction(socket, msg, broadcast) {
     } catch (err) { logger.error(`[Admin] vehicle_action error: ${err.message}`) }
 }
 
-const DELETABLE = ['accounts', 'vehicles', 'items'];
-
-const DELETE_NAMES = {
-    accounts: 'Аккаунт удалён',
-    vehicles: 'Авто удалено',
-    items: 'Предмет удалён'
-};
-
-const DELETE_HOOKS = {
-    accounts: async (socket, id, row) => {
-        if (id === socket.admin.accountId) throw new Error('Нельзя удалить себя');
-        if ((row.admin_level || 0) > (socket.admin.adminLevel || 0)) throw new Error('Нельзя удалить админа выше уровнем');
-        const player = mp.players.toArray().find(p => p.accountId === id);
-        if (player) player.kick('Аккаунт удалён администратором');
-    },
-    vehicles: async (socket, id) => { await vehicleService.despawnVehicle(id, false) }
-};
-
 async function handleDeleteRow(socket, msg, broadcast) {
     try {
         const { table, targetId } = msg;
@@ -238,4 +318,60 @@ async function handleDeleteRow(socket, msg, broadcast) {
     }
 }
 
-module.exports = { handleMessage }
+async function handleCreateRow(socket, msg, broadcast) {
+    try {
+        const { table, data } = msg;
+        const cfg = CREATORS[table];
+        if (!cfg) return;
+
+        const cleaned = {};
+        for (const field of cfg.fields) {
+            const raw = data[field];
+            if ((raw === '' || raw === undefined || raw === null) && cfg.required.includes(field)) throw new Error(`${field} обязательно`);
+            if (raw === '' || raw === undefined || raw === null) continue;
+            const validator = cfg.validators[field];
+            if (!validator) throw new Error(`unknown field ${field}`);
+            cleaned[field] = validator(raw);
+        }
+
+        const created = await cfg.create(cleaned);
+
+        await auditService.log({
+            success: 1,
+            category: 'web_create',
+            action: `create_${table}`,
+            actor: socket.admin.username,
+            actor_id: socket.admin.accountId,
+            target: created.id || null,
+            ip: socket.admin.ip,
+            details: cleaned
+        });
+
+        if (broadcast) broadcast({ type: 'table', table, rows: await TABLES[table]() });
+        socket.send(JSON.stringify({
+            type: 'action_result',
+            result: { success: true, message: `Создано: ${table} (id ${created.id})` }
+        }));
+    } catch (err) {
+        socket.send(JSON.stringify({
+            type: 'action_result',
+            result: { success: false, message: err.message }
+        }));
+        logger.error(`[Admin] create_row error: ${err.message}`);
+    }
+}
+
+function getCreateSchema() {
+    return Object.fromEntries(
+        Object.entries(CREATORS).map(([t, c]) => [t, {
+            fields: c.fields,
+            required: c.required,
+            options: {
+                vehicles: { model: Object.keys(VehicleConfig) },
+                items:    { item_id: Object.keys(ItemConfig) }
+            }[t] || {}
+        }])
+    );
+}
+
+module.exports = { handleMessage, getCreateSchema }

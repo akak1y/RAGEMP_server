@@ -26,6 +26,7 @@
       </span>
     </h2>
     <div>
+      <button v-if="canCreate()" @click="startCreate()" class="btn-create">+ Создать</button>
       <button v-for="t in tabs" :key="t" :class="{active: active===t}" @click="openTab(t)">{{t}}</button>
     </div>
 
@@ -34,6 +35,28 @@
       <div class="map-btns">
         <button @click="zoomIn">+</button>
         <button @click="zoomOut">−</button>
+      </div>
+    </div>
+
+    <div v-if="creating" class="create-form">
+      <h3>Новая запись: {{active}}</h3>
+      <div class="create-fields">
+        <div v-for="f in (createSchema[active]?.fields || [])" :key="f" class="create-field">
+          <label :class="{required: (createSchema[active]?.required || []).includes(f)}">
+            {{f}}<span v-if="(createSchema[active]?.required || []).includes(f)">*</span>
+          </label>
+          <select v-if="createSchema[active]?.options?.[f]"
+                  v-model="createData[f]" ref="createInput">
+            <option value="">-- выбери --</option>
+            <option v-for="opt in createSchema[active].options[f]" :value="opt">{{opt}}</option>
+          </select>
+          <input v-else v-model="createData[f]" ref="createInput"
+                 @keyup.enter="submitCreate">
+        </div>
+      </div>
+      <div class="create-actions">
+        <button @click="submitCreate" class="btn-create">Сохранить</button>
+        <button @click="cancelCreate">Отмена</button>
       </div>
     </div>
 

@@ -6,7 +6,7 @@ const { WebSocketServer } = require('ws');
 const authService = require('../services/AuthService');
 const auditService = require('../services/AuditService');
 const logger = require('../logger');
-const { handleMessage } = require('./protocol');
+const { handleMessage, getCreateSchema } = require('./protocol');
 const config = require('../config');
 
 let settings = {};
@@ -106,6 +106,7 @@ function start() {
         socket.on('close', () => clients.delete(socket));
         socket.send(JSON.stringify({ type: 'hello', admin: payload.username, online: mp.players.length }));
         socket.send(JSON.stringify({ type: 'markers', markers: MAP_MARKERS }));
+        socket.send(JSON.stringify({ type: 'create_schema', schema: getCreateSchema() }));
         
         socket.on('message', (data) => {
             let msg;

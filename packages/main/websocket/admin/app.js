@@ -25,6 +25,9 @@ createApp({
             items: ['count']
         },
         actionResult: null,
+        createSchema: {},
+        creating: false,
+        createData: {},
     }),
     computed: {
         rows() { return this.tables[this.active] || []; },
@@ -46,6 +49,7 @@ createApp({
             return this.fmt(v);
         },
         openTab(t) {
+            this.creating = false;
             this.editing = null;
             this.active = t;
             if (t === 'map') {
@@ -129,6 +133,9 @@ createApp({
                         this.actionResult = null;
                     }, 5000)
                 }
+                if (m.type === 'create_schema') {
+                    this.createSchema = m.schema;
+                }
             };
         },
         drawStaticMarkers() {
@@ -176,6 +183,36 @@ createApp({
         deleteRow(table, id) {
             if (!confirm(`Удалить запись id ${id}?`)) return;
             this.ws.send(JSON.stringify({ type: 'delete_row', table, targetId: id }));
+        },
+        canCreate() {
+            return ['accounts', 'vehicles', 'items'].includes(this.active);
+        },
+        startCreate() {
+            const schema = this.createSchema[this.active];
+            if (!schema) return;
+            this.createData = {};
+            for (const f of schema.fields) this.createData[f] = '';
+            this.creating = true;
+            this.$nextTick(() => {
+                const el = this.$refs.createInput && this.$refs.createInput[0];
+                if (el) el.focus();
+            });
+        },
+        cancelCreate() {
+            this.creating = false;
+            this.createData = {};
+        },
+        submitCreate() {
+            const schema = this.createSchema[this.active];
+            if (!schema) return;
+            for (const f of schema.required) {
+                if (this.createData[f] === '' || this.createData[f] === undefined) {
+                    this.actionResult = { success: false, message: `Поле ${f} обязательно` };
+                    return;
+                }
+            }
+            this.ws.send(JSON.stringify({ type: 'create_row', table: this.active, data: this.createData }));
+            this.cancelCreate();
         },
     }
 }).mount('#app');

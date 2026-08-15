@@ -129,3 +129,53 @@ input{
 .action-msg.fail{
     color:#f44
 }
+.btn-create{
+    background:#234;
+    color:#4f4;
+    border:1px solid #4f4;
+    padding:4px 10px
+}
+.btn-create:hover{
+    opacity:.85
+}
+.create-form{
+    background:#0f2318;
+    border:1px solid #2ea043;
+    padding:14px;
+    margin:12px 0;
+    border-radius:6px
+}
+.create-fields{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:10px
+}
+.create-field{
+    display:flex;
+    flex-direction:column;
+    min-width:140px
+}
+.create-field label{
+    font-size:12px;
+    color:#8b949e;
+    margin-bottom:2px
+}
+.create-field label.required{
+    color:#c9d1d9
+}
+.create-field label.required span{
+    color:#f44;
+    margin-left:2px
+}
+.create-field input, .create-field select{
+    background:#0d1117;
+    color:#c9d1d9;
+    border:1px solid #30363d;
+    padding:4px 8px;
+    font-size:14px
+}
+.create-actions{
+    display:flex;
+    gap:8px
+}
