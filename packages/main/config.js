@@ -48,6 +48,7 @@ module.exports = {
     CustomBoxPos: { x: -401.3, y: -84.2, z: 53.9, h: 298.0 },
     HospitalPos: { x: -449.6, y: -133.1, z: 39.1, h: 120.6 },
     BotSpawnPos: { x: -453.3, y: -85.1, z: 40.0, h: 215.6 },
+    BotPedModel: 'g_m_m_korboss_01',
     FuelStationPos: { x: -374.4, y: -87.4, z: 45.7 },
     FuelPricePerLiter: 3, // цена за литр
     FuelInteractionRadius: 5, // расстояние заправки

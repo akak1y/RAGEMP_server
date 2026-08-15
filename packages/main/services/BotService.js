@@ -1,6 +1,6 @@
 const { getBotModel, ensureBotReady } = require('../models/Bot');
 const accountService = require('./AccountService');
-const { BotSpawnPos } = require('../config');
+const { BotSpawnPos, BotPedModel } = require('../config');
 const logger = require('../logger');
 
 /**
@@ -61,7 +61,7 @@ class BotService {
             });
 
             const ped = mp.peds.new(
-                mp.joaat('g_m_m_korboss_01'),
+                mp.joaat(BotPedModel),
                 new mp.Vector3(BotSpawnPos.x, BotSpawnPos.y, BotSpawnPos.z),
                 BotSpawnPos.h, 0
             );
