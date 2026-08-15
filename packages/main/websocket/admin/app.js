@@ -173,5 +173,9 @@ createApp({
             if (!confirm(`Действие с авто: ${action}?`)) return;
             this.ws.send(JSON.stringify({ type: 'vehicle_action', action, targetId: id }));
         },
+        deleteRow(table, id) {
+            if (!confirm(`Удалить запись id ${id}?`)) return;
+            this.ws.send(JSON.stringify({ type: 'delete_row', table, targetId: id }));
+        },
     }
 }).mount('#app');

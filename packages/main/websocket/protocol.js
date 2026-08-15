@@ -72,6 +72,11 @@ async function handleMessage(socket, msg, broadcast) {
             return;
         }
 
+        if (msg.type === 'delete_row') {
+            await handleDeleteRow(socket, msg, broadcast);
+            return;
+        }
+
         if (msg.type === 'update_cell') {
             const editor = (EDITORS[msg.table] || {})[msg.field];
             const getModel = MODELS[msg.table];
@@ -187,6 +192,37 @@ async function handleVehicleAction(socket, msg, broadcast) {
         if (broadcast) broadcast({ type: 'table', table: 'vehicles', rows: await TABLES.vehicles() });
         socket.send(JSON.stringify({ type: 'action_result', result }));
     } catch (err) { logger.error(`[Admin] vehicle_action error: ${err.message}`) }
+}
+
+const DELETABLE = ['items'];
+
+async function handleDeleteRow(socket, msg, broadcast) {
+    try {
+        const { table, targetId } = msg;
+        if (!DELETABLE.includes(table)) return;
+        const id = Number(targetId);
+        if (!Number.isInteger(id)) return;
+
+        const getModel = MODELS[table];
+        const row = await getModel().findByPk(id);
+        if (!row) return;
+
+        await getModel().destroy({ where: { id } });
+
+        await auditService.log({
+            success: 1,
+            category: 'web_action',
+            action: `${table}_delete`,
+            actor: socket.admin.username,
+            actor_id: socket.admin.accountId,
+            target: id,
+            ip: socket.admin.ip,
+            details: { table }
+        });
+
+        if (broadcast) broadcast({ type: 'table', table, rows: await TABLES[table]() });
+        socket.send(JSON.stringify({ type: 'action_result', result: { success: true, message: `Предмет удалён (id ${id})` } }));
+    } catch (err) { logger.error(`[Admin] delete_row error: ${err.message}`) }
 }
 
 module.exports = { handleMessage }
