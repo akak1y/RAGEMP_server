@@ -8,9 +8,18 @@ function writeLog(level, message) {
     const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
     const logLine = `[${timestamp}] [${level.toUpperCase()}]: ${message}\n`;
 
-    fs.appendFileSync(path.join(logsDir, 'combined.log'), logLine);
-    if (level === 'error') { fs.appendFileSync(path.join(logsDir, 'error.log'), logLine) } // дублируем ошибку в отдельный файл
-    console.log(`[${level.toUpperCase()}] ${message}`)
+    const logFile = path.join(logsDir, 'combined.log');
+    const errorFile = path.join(logsDir, 'error.log');
+
+    fs.appendFile(logFile, logLine, (err) => {
+        if (err) console.error(`[Logger] Ошибка записи: ${err.message}`);
+    });
+    if (level === 'error') {
+        fs.appendFile(errorFile, logLine, (err) => {
+            if (err) console.error(`[Logger] Ошибка записи error.log: ${err.message}`);
+        });
+    }
+    console.log(`[${level.toUpperCase()}] ${message}`);
 }
 
 const logger = {
