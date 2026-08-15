@@ -12,8 +12,9 @@
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "jsonwebtoken": "^9.0.3",
-    "mysql2": "^2.3.3",
-    "winston": "^3.3.3",
+    "mysql2": "^3.23.3",
+    "redis": "^4.6.10",
+    "sequelize": "^6.37.8",
     "ws": "^8.21.3"
   },
   "devDependencies": {
