@@ -83,8 +83,18 @@ class CourierService {
         player.outputChatBox(`!{#00FFFF}[Курьер] Посылка взята. Точка доставки: ~${Math.round(this.distTo(st.pointIdx))} м, награда $${st.pay}.`);
     }
 
-    completeOrder(player, st) {
-        player.addMoney(st.pay, 'курьерская доставка');
+    async completeOrder(player, st) {
+        const moneyService = require('./MoneyService');
+        const success = await moneyService.addMoney(player.accountId, st.pay, 'курьерская доставка');
+        
+        if (!success) {
+            logger.error(`[CourierService] Начисление $${st.pay} игроку ${player.accountId} провалилось`);
+            return;
+        }
+
+        player.money += st.pay;
+        player.call('client:updateMoney', [player.money]);
+
         auditService.logPlayer(player, 'courier', {
             category: 'money', amount: st.pay,
             details: { point: st.pointIdx, dist: Math.round(this.distTo(st.pointIdx)) }
