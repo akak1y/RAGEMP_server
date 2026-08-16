@@ -1,6 +1,7 @@
 require('./state'); // создаём UIstate
 const state = globalThis.UIState;
 require('./auth');
+require('./windows');
 
 mp.gui.chat.show(false); // скрываем чат и миникарту
 mp.game.ui.displayRadar(false);
@@ -50,22 +51,6 @@ mp.keys.bind(0xC0, true, () => { // Ё - включаем курсор
 mp.events.add("browserCreated", (browser) => { // когда создался браузер
     if (state.uiBrowser && browser === state.uiBrowser){
         mp.gui.cursor.show(true, true) // включаем курсор для авторизации
-    }
-});
-
-mp.events.add("client:ui:windowStateChanged", (winName, isOpen) => { // выключаем/включаем чат при открытии/закрытии любого окна
-    if (state.openWindowsState.hasOwnProperty(winName)) { state.openWindowsState[winName] = isOpen }
-    state.isAnyUiWindowOpen = Object.values(state.openWindowsState).some(state => state === true);
-
-    if (state.isAnyUiWindowOpen) { mp.gui.chat.activate(false) }
-    else { mp.gui.chat.activate(true) }
-    if (winName === 'carCustom' && isOpen === false) { // если из LSC
-        state.isCameraRotateActive = false;
-        if (mp.players.local.vehicle) { // возвращаем коллизию и размораживаем
-            mp.players.local.vehicle.freezePosition(false);
-            mp.players.local.vehicle.setCollision(true, true)
-        }
-        mp.events.callRemote('server:custom:exitShop')
     }
 });
 
