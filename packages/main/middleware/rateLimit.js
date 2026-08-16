@@ -24,29 +24,23 @@ function rateLimit(action, maxCalls, windowSec = 5) {
 
             if (count > maxCalls) {
                 logger.warn(`[RateLimit] ${player.accountName} превысил лимит ${action}: ${count}/${maxCalls} за ${windowSec}с`);
-                
-                if (count > maxCalls) {
-                    logger.warn(`[RateLimit] ${player.accountName} превысил лимит ${action}: ${count}/${maxCalls} за ${windowSec}с`);
 
-                    const violKey = `ratelimit:viol:${action}:${id}`;
-                    const vCount = await redis.incr(violKey);
-                    if (vCount === 1) {
-                        // первое нарушение в окне — создаём строку журнала
-                        await redis.expire(violKey, windowSec);
-                        const row = await auditService.logPlayer(player, 'ratelimit', {
-                            category: 'security',
-                            success: false,
-                            repeats: 1,
-                            details: { action, limit: maxCalls, window: windowSec }
-                        });
-                        if (row && row.id) await redis.set(`${violKey}:row`, String(row.id), { EX: windowSec });
-                    } else {
-                        // серия продолжается — увеличиваем repeats у той же строки
-                        const rowId = await redis.get(`${violKey}:row`);
-                        if (rowId) await auditService.bumpRepeats(Number(rowId));
-                    }
-                    player.outputChatBox(`!{#FF3333}[Антиспам] Слишком часто. Подождите ${windowSec} секунд.`);
-                    return false;
+                const violKey = `ratelimit:viol:${action}:${id}`;
+                const vCount = await redis.incr(violKey);
+                if (vCount === 1) {
+                    // первое нарушение в окне — создаём строку журнала
+                    await redis.expire(violKey, windowSec);
+                    const row = await auditService.logPlayer(player, 'ratelimit', {
+                        category: 'security',
+                        success: false,
+                        repeats: 1,
+                        details: { action, limit: maxCalls, window: windowSec }
+                    });
+                    if (row && row.id) await redis.set(`${violKey}:row`, String(row.id), { EX: windowSec });
+                } else {
+                    // серия продолжается — увеличиваем repeats у той же строки
+                    const rowId = await redis.get(`${violKey}:row`);
+                    if (rowId) await auditService.bumpRepeats(Number(rowId));
                 }
                 player.outputChatBox(`!{#FF3333}[Антиспам] Слишком часто. Подождите ${windowSec} секунд.`);
                 return false;
