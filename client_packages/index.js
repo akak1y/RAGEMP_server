@@ -6,6 +6,7 @@ require('./speedometer');
 require('./courier');
 require('./bots');
 require('./tuning');
+require('./vehicleSync');
 
 mp.gui.chat.show(false); // скрываем чат и миникарту
 mp.game.ui.displayRadar(false);
@@ -220,45 +221,3 @@ mp.events.add("client:garage:setPos", (pos) => { state.positions.garage = new mp
 mp.events.add("client:customCar:setPos", (pos) => { state.positions.carCustom = new mp.Vector3(pos.x, pos.y, pos.z) });
 mp.events.add('client:fuel:setPos', (pos) => { state.positions.fuel = new mp.Vector3(pos.x, pos.y, pos.z); });
 mp.events.add("client:courier:setPos", (pos) => { state.positions.courierStart = new mp.Vector3(pos.x, pos.y, pos.z); });
-
-mp.events.addDataHandler("customColor", (entity, value) => { // триггеры тюнинга
-    if (mp.vehicles.exists(entity) && value) {
-        entity.setCustomPrimaryColour(value.r, value.g, value.b);
-        entity.setCustomSecondaryColour(value.r, value.g, value.b)
-    }
-});
-
-mp.events.addDataHandler("customWheels", (entity, value) => {
-    if (mp.vehicles.exists(entity) && value) {
-        entity.setWheelType(Number(value.type));
-        entity.setMod(23, Number(value.id))
-    }
-});
-
-mp.events.addDataHandler(/^customMod_(\d+)$/, (entity, value) => {
-    if (mp.vehicles.exists(entity) && value !== undefined && value !== null) {
-        const modType = Number(entity.activeDataHandlerKey.split('_')[1]);
-        entity.setMod(modType, Number(value))
-    }
-});
-
-mp.events.add("entityStreamIn", (entity) => { // синхронизация стрима
-    if (entity.type === "vehicle") {
-        const rgb = entity.getVariable("customColor");
-        if (rgb) {
-            entity.setCustomPrimaryColour(Number(rgb.r), Number(rgb.g), Number(rgb.b));
-            entity.setCustomSecondaryColour(Number(rgb.r), Number(rgb.g), Number(rgb.b))
-        }
-
-        const wheels = entity.getVariable("customWheels");
-        if (wheels && wheels.id !== undefined) {
-            entity.setWheelType(Number(wheels.type));
-            entity.setMod(23, Number(wheels.id))
-        }
-        const technicalMods = [11, 12, 13, 18];
-        technicalMods.forEach(modType => {
-            const modValue = entity.getVariable(`customMod_${modType}`);
-            if (modValue !== undefined && modValue !== null && modValue !== -1) entity.setMod(modType, Number(modValue));
-        });
-    }
-});
