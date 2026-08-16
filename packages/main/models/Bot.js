@@ -2,7 +2,6 @@ const { Sequelize } = require('sequelize');
 const { getSequelize } = require('../db');
 
 let Bot = null;
-let syncPromise = null;
 
 function initBotModel() {
     const sequelize = getSequelize();
@@ -16,7 +15,6 @@ function initBotModel() {
         tableName: 'bots',
         timestamps: false
     });
-    syncPromise = Bot.sync();
 }
 
 function getBotModel() {
@@ -24,9 +22,12 @@ function getBotModel() {
     return Bot;
 }
 
+/**
+ * Гарантирует, что модель определена
+ */
 function ensureBotReady() {
     if (!Bot) initBotModel();
-    return syncPromise;
+    return Promise.resolve();
 }
 
 module.exports = { initBotModel, getBotModel, ensureBotReady }
