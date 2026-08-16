@@ -22,7 +22,5 @@ globalThis.UIState = {
         fuel: null,
         courierStart: null,
         courierTarget: null
-    },
-    courierMarker: null,
-    courierBlip: null
+    }
 };

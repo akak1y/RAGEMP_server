@@ -3,6 +3,7 @@ const state = globalThis.UIState;
 require('./auth');
 require('./windows');
 require('./speedometer');
+require('./courier');
 
 mp.gui.chat.show(false); // скрываем чат и миникарту
 mp.game.ui.displayRadar(false);
@@ -253,26 +254,6 @@ mp.events.add('client:custom:applyUpgrade', (categoryKey, optionJson, price) => 
         veh.setMod(modType, maxLevels[modType]);
     }
     mp.events.callRemote('server:custom:buyUpgrade', categoryKey, optionJson, price) // запрос для списания денег и сохранения изменений
-});
-
-mp.events.add('client:courier:target', (x, y, z, stage) => {
-    if (state.courierMarker) { state.courierMarker.destroy(); state.courierMarker = null; }
-    if (state.courierBlip) { state.courierBlip.destroy(); state.courierBlip = null; }
-    state.positions.courierTarget = null;
-    if (x === null || x === undefined) return;
-
-    state.positions.courierTarget = new mp.Vector3(x, y, z);
-    const isDelivery = stage === 'delivery';
-    state.courierMarker = mp.markers.new(1, state.positions.courierTarget, isDelivery ? 1.0 : 2.5, {
-        color: isDelivery ? [255, 200, 0, 150] : [100, 150, 255, 150]
-    });
-    if (isDelivery) {
-        state.courierBlip = mp.blips.new(477, state.positions.courierTarget);
-        try {
-            state.courierBlip.shortRange = false;
-            state.courierBlip.name = 'Доставка';
-        } catch (e) {}
-    }
 });
 
 mp.events.addDataHandler("customColor", (entity, value) => { // триггеры тюнинга
