@@ -2,6 +2,7 @@ require('./state'); // создаём UIstate
 const state = globalThis.UIState;
 require('./auth');
 require('./windows');
+require('./speedometer');
 
 mp.gui.chat.show(false); // скрываем чат и миникарту
 mp.game.ui.displayRadar(false);
@@ -149,36 +150,6 @@ mp.keys.bind(0x45, true, () => { // E - взаимодействие с марк
         }
     }
 });
-
-// спидометр
-let spdLastPos = null;
-let spdLastTime = 0;
-
-setInterval(() => {
-    if (!state.isAuthorized || !state.uiBrowser) return;
-    const veh = mp.players.local.vehicle;
-    if (!veh) {
-        spdLastPos = null;
-        spdLastTime = 0;
-        state.uiBrowser.execute(`if(window.updateSpeedometer) window.updateSpeedometer(0, '', false, 0);`);
-        return;
-    }
-
-    const now = Date.now();
-    const pos = veh.position;
-    let kmh = 0;
-    if (spdLastPos && spdLastTime) {
-        const dt = (now - spdLastTime) / 1000;
-        if (dt > 0) { kmh = Math.round( Math.hypot(pos.x - spdLastPos.x, pos.y - spdLastPos.y, pos.z - spdLastPos.z) / dt * 3.6 ) }
-    }
-    spdLastPos = pos;
-    spdLastTime = now;
-
-    let name = '';
-    try { name = mp.game.vehicle.getDisplayNameFromVehicleModel(veh.model).toLowerCase(); } catch (e) {}
-    const fuel = typeof veh.getVariable === 'function' ? Number(veh.getVariable('fuel') || 0) : 0;
-    state.uiBrowser.execute(`if(window.updateSpeedometer) window.updateSpeedometer(${kmh}, '${name}', true, ${fuel});`);
-}, 100);
 
 // мосты для vue
 mp.events.add("client:ui:debugLog", (msg, type = 'info') => {
