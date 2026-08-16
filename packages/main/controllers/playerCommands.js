@@ -8,7 +8,6 @@ const { getRedis } = require('../redis');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
 const { registerCommand } = require('./commandSystem');
-const { CourierConfig } = require('../config');
 const logger = require('../logger');
 
 mp.events.add("server:requestRedisStats", withGuards([isLoggedIn], async (player) => { // мост для обновления счётчиков акк-ов
@@ -26,10 +25,6 @@ mp.events.add("server:requestRedisStats", withGuards([isLoggedIn], async (player
 mp.events.add('server:courier:interact', withGuards([isLoggedIn], (player) => {
     courierService.interact(player);
 }, 'courier:interact'));
-
-mp.events.add('server:courier:requestPos', withGuards([isLoggedIn], (player) => {
-    player.call('client:courier:setPos', [CourierConfig.startPos]);
-}, 'courier:requestPos'));
 
 mp.events.add('playerDeath', (player, reason, killer) => {
     if (!player.isLoggedIn) return;

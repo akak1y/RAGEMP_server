@@ -6,7 +6,7 @@ const moneyService = require('../services/MoneyService');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
 const rateLimit = require('../middleware/rateLimit');
-const { VehicleConfig, PhoneConfig, GaragePos, FuelStationPos, FuelPricePerLiter, FuelInteractionRadius } = require('../config');
+const { VehicleConfig, PhoneConfig, GaragePos, CourierConfig, FuelStationPos, FuelPricePerLiter, FuelInteractionRadius } = require('../config');
 const { getSequelize } = require('../db');
 
 mp.events.add('server:dealership:buy', withGuards([isLoggedIn, rateLimit('buy_car', 1, 5)], async (player, model) => {
@@ -115,6 +115,10 @@ mp.events.add('server:garage:requestPos', withGuards([isLoggedIn], (player) => {
 mp.events.add('server:fuel:requestPos', withGuards([isLoggedIn], (player) => {
     player.call('client:fuel:setPos', [locationService.getPosition('fuel')]);
 }, 'fuel:requestPos'));
+
+mp.events.add('server:courier:requestPos', withGuards([isLoggedIn], (player) => {
+    player.call('client:courier:setPos', [CourierConfig.startPos]);
+}, 'courier:requestPos'));
 
 mp.events.add('server:fuel:refuel', withGuards([isLoggedIn, rateLimit('refuel', 1, 5)], async (player, vehicleDbId) => {
     if (!vehicleDbId) return;
