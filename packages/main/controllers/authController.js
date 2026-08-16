@@ -8,6 +8,10 @@ const withGuards = require('../middleware/withGuards');
 const logger = require('../logger');
 const profile = require('../profiler');
 
+/**
+ * Сессия игрока: вход/регистрация и выход с сохранением прогресса.
+ */
+
 mp.events.add('server:account:login', withGuards([], async (player, username, password) => {
     logger.info(`Игрок ${username} инициировал процесс входа на сервер.`);
 

@@ -10,6 +10,10 @@ const { getRedis } = require('../redis');
 const adminOnly = isAdmin(1);
 const moderatorOnly = isAdmin(2);
 
+/**
+ * Админские команды.
+ */
+
 registerCommand('checkban', {
     guards: [adminOnly],
     run: async (player, args) => {

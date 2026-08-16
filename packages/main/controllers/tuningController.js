@@ -4,6 +4,21 @@ const withGuards = require('../middleware/withGuards');
 const rateLimit = require('../middleware/rateLimit');
 const { CustomBoxPos, TuningConfig } = require('../config');
 
+/**
+ * Тюнинг транспорта: вход в LCS, покупка тюнинга, выход.
+ */
+
+mp.events.add('server:customCar:enterTuning', withGuards([isLoggedIn, rateLimit('enter_tuning', 1, 5)], async (player) => { // вход в LSC
+    if (!player.vehicle) return;
+
+    const result = await tuningService.enterTuning(player);
+    if (!result.success) return;
+
+    player.call('client:customCar:setTuningConfig', [JSON.stringify(TuningConfig)]); // каталог клиенту
+    player.call('client:customCar:setTuningState', [JSON.stringify(tuningService.getTuningState(result.carData))]); // состояние клиенту
+    player.call('client:custom:startTuning', [CustomBoxPos.x, CustomBoxPos.y, CustomBoxPos.z, CustomBoxPos.h]); // триггер фиксации авто
+}, 'customCar:enterTuning'));
+
 mp.events.add('server:custom:buyUpgrade', withGuards([isLoggedIn, rateLimit('buy_upgrade', 1, 5)], async (player, categoryKey, optionJson, price) => { // покупка тюнинга
     let option;
     try { option = JSON.parse(optionJson) }
@@ -38,15 +53,4 @@ mp.events.add('server:custom:buyUpgrade', withGuards([isLoggedIn, rateLimit('buy
 
 mp.events.add('server:custom:exitShop', withGuards([isLoggedIn], (player) => { // выход из LSC
     tuningService.exitTuning(player);
-}, 'custom:exitShop'));
-
-mp.events.add('server:customCar:enterTuning', withGuards([isLoggedIn, rateLimit('enter_tuning', 1, 5)], async (player) => { // вход в LSC
-    if (!player.vehicle) return;
-
-    const result = await tuningService.enterTuning(player);
-    if (!result.success) return;
-
-    player.call('client:customCar:setTuningConfig', [JSON.stringify(TuningConfig)]); // каталог клиенту
-    player.call('client:customCar:setTuningState', [JSON.stringify(tuningService.getTuningState(result.carData))]); // состояние клиенту
-    player.call('client:custom:startTuning', [CustomBoxPos.x, CustomBoxPos.y, CustomBoxPos.z, CustomBoxPos.h]); // триггер фиксации авто
-}, 'customCar:enterTuning'));
+}, 'custom:exitShop'))

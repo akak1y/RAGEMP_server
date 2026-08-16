@@ -38,11 +38,11 @@ async function refreshStatsCache() { // обновление кэша стати
         require('./controllers/commandSystem'); // диспетчер команд
         require('./controllers/authController'); // вход/выход
         require('./controllers/adminCommands'); // админ-команды
-        require('./controllers/playerCommands'); // игровые команды и события
-
-        require('./controllers/vehicleController');
-        require('./controllers/locationController');
-        require('./controllers/tuningController');
+        require('./controllers/playerCommands'); // игровые команды
+        require('./controllers/gameEvents'); // события игрока
+        require('./controllers/vehicleController'); // транспорт
+        require('./controllers/locationController'); // раздача координат локаций
+        require('./controllers/tuningController'); // тюнинг ТС
         locationService.initialize();
         logger.info('[System] Все системы сервера RAGE MP успешно запущены и готовы!');
 
