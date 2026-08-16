@@ -16,7 +16,6 @@ const rateLimit = require('../middleware/rateLimit');
 const { CourierConfig } = require('../config');
 const logger = require('../logger');
 const profile = require('../profiler');
-const { performance } = require('perf_hooks');
 
 const adminOnly = isAdmin(1);
 const moderatorOnly = isAdmin(2);
@@ -185,23 +184,16 @@ registerCommand('checkban', {
         const cacheKey = `server:cache:bancheck:${targetUsername.toLowerCase()}`;
         const cachedResult = await redis.get(cacheKey);
         if (cachedResult !== null) {
-            const tStartRedis = performance.now();
-            const memoryCheck = cachedResult === "clear"; 
-            const tEndRedis = performance.now();
             player.outputChatBox(`!{#00FF00}[Redis КЭШ] Игрок ${targetUsername} проверен.`);
-            player.outputChatBox(`!{#00FF00} Скорость RAM-ответа: ${(tEndRedis - tStartRedis).toFixed(3)} мс`);
             return
         }
-        const tStartMysql = performance.now();
         const userCheck = await accountService.findByUsername(targetUsername);
-        const tEndMysql = performance.now();
         if (!userCheck) {
             player.outputChatBox(`!{#FFaa00}[MySQL] Игрок "${targetUsername}" не найден.`);
             return
         }
         await redis.set(cacheKey, "clear", { EX: 60 });
-        player.outputChatBox(`!{#FFcc00}[MySQL] Данные считаны через ORM.`);
-        player.outputChatBox(`!{#FFcc00} Скорость ORM-ответа: ${(tEndMysql - tStartMysql).toFixed(3)} мс`)
+        player.outputChatBox(`!{#FFcc00}[MySQL] Данные считаны через ORM и закэшированы на 60с.`);
     }
 });
 
@@ -367,5 +359,21 @@ registerCommand('endwork', {
     run: (player) => {
         if (!courierService.isWorking(player.accountId)) return player.outputChatBox('!{#FF3333}[Курьер] Вы не работаете курьером.');
         courierService.endWork(player.accountId);
+    }
+});
+
+registerCommand('bench', {
+    guards: [adminOnly],
+    run: async (player, args) => {
+        const iterations = Math.min(Number(args[0]) || 50, 100);
+
+        const bench = await statsService.benchmarkRedis(iterations);
+        await statsService.invalidateEconomyCache();
+        const cold = await statsService.getEconomyStats();
+        const warm = await statsService.getEconomyStats();
+
+        player.outputChatBox(`!{#00FFFF}[Bench] Redis синтетика (${bench.iterations} GET): ${bench.avgMs} мс/запрос`);
+        player.outputChatBox(`!{#FFcc00}[Bench] MySQL холодный (агрегация): ${cold.ms} мс`);
+        player.outputChatBox(`!{#00FF00}[Bench] Redis тёплый (реальный GET): ${warm.ms} мс`);
     }
 });
