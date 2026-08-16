@@ -34,7 +34,12 @@ async function refreshStatsCache() { // обновление кэша стати
         await initRedis(); // запуск RAM-кэш redis
         logger.info('[System] Базы данных и кэш успешно запущены.');
 
-        require('./controllers/playerController');
+        require('./controllers/moneyApi'); // денежные методы mp.Player
+        require('./controllers/commandSystem'); // диспетчер команд
+        require('./controllers/authController'); // вход/выход
+        require('./controllers/adminCommands'); // админ-команды
+        require('./controllers/playerCommands'); // игровые команды и события
+        
         require('./controllers/dealershipController');
         require('./controllers/tuningController');
         locationService.initialize();
