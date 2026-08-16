@@ -1,72 +1,53 @@
-let uiBrowser = null;
-let windowDebug = false;
-let isAuthorized = false;
-let globalKeyBlock = false; // предохранитель для чата
-let openWindowsState = { // состояние интерфесов
-    inventory: false,
-    phone: false,
-    dealership: false,
-    carCustom: false
-};
-let isAnyUiWindowOpen = false; // для заморозки игрока если открыто любое окно
-let dealershipPos = null;
-let garagePos = null;
-let сarCustomPos = null;
-let fuelStationPos = null;
-let courierStartPos = null;
-let courierTargetPos = null;
-let courierMarker = null;
-let courierBlip = null;
-let playerIsDeveloper = false;
-let isCameraRotateActive = false;
+require('./state'); // создаём UIstate
+const state = globalThis.UIState;
 
 mp.gui.chat.show(false); // скрываем чат и миникарту
 mp.game.ui.displayRadar(false);
 
-mp.events.add("playerReady", () => { uiBrowser = mp.browsers.new("http://localhost:5173/") }); // подключаемся к vue сайту
+mp.events.add("playerReady", () => { state.uiBrowser = mp.browsers.new("http://localhost:5173/") }); // подключаемся к vue сайту
 
 setInterval(() => {
-  if (windowDebug && uiBrowser) { // отправляем текущие координаты в vue
-    uiBrowser.execute(`if(window.updateDebugCoords) window.updateDebugCoords(${mp.players.local.position.x}, ${mp.players.local.position.y}, ${mp.players.local.position.z}, ${mp.players.local.getHeading(true)});`)
-  }
+    if (state.windowDebug && state.uiBrowser) { // отправляем текущие координаты в vue
+        state.uiBrowser.execute(`if(window.updateDebugCoords) window.updateDebugCoords(${mp.players.local.position.x}, ${mp.players.local.position.y}, ${mp.players.local.position.z}, ${mp.players.local.getHeading(true)});`)
+    }
 }, 300);
 
 mp.keys.bind(0x54, false, () => { // срабатывает на отпускание T
-    if (!isAuthorized || isAnyUiWindowOpen) return;
-    globalKeyBlock = true // закрываем доступ к окнам
+    if (!state.isAuthorized || state.isAnyUiWindowOpen) return;
+    state.globalKeyBlock = true // закрываем доступ к окнам
 });
 mp.keys.bind(0x0D, true, () => { // enter
-    if (!isAuthorized) return;
-    setTimeout(() => { globalKeyBlock = false }, 60)
+    if (!state.isAuthorized) return;
+    setTimeout(() => { state.globalKeyBlock = false }, 60)
 });
 mp.keys.bind(0x1B, true, () => { // escape
-    if (!isAuthorized) return;
-    if (openWindowsState.carCustom && isCameraRotateActive) { // если открыт автосалон
-        isCameraRotateActive = false;
+    if (!state.isAuthorized) return;
+    if (state.openWindowsState.carCustom && state.isCameraRotateActive) { // если открыт автосалон
+        state.isCameraRotateActive = false;
         mp.gui.cursor.show(true, true); // активируем мышь для кликов по меню
         mp.game.controls.disableAllControlActions(0); // деактивируем все контроллеры
         return
     }
-    setTimeout(() => { globalKeyBlock = false }, 60);
-    if (isAnyUiWindowOpen) {
-        openWindowsState = { inventory: false, phone: false, dealership: false, carCustom: false }; // обнуляем состояния
-        setTimeout(() => { isAnyUiWindowOpen = false }, 170); // с задержкой выключаем проверку
+    setTimeout(() => { state.globalKeyBlock = false }, 60);
+    if (state.isAnyUiWindowOpen) {
+        state.openWindowsState = { inventory: false, phone: false, dealership: false, carCustom: false }; // обнуляем состояния
+        setTimeout(() => { state.isAnyUiWindowOpen = false }, 170); // с задержкой выключаем проверку
     }
 });
 mp.keys.bind(0x74, true, () => { // F5 - дебаг окно
-    if (!isAuthorized || !playerIsDeveloper) return;
-    windowDebug = !windowDebug;
-    if (uiBrowser) uiBrowser.execute(`if(window.toggleDebug) window.toggleDebug(${windowDebug});`)
+    if (!state.isAuthorized || !state.playerIsDeveloper) return;
+    state.windowDebug = !state.windowDebug;
+    if (state.uiBrowser) state.uiBrowser.execute(`if(window.toggleDebug) window.toggleDebug(${state.windowDebug});`)
 });
 mp.keys.bind(0xC0, true, () => { // Ё - включаем курсор
-    if (!isAuthorized || !openWindowsState.carCustom) return;
-    isCameraRotateActive = !isCameraRotateActive;
-    if (isCameraRotateActive) { mp.gui.cursor.show(false, false) }
+    if (!state.isAuthorized || !state.openWindowsState.carCustom) return;
+    state.isCameraRotateActive = !state.isCameraRotateActive;
+    if (state.isCameraRotateActive) { mp.gui.cursor.show(false, false) }
     else { mp.gui.cursor.show(true, true) }
 });
 
 mp.events.add("browserCreated", (browser) => { // когда создался браузер
-    if (uiBrowser && browser === uiBrowser){
+    if (state.uiBrowser && browser === state.uiBrowser){
         mp.gui.cursor.show(true, true) // включаем курсор для авторизации
     }
 });
@@ -76,35 +57,35 @@ mp.events.add("client:account:submitLogin", (username, password) => { // кно�
 });
 
 mp.events.add("client:account:authError", (msg) => { // ошибка авторизации
-    if (uiBrowser) uiBrowser.execute(`window.showAuthError("${msg}");`); 
+    if (state.uiBrowser) state.uiBrowser.execute(`window.showAuthError("${msg}");`); 
 });
 
 mp.events.add("client:account:hideAuth", (developer) => { // успешная авторизация
     mp.gui.cursor.show(false, false); // сбрасываем все блокировки при спавне
     mp.gui.chat.show(true);
     mp.game.ui.displayRadar(true);
-    isAuthorized = true;
-    globalKeyBlock = false;
-    isAnyUiWindowOpen = false;
-    openWindowsState = { inventory: false, phone: false, dealership: false, carCustom: false };
+    state.isAuthorized = true;
+    state.globalKeyBlock = false;
+    state.isAnyUiWindowOpen = false;
+    state.openWindowsState = { inventory: false, phone: false, dealership: false, carCustom: false };
     mp.events.callRemote("server:dealership:requestPos");
     mp.events.callRemote("server:garage:requestPos");
     mp.events.callRemote("server:customCar:requestPos");
     mp.events.callRemote("server:fuel:requestPos");
     mp.events.callRemote("server:courier:requestPos");
     mp.events.callRemote("server:phone:requestPriceDeliveryCar");
-    if (uiBrowser) uiBrowser.execute(`window.changeScreen("game");`); // меняем окно авторизации на игровой худ
-    playerIsDeveloper = developer
+    if (state.uiBrowser) state.uiBrowser.execute(`window.changeScreen("game");`); // меняем окно авторизации на игровой худ
+    state.playerIsDeveloper = developer
 });
 
 mp.events.add("client:ui:windowStateChanged", (winName, isOpen) => { // выключаем/включаем чат при открытии/закрытии любого окна
-    if (openWindowsState.hasOwnProperty(winName)) { openWindowsState[winName] = isOpen }
-    isAnyUiWindowOpen = Object.values(openWindowsState).some(state => state === true);
+    if (state.openWindowsState.hasOwnProperty(winName)) { state.openWindowsState[winName] = isOpen }
+    state.isAnyUiWindowOpen = Object.values(state.openWindowsState).some(state => state === true);
 
-    if (isAnyUiWindowOpen) { mp.gui.chat.activate(false) }
+    if (state.isAnyUiWindowOpen) { mp.gui.chat.activate(false) }
     else { mp.gui.chat.activate(true) }
     if (winName === 'carCustom' && isOpen === false) { // если из LSC
-        isCameraRotateActive = false;
+        state.isCameraRotateActive = false;
         if (mp.players.local.vehicle) { // возвращаем коллизию и размораживаем
             mp.players.local.vehicle.freezePosition(false);
             mp.players.local.vehicle.setCollision(true, true)
@@ -114,7 +95,7 @@ mp.events.add("client:ui:windowStateChanged", (winName, isOpen) => { // выкл
 });
 
 mp.events.add("render", () => { // при открытом любом окне отключаем движение персонажа
-    if (isAuthorized && isAnyUiWindowOpen) {
+    if (state.isAuthorized && state.isAnyUiWindowOpen) {
         mp.game.controls.disableControlAction(0, 30, true); // A/D
         mp.game.controls.disableControlAction(0, 31, true); // W/S
         mp.game.controls.disableControlAction(0, 21, true); // shift
@@ -123,27 +104,27 @@ mp.events.add("render", () => { // при открытом любом окне �
         mp.game.controls.disableControlAction(0, 2, true);  // мышь Y
         mp.game.controls.disableControlAction(0, 24, true) // лкм
     }
-    if (isAuthorized && openWindowsState.carCustom && isCameraRotateActive) { // если в LSC - разрешаем двигать мышью
+    if (state.isAuthorized && state.openWindowsState.carCustom && state.isCameraRotateActive) { // если в LSC - разрешаем двигать мышью
         mp.game.controls.enableControlAction(0, 1, true); // мышь X
         mp.game.controls.enableControlAction(0, 2, true); // мышь Y
     }
 });
 
 mp.keys.bind(0x49, true, () => { // I - инвентарь
-    if (!isAuthorized || globalKeyBlock) return;
-    if (!openWindowsState.inventory && isAnyUiWindowOpen) return;
-    if (uiBrowser) uiBrowser.execute(`if(window.toggleWindow) window.toggleWindow('inventory');`)
+    if (!state.isAuthorized || state.globalKeyBlock) return;
+    if (!state.openWindowsState.inventory && state.isAnyUiWindowOpen) return;
+    if (state.uiBrowser) state.uiBrowser.execute(`if(window.toggleWindow) window.toggleWindow('inventory');`)
 });
 
 mp.keys.bind(0x50, true, () => { // P - телефон
-    if (!isAuthorized || globalKeyBlock) return;
-    if (!openWindowsState.phone && isAnyUiWindowOpen) return;
+    if (!state.isAuthorized || state.globalKeyBlock) return;
+    if (!state.openWindowsState.phone && state.isAnyUiWindowOpen) return;
     mp.events.callRemote("server:phone:requestCars"); // запрашиваем список авто
-    if (uiBrowser) uiBrowser.execute(`if(window.setPayDeliveryCar) window.setPayDeliveryCar(true); if(window.toggleWindow) window.toggleWindow('phone');`)
+    if (state.uiBrowser) state.uiBrowser.execute(`if(window.setPayDeliveryCar) window.setPayDeliveryCar(true); if(window.toggleWindow) window.toggleWindow('phone');`)
 });
 
 mp.keys.bind(0x45, true, () => { // E - взаимодействие с маркером
-    if (!isAuthorized || globalKeyBlock || isAnyUiWindowOpen || !dealershipPos || !garagePos || !сarCustomPos) return;
+    if (!state.isAuthorized || state.globalKeyBlock || state.isAnyUiWindowOpen || !state.positions.dealership || !state.positions.garage || !state.positions.carCustom) return;
 
     const playerPos = mp.players.local.position;
     const interactionRadius = 2.5;
@@ -151,19 +132,19 @@ mp.keys.bind(0x45, true, () => { // E - взаимодействие с марк
     const interactionZones = [ // конфигурация зон
         {
             name: 'dealership',
-            position: dealershipPos,
+            position: state.positions.dealership,
             onInteract: () => {
                 mp.events.callRemote('server:dealership:requestConfig');
-                if (uiBrowser) uiBrowser.execute(`if(window.toggleWindow) window.toggleWindow('dealership');`);
+                if (state.uiBrowser) state.uiBrowser.execute(`if(window.toggleWindow) window.toggleWindow('dealership');`);
             }
         },
         {
             name: 'garage',
-            position: garagePos,
+            position: state.positions.garage,
             onInteract: () => {
                 mp.events.callRemote('server:phone:requestCars');
-                if (uiBrowser) {
-                    uiBrowser.execute(`
+                if (state.uiBrowser) {
+                    state.uiBrowser.execute(`
                         if(window.setPayDeliveryCar) window.setPayDeliveryCar(false);
                         if(window.toggleWindow) window.toggleWindow('phone');
                     `)
@@ -172,14 +153,14 @@ mp.keys.bind(0x45, true, () => { // E - взаимодействие с марк
         },
         {
             name: 'customCar',
-            position: сarCustomPos,
+            position: state.positions.carCustom,
             onInteract: () => {
                 mp.events.callRemote('server:customCar:enterTuning'); // входим в LSC
             }
         },
         {
             name: 'fuel',
-            position: fuelStationPos,
+            position: state.positions.fuel,
             onInteract: () => {
                 const veh = mp.players.local.vehicle;
                 if (!veh) return mp.gui.chat.push('!{#FF3333}[Заправка] Сначала сядьте в машину.');
@@ -190,12 +171,12 @@ mp.keys.bind(0x45, true, () => { // E - взаимодействие с марк
         },
         {
             name: 'courierStart',
-            position: courierStartPos,
+            position: state.positions.courierStart,
             onInteract: () => { mp.events.callRemote('server:courier:interact'); }
         },
         {
             name: 'courierTarget',
-            position: courierTargetPos,
+            position: state.positions.courierTarget,
             onInteract: () => { mp.events.callRemote('server:courier:interact'); }
         },
     ];
@@ -214,12 +195,12 @@ let spdLastPos = null;
 let spdLastTime = 0;
 
 setInterval(() => {
-    if (!isAuthorized || !uiBrowser) return;
+    if (!state.isAuthorized || !state.uiBrowser) return;
     const veh = mp.players.local.vehicle;
     if (!veh) {
         spdLastPos = null;
         spdLastTime = 0;
-        uiBrowser.execute(`if(window.updateSpeedometer) window.updateSpeedometer(0, '', false, 0);`);
+        state.uiBrowser.execute(`if(window.updateSpeedometer) window.updateSpeedometer(0, '', false, 0);`);
         return;
     }
 
@@ -236,61 +217,61 @@ setInterval(() => {
     let name = '';
     try { name = mp.game.vehicle.getDisplayNameFromVehicleModel(veh.model).toLowerCase(); } catch (e) {}
     const fuel = typeof veh.getVariable === 'function' ? Number(veh.getVariable('fuel') || 0) : 0;
-    uiBrowser.execute(`if(window.updateSpeedometer) window.updateSpeedometer(${kmh}, '${name}', true, ${fuel});`);
+    state.uiBrowser.execute(`if(window.updateSpeedometer) window.updateSpeedometer(${kmh}, '${name}', true, ${fuel});`);
 }, 100);
 
 // мосты для vue
 mp.events.add("client:ui:debugLog", (msg, type = 'info') => {
-    if (uiBrowser) {
-        uiBrowser.execute(`if(window.addDebugLog) window.addDebugLog('${msg}', '${type}');`)
+    if (state.uiBrowser) {
+        state.uiBrowser.execute(`if(window.addDebugLog) window.addDebugLog('${msg}', '${type}');`)
     }
 });
 
 mp.events.add("client:updateMoney", (money) => {
-    if (uiBrowser) {
-        uiBrowser.execute(`if(window.updateMoney) window.updateMoney(${money});`)
+    if (state.uiBrowser) {
+        state.uiBrowser.execute(`if(window.updateMoney) window.updateMoney(${money});`)
     }
 });
 
 mp.events.add("client:inventory:update", (jsonSlots, jsonConfig) => {
-    if (uiBrowser) {
-        uiBrowser.execute(`if(window.updateInventory) window.updateInventory('${jsonSlots}', '${jsonConfig}');`)
+    if (state.uiBrowser) {
+        state.uiBrowser.execute(`if(window.updateInventory) window.updateInventory('${jsonSlots}', '${jsonConfig}');`)
     }
 });
 
 mp.events.add("client:phone:setCarList", (carsJson, configJson) => {
-    if (uiBrowser) {
-        uiBrowser.execute(`if(window.setPhoneCars) window.setPhoneCars('${carsJson}', '${configJson}');`)
+    if (state.uiBrowser) {
+        state.uiBrowser.execute(`if(window.setPhoneCars) window.setPhoneCars('${carsJson}', '${configJson}');`)
     }
 });
 
 mp.events.add("client:setRedisStats", (count) => {
-    if (uiBrowser) {
-        uiBrowser.execute(`if(window.updateGlobalStats) window.updateGlobalStats(${count});`)
+    if (state.uiBrowser) {
+        state.uiBrowser.execute(`if(window.updateGlobalStats) window.updateGlobalStats(${count});`)
     }
 });
 
 mp.events.add("client:dealership:setConfig", (carsJson) => {
-    if (uiBrowser) {
-        uiBrowser.execute(`if(window.setDealershipCars) window.setDealershipCars('${carsJson}');`)
+    if (state.uiBrowser) {
+        state.uiBrowser.execute(`if(window.setDealershipCars) window.setDealershipCars('${carsJson}');`)
     }
 });
 
 mp.events.add("client:phone:requestPriceDeliveryCar", (price) => {
-    if (uiBrowser) {
-        uiBrowser.execute(`if(window.setPriceDeliveryCar) window.setPriceDeliveryCar(${price});`)
+    if (state.uiBrowser) {
+        state.uiBrowser.execute(`if(window.setPriceDeliveryCar) window.setPriceDeliveryCar(${price});`)
     }
 });
 
 mp.events.add("client:customCar:setTuningConfig", (json) => {
-    if (uiBrowser) {
-        uiBrowser.execute(`if(window.setTuningConfig) window.setTuningConfig('${json}');`)
+    if (state.uiBrowser) {
+        state.uiBrowser.execute(`if(window.setTuningConfig) window.setTuningConfig('${json}');`)
     }
 });
 
 mp.events.add("client:customCar:setTuningState", (json) => {
-    if (uiBrowser) {
-        uiBrowser.execute(`if(window.setTuningState) window.setTuningState('${json}');`)
+    if (state.uiBrowser) {
+        state.uiBrowser.execute(`if(window.setTuningState) window.setTuningState('${json}');`)
     }
 });
 
@@ -300,22 +281,22 @@ mp.events.add("client:toggleCursor", (toggle) => { mp.gui.cursor.show(toggle, to
 mp.events.add("client:server:buyCar", (model) => { mp.events.callRemote("server:dealership:buy", model) }); // информация в бэк о покупке авто
 mp.events.add("client:server:spawnCar", (vehDbId, pay) => { mp.events.callRemote("server:phone:spawnVehicle", vehDbId, pay) });
 
-mp.events.add("client:dealership:setPos", (pos) => { dealershipPos = new mp.Vector3(pos.x, pos.y, pos.z) }); // получение xyz из конфига сервера
-mp.events.add("client:garage:setPos", (pos) => { garagePos = new mp.Vector3(pos.x, pos.y, pos.z) });
-mp.events.add("client:customCar:setPos", (pos) => { сarCustomPos = new mp.Vector3(pos.x, pos.y, pos.z) });
-mp.events.add('client:fuel:setPos', (pos) => { fuelStationPos = new mp.Vector3(pos.x, pos.y, pos.z); });
-mp.events.add("client:courier:setPos", (pos) => { courierStartPos = new mp.Vector3(pos.x, pos.y, pos.z); });
+mp.events.add("client:dealership:setPos", (pos) => { state.positions.dealership = new mp.Vector3(pos.x, pos.y, pos.z) }); // получение xyz из конфига сервера
+mp.events.add("client:garage:setPos", (pos) => { state.positions.garage = new mp.Vector3(pos.x, pos.y, pos.z) });
+mp.events.add("client:customCar:setPos", (pos) => { state.positions.carCustom = new mp.Vector3(pos.x, pos.y, pos.z) });
+mp.events.add('client:fuel:setPos', (pos) => { state.positions.fuel = new mp.Vector3(pos.x, pos.y, pos.z); });
+mp.events.add("client:courier:setPos", (pos) => { state.positions.courierStart = new mp.Vector3(pos.x, pos.y, pos.z); });
 
 mp.events.add('client:custom:startTuning', (boxX, boxY, boxZ, boxH) => { // при заезде в LSC - фиксируем авто
-    if (!isAuthorized || !mp.players.local.vehicle) return;
+    if (!state.isAuthorized || !mp.players.local.vehicle) return;
     const veh = mp.players.local.vehicle;
     veh.position = new mp.Vector3(boxX, boxY, boxZ);
     veh.setHeading(boxH);
     veh.freezePosition(true);
     veh.setCollision(false, false);
 
-    isAnyUiWindowOpen = true;
-    if (uiBrowser) uiBrowser.execute(`if(window.toggleWindow) window.toggleWindow('carCustom');`);
+    state.isAnyUiWindowOpen = true;
+    if (state.uiBrowser) state.uiBrowser.execute(`if(window.toggleWindow) window.toggleWindow('carCustom');`);
     mp.gui.cursor.show(true, true) // включаем курсор
 });
 
@@ -344,21 +325,21 @@ mp.events.add('client:custom:applyUpgrade', (categoryKey, optionJson, price) => 
 });
 
 mp.events.add('client:courier:target', (x, y, z, stage) => {
-    if (courierMarker) { courierMarker.destroy(); courierMarker = null; }
-    if (courierBlip) { courierBlip.destroy(); courierBlip = null; }
-    courierTargetPos = null;
+    if (state.courierMarker) { state.courierMarker.destroy(); state.courierMarker = null; }
+    if (state.courierBlip) { state.courierBlip.destroy(); state.courierBlip = null; }
+    state.positions.courierTarget = null;
     if (x === null || x === undefined) return;
 
-    courierTargetPos = new mp.Vector3(x, y, z);
+    state.positions.courierTarget = new mp.Vector3(x, y, z);
     const isDelivery = stage === 'delivery';
-    courierMarker = mp.markers.new(1, courierTargetPos, isDelivery ? 1.0 : 2.5, {
+    state.courierMarker = mp.markers.new(1, state.positions.courierTarget, isDelivery ? 1.0 : 2.5, {
         color: isDelivery ? [255, 200, 0, 150] : [100, 150, 255, 150]
     });
     if (isDelivery) {
-        courierBlip = mp.blips.new(477, courierTargetPos);
+        state.courierBlip = mp.blips.new(477, state.positions.courierTarget);
         try {
-            courierBlip.shortRange = false;
-            courierBlip.name = 'Доставка';
+            state.courierBlip.shortRange = false;
+            state.courierBlip.name = 'Доставка';
         } catch (e) {}
     }
 });
