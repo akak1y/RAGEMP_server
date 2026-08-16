@@ -180,17 +180,19 @@ class VehicleService {
      * Заправить машину до 100
      * @param {number} vehicleDbId
      * @param {number} ownerId
-     * @param {Object} [transaction] - Sequelize-транзакция (если null — автокоммит)
      * @returns {Promise<{success: boolean, error?: string, liters?: number}>}
      */
-    async refuelVehicle(vehicleDbId, ownerId, transaction = null) {
+    async refuelVehicle(vehicleDbId, ownerId) {
         const veh = await this.getVehicleForOwner(vehicleDbId, ownerId);
         if (!veh) return { success: false, error: 'not_found' };
 
-        const current = Number(veh.fuel);
+        const spawned = this.spawnedVehicles.get(vehicleDbId);
+        if (!spawned || !mp.vehicles.exists(spawned)) return { success: false, error: 'not_spawned' };
+
+        const current = Number(spawned.getVariable('fuel') || 0);
         if (current >= 100) return { success: false, error: 'full' };
 
-        await this.setFuel(vehicleDbId, 100, transaction);
+        spawned.setVariable('fuel', 100);
         return { success: true, liters: 100 - current };
     }
 

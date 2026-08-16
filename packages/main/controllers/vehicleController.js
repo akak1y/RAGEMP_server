@@ -118,14 +118,19 @@ mp.events.add('server:fuel:refuel', withGuards([isLoggedIn, rateLimit('refuel', 
     const cost = Math.ceil(liters * FuelPricePerLiter);
 
     const sequelize = getSequelize();
-    await sequelize.transaction(async (t) => {
-        const paid = await moneyService.takeMoney(player.accountId, cost, 'заправка', t);
-        if (!paid) throw new Error('not_enough_money');
-        await vehicleService.refuelVehicle(vehicleDbId, player.accountId, t);
-    }).catch(err => {
+    try {
+        await sequelize.transaction(async (t) => {
+            const paid = await moneyService.takeMoney(player.accountId, cost, 'заправка', t);
+            if (!paid) throw new Error('not_enough_money');
+
+            const result = await vehicleService.refuelVehicle(vehicleDbId, player.accountId);
+            if (!result.success) throw new Error('refuel_failed');
+        });
+    } catch (err) {
         if (err.message === 'not_enough_money') return player.outputChatBox('!{#FF3333}[Заправка] Недостаточно денег!');
+        if (err.message === 'refuel_failed') return player.outputChatBox('!{#FF3333}[Заправка] Не удалось заправить машину.');
         throw err;
-    });
+    }
 
     player.applyMoneyDelta(-cost);
     player.outputChatBox(`!{#00FF00}[Заправка] Залито ${liters.toFixed(1)} л за $${cost}`);
