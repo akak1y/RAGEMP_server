@@ -114,11 +114,17 @@ mp.events.add('server:account:login', withGuards([], async (player, username, pa
 
 mp.events.add('playerQuit', withGuards([], async (player) => {
     if (player.posTracker) clearInterval(player.posTracker); // уничтожаем таймер обновления позиции
-    if (!player.isLoggedIn || !player.lastPos) return;
+    if (!player.isLoggedIn) return;
 
     try {
-        const saved = await accountService.updatePosition(player.accountId, player.lastPos);
-        if (saved) logger.info(`[Sequelize Save] Позиция игрока "${player.accountName}" успешно обновлена.`);
+        const updateData = { money: player.money || 0 };
+        if (player.lastPos) {
+            updateData.pos_x = player.lastPos.x;
+            updateData.pos_y = player.lastPos.y;
+            updateData.pos_z = player.lastPos.z;
+        }
+        const saved = await accountService.updateAccount(player.accountId, updateData);
+        if (saved) logger.info(`[Sequelize Save] Игрок "${player.accountName}" сохранён (позиция + деньги).`);
     } catch (err) { console.error(`[Sequelize Save Error]: ${err.message}`) }
 
     vehicleService.despawnPlayerVehicles(player.accountId);
