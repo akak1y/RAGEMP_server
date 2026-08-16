@@ -1,13 +1,8 @@
 const tuningService = require('../services/TuningService');
-const locationService = require('../services/LocationService');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
 const rateLimit = require('../middleware/rateLimit');
 const { CustomBoxPos, TuningConfig } = require('../config');
-
-mp.events.add('server:customCar:requestPos', withGuards([isLoggedIn], (player) => {
-    player.call('client:customCar:setPos', [locationService.getPosition('lsc')])
-}, 'customCar:requestPos'));
 
 mp.events.add('server:custom:buyUpgrade', withGuards([isLoggedIn, rateLimit('buy_upgrade', 1, 5)], async (player, categoryKey, optionJson, price) => { // покупка тюнинга
     let option;

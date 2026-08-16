@@ -39,8 +39,9 @@ async function refreshStatsCache() { // обновление кэша стати
         require('./controllers/authController'); // вход/выход
         require('./controllers/adminCommands'); // админ-команды
         require('./controllers/playerCommands'); // игровые команды и события
-        
-        require('./controllers/dealershipController');
+
+        require('./controllers/vehicleController');
+        require('./controllers/locationController');
         require('./controllers/tuningController');
         locationService.initialize();
         logger.info('[System] Все системы сервера RAGE MP успешно запущены и готовы!');
