@@ -5,6 +5,7 @@ require('./windows');
 require('./speedometer');
 require('./courier');
 require('./bots');
+require('./tuning');
 
 mp.gui.chat.show(false); // скрываем чат и миникарту
 mp.game.ui.displayRadar(false);
@@ -219,43 +220,6 @@ mp.events.add("client:garage:setPos", (pos) => { state.positions.garage = new mp
 mp.events.add("client:customCar:setPos", (pos) => { state.positions.carCustom = new mp.Vector3(pos.x, pos.y, pos.z) });
 mp.events.add('client:fuel:setPos', (pos) => { state.positions.fuel = new mp.Vector3(pos.x, pos.y, pos.z); });
 mp.events.add("client:courier:setPos", (pos) => { state.positions.courierStart = new mp.Vector3(pos.x, pos.y, pos.z); });
-
-mp.events.add('client:custom:startTuning', (boxX, boxY, boxZ, boxH) => { // при заезде в LSC - фиксируем авто
-    if (!state.isAuthorized || !mp.players.local.vehicle) return;
-    const veh = mp.players.local.vehicle;
-    veh.position = new mp.Vector3(boxX, boxY, boxZ);
-    veh.setHeading(boxH);
-    veh.freezePosition(true);
-    veh.setCollision(false, false);
-
-    state.isAnyUiWindowOpen = true;
-    if (state.uiBrowser) state.uiBrowser.execute(`if(window.toggleWindow) window.toggleWindow('carCustom');`);
-    mp.gui.cursor.show(true, true) // включаем курсор
-});
-
-mp.events.add('client:custom:applyUpgrade', (categoryKey, optionJson, price) => { // применяем изменения LSC
-    if (!mp.players.local.vehicle) return;
-
-    const veh = mp.players.local.vehicle;
-    const option = JSON.parse(optionJson);
-
-    if (categoryKey === 'color') { // если покраска
-        veh.setCustomPrimaryColour(option.r, option.g, option.b);
-        veh.setCustomSecondaryColour(option.r, option.g, option.b)
-    }
-    if (categoryKey === 'wheels') {
-        veh.setWheelType(option.wheelType);
-        veh.setMod(23, option.wheelId); 
-    }
-    if (categoryKey === 'engine' || categoryKey === 'brakes' || 
-        categoryKey === 'transmission' || categoryKey === 'turbo') {
-        const modTypeMap = { engine: 11, brakes: 12, transmission: 13, turbo: 18 };
-        const modType = modTypeMap[categoryKey];
-        const maxLevels = { 11: 3, 12: 2, 13: 2, 18: 0 };
-        veh.setMod(modType, maxLevels[modType]);
-    }
-    mp.events.callRemote('server:custom:buyUpgrade', categoryKey, optionJson, price) // запрос для списания денег и сохранения изменений
-});
 
 mp.events.addDataHandler("customColor", (entity, value) => { // триггеры тюнинга
     if (mp.vehicles.exists(entity) && value) {
