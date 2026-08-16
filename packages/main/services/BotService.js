@@ -1,7 +1,7 @@
 const { getBotModel, ensureBotReady } = require('../models/Bot');
 const accountService = require('./AccountService');
 const { BotSpawnPos, BotPedModel } = require('../config');
-const logger = require('../logger');
+const logger = require('../core/logger');
 
 /**
  * BotService — тестовый бот для мультиплеер-тестов

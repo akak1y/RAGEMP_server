@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const logsDir = path.join(__dirname, 'logs');
+const logsDir = path.join(__dirname, '..', 'logs');
 if (!fs.existsSync(logsDir)) { fs.mkdirSync(logsDir) } // создаём папку логов если нет
 
 function writeLog(level, message) {

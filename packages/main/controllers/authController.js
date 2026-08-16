@@ -3,10 +3,10 @@ const authService = require('../services/AuthService');
 const inventoryService = require('../services/InventoryService');
 const vehicleService = require('../services/VehicleService');
 const courierService = require('../services/CourierService');
-const { getRedis } = require('../redis');
+const { getRedis } = require('../core/redis');
 const withGuards = require('../middleware/withGuards');
-const logger = require('../logger');
-const profile = require('../profiler');
+const logger = require('../core/logger');
+const profile = require('../core/profiler');
 
 /**
  * Сессия игрока: вход/регистрация и выход с сохранением прогресса.

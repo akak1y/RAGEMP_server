@@ -1,6 +1,6 @@
 const { Sequelize } = require('sequelize');
 const mysql = require('mysql2');
-let gConfig = require('./settings.json');
+let gConfig = require('../settings.json');
 
 const dbName = 'ragemp_server';
 const connection = mysql.createConnection({

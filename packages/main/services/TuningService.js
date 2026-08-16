@@ -2,7 +2,7 @@ const { getVehicleModel } = require('../models/Vehicle');
 const { TuningConfig, CarCustomPos } = require('../config');
 const vehicleService = require('./VehicleService');
 const moneyService = require('./MoneyService');
-const logger = require('../logger');
+const logger = require('../core/logger');
 
 /**
  * Сервис тюнинга транспорта (LSC)

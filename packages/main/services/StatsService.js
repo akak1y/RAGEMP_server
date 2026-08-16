@@ -1,9 +1,9 @@
 const { fn, col } = require('sequelize');
 const { performance } = require('perf_hooks');
-const { getRedis } = require('../redis');
+const { getRedis } = require('../core/redis');
 const { getUserModel } = require('../models/Users');
-const logger = require('../logger');
-const profile = require('../profiler');
+const logger = require('../core/logger');
+const profile = require('../core/profiler');
 
 const ECONOMY_CACHE_KEY = 'server:stats:economy';
 const ECONOMY_CACHE_TTL = 60; // как часто экономика перечитывается из MySQL

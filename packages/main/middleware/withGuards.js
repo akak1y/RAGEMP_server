@@ -1,4 +1,4 @@
-const logger = require('../logger');
+const logger = require('../core/logger');
 
 /**
  * Оборачивает обработчик mp.events в цепочку middleware + error boundary

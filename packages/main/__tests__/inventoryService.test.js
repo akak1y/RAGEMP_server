@@ -13,7 +13,7 @@ jest.mock('../config', () => ({
     }
 }));
 
-jest.mock('../logger', () => ({
+jest.mock('../core/logger', () => ({
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn()
@@ -115,7 +115,7 @@ describe('InventoryService', () => {
         });
 
         test('отклоняет отрицательное количество', async () => {
-            const logger = require('../logger');
+            const logger = require('../core/logger');
             const result = await inventoryService.giveItem(mockPlayer, 'burger', -5);
             expect(result).toBe(false);
             expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('некорректное'));

@@ -1,6 +1,6 @@
 const { getAuditModel, ensureAuditReady } = require('../models/AuditLog');
-const { getRedis } = require('../redis');
-const logger = require('../logger');
+const { getRedis } = require('../core/redis');
+const logger = require('../core/logger');
 
 /**
  * AuditService — журнал бизнес-событий

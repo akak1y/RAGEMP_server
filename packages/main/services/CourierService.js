@@ -1,7 +1,7 @@
 const { CourierConfig } = require('../config');
 const auditService = require('./AuditService');
 const { isNear } = require('../utils/distance');
-const logger = require('../logger');
+const logger = require('../core/logger');
 
 /**
  * Работа «Курьер»

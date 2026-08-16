@@ -27,7 +27,7 @@ mp.events.add('server:custom:buyUpgrade', withGuards([isLoggedIn, rateLimit('buy
     const veh = player.vehicle;
     if (!veh || !veh.vehicleDbId) return;
 
-    const { getSequelize } = require('../db');
+    const { getSequelize } = require('../core/db');
     const sequelize = getSequelize();
 
     let realPrice = null;

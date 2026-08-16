@@ -1,7 +1,7 @@
 const { getVehicleModel } = require('../models/Vehicle');
 const { VehicleConfig } = require('../config');
 const moneyService = require('./MoneyService');
-const logger = require('../logger');
+const logger = require('../core/logger');
 
 /**
  * Сервис управления транспортом

@@ -1,6 +1,6 @@
 const { getItemModel } = require('../models/Item');
 const { ItemConfig } = require('../config');
-const logger = require('../logger');
+const logger = require('../core/logger');
 
 /**
  * Сервис инвентаря игроков

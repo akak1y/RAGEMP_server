@@ -5,7 +5,7 @@ const healthService = require('../services/HealthService');
 const inventoryService = require('../services/InventoryService');
 const isAdmin = require('../middleware/isAdmin');
 const { registerCommand } = require('./commandSystem');
-const { getRedis } = require('../redis');
+const { getRedis } = require('../core/redis');
 
 const adminOnly = isAdmin(1);
 const moderatorOnly = isAdmin(2);

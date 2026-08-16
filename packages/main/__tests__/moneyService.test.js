@@ -7,7 +7,7 @@ jest.mock('../services/AccountService', () => ({
     findById: jest.fn()
 }));
 
-jest.mock('../logger', () => ({
+jest.mock('../core/logger', () => ({
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn()

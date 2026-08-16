@@ -1,4 +1,4 @@
-const logger = require('../logger');
+const logger = require('../core/logger');
 
 /**
  * Денежные методы на прототипе mp.Player

@@ -1,5 +1,5 @@
 const { createClient } = require('redis');
-let gConfig = require('./settings.json');
+let gConfig = require('../settings.json');
 let redisClient = null; // хранилище
 
 async function initRedis() {

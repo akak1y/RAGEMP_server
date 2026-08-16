@@ -1,6 +1,6 @@
-const { getRedis } = require('../redis');
+const { getRedis } = require('../core/redis');
 const auditService = require('../services/AuditService');
-const logger = require('../logger');
+const logger = require('../core/logger');
 
 /**
  * Фабрика middleware для rate-limiting

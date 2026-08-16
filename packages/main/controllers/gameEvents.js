@@ -1,10 +1,10 @@
 const accountService = require('../services/AccountService');
 const courierService = require('../services/CourierService');
 const healthService = require('../services/HealthService');
-const { getRedis } = require('../redis');
+const { getRedis } = require('../core/redis');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
-const logger = require('../logger');
+const logger = require('../core/logger');
 
 /**
  * Игровые события игроков.

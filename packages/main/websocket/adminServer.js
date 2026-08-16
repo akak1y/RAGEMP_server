@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const { WebSocketServer } = require('ws');
 const authService = require('../services/AuthService');
 const auditService = require('../services/AuditService');
-const logger = require('../logger');
+const logger = require('../core/logger');
 const { handleMessage, getCreateSchema } = require('./protocol');
 const config = require('../config');
 

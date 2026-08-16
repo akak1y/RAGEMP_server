@@ -7,7 +7,7 @@ const healthService = require('../services/HealthService');
 const vehicleService = require('../services/VehicleService');
 const authService = require('../services/AuthService');
 const { ItemConfig, VehicleConfig } = require('../config');
-const logger = require('../logger');
+const logger = require('../core/logger');
 
 const TABLES = {
     accounts: () => getUserModel().findAll({ order: [['id', 'DESC']], raw: true, attributes: ['id', 'username', 'money', 'admin_level'] }),

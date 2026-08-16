@@ -1,5 +1,5 @@
 const { HospitalPos } = require('../config');
-const logger = require('../logger');
+const logger = require('../core/logger');
 
 const RESPAWN_DELAY_MS = 5000; // без сознания
 const MAX_HEALTH = 100;

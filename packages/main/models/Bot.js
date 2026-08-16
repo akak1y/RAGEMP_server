@@ -1,5 +1,5 @@
 const { Sequelize } = require('sequelize');
-const { getSequelize } = require('../db');
+const { getSequelize } = require('../core/db');
 
 let Bot = null;
 

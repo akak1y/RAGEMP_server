@@ -1,15 +1,15 @@
 const auditService = require('../services/AuditService');
 const { getAuditModel } = require('../models/AuditLog');
-const { getRedis } = require('../redis');
+const { getRedis } = require('../core/redis');
 
 jest.mock('../models/AuditLog', () => ({
     getAuditModel: jest.fn(),
     ensureAuditReady: jest.fn().mockResolvedValue(true)
 }));
 
-jest.mock('../redis', () => ({ getRedis: jest.fn() }));
+jest.mock('../core/redis', () => ({ getRedis: jest.fn() }));
 
-jest.mock('../logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
+jest.mock('../core/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
 
 describe('AuditService', () => {
     let mockModel, mockRedis;

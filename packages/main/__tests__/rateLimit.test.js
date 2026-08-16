@@ -1,6 +1,6 @@
 const rateLimit = require('../middleware/rateLimit');
 
-jest.mock('../redis', () => ({
+jest.mock('../core/redis', () => ({
     getRedis: jest.fn()
 }));
 
@@ -9,12 +9,12 @@ jest.mock('../services/AuditService', () => ({
     bumpRepeats: jest.fn()
 }));
 
-jest.mock('../logger', () => ({
+jest.mock('../core/logger', () => ({
     warn: jest.fn(),
     error: jest.fn()
 }));
 
-const { getRedis } = require('../redis');
+const { getRedis } = require('../core/redis');
 const auditService = require('../services/AuditService');
 
 describe('rateLimit middleware', () => {

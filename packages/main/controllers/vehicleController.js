@@ -6,7 +6,7 @@ const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
 const rateLimit = require('../middleware/rateLimit');
 const { VehicleConfig, PhoneConfig, GaragePos, FuelPricePerLiter, FuelInteractionRadius } = require('../config');
-const { getSequelize } = require('../db');
+const { getSequelize } = require('../core/db');
 
 /**
  * Транспорт: покупка в автосалоне, доставка через телефон, заправка.

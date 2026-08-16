@@ -1,6 +1,6 @@
 const { DealershipPos, GaragePos, CarCustomPos, HospitalPos, FuelStationPos, CourierConfig } = require('../config');
 const { isNear } = require('../utils/distance');
-const logger = require('../logger');
+const logger = require('../core/logger');
 
 /**
  * Сервис игровых локаций (маркеры и blips)

@@ -5,9 +5,9 @@ Module.prototype.require = function (id) { // перехват для работ
     return originalRequire.apply(this, [id]);
 };
 
-const { initDB, syncDB, getSequelize } = require('./db');
-const { initRedis, getRedis } = require('./redis');
-const logger = require('./logger');
+const { initDB, syncDB, getSequelize } = require('./core/db');
+const { initRedis, getRedis } = require('./core/redis');
+const logger = require('./core/logger');
 
 const accountService = require('./services/AccountService'); // сервис аккаунтов
 const locationService = require('./services/LocationService'); // сервис локаций

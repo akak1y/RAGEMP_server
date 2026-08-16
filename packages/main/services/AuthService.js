@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const accountService = require('./AccountService');
-const logger = require('../logger');
+const logger = require('../core/logger');
 
 /**
  * Сервис авторизации и работы с паролями

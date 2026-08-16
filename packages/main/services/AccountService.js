@@ -1,4 +1,4 @@
-const logger = require('../logger');
+const logger = require('../core/logger');
 
 /**
  * Сервис для работы с данными аккаунтов

@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize'); // для описания столбцов
-const { getSequelize } = require('../db.js');
+const { getSequelize } = require('../core/db.js');
 
 let User = null;
 
