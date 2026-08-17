@@ -31,6 +31,22 @@ jobs:
       - name: Зависимости пакета
         run: npm ci
         working-directory: packages/main
-      - name: Запуск Jest-тестов
+      - name: Запуск Jest-тестов сервера
         run: npm test
         working-directory: packages/main
+
+  client-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: client_packages/package-lock.json
+      - name: Зависимости клиента
+        run: npm ci
+        working-directory: client_packages
+      - name: Запуск Jest-тестов клиента
+        run: npm test
+        working-directory: client_packages
