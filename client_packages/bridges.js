@@ -6,7 +6,7 @@ const state = globalThis.UIState;
 
 // ДАННЫЕ → VUE ==============
 mp.events.add("client:ui:debugLog", (msg, type = 'info') => {
-    if (state.uiBrowser) state.uiBrowser.execute(`if(window.addDebugLog) window.addDebugLog('${msg}', '${type}');`);
+    if (state.uiBrowser) state.uiBrowser.execute(`if(window.addDebugLog) window.addDebugLog(${JSON.stringify(msg)}, ${JSON.stringify(type)})`);
 });
 
 mp.events.add("client:updateMoney", (money) => {
@@ -14,11 +14,11 @@ mp.events.add("client:updateMoney", (money) => {
 });
 
 mp.events.add("client:inventory:update", (jsonSlots, jsonConfig) => {
-    if (state.uiBrowser) state.uiBrowser.execute(`if(window.updateInventory) window.updateInventory('${jsonSlots}', '${jsonConfig}');`);
+    if (state.uiBrowser) state.uiBrowser.execute(`if(window.updateInventory) window.updateInventory(${jsonSlots}, ${jsonConfig});`);
 });
 
 mp.events.add("client:phone:setCarList", (carsJson, configJson) => {
-    if (state.uiBrowser) state.uiBrowser.execute(`if(window.setPhoneCars) window.setPhoneCars('${carsJson}', '${configJson}');`);
+    if (state.uiBrowser) state.uiBrowser.execute(`if(window.setPhoneCars) window.setPhoneCars(${carsJson}, ${configJson});`);
 });
 
 mp.events.add("client:setRedisStats", (count) => {
@@ -26,7 +26,7 @@ mp.events.add("client:setRedisStats", (count) => {
 });
 
 mp.events.add("client:dealership:setConfig", (carsJson) => {
-    if (state.uiBrowser) state.uiBrowser.execute(`if(window.setDealershipCars) window.setDealershipCars('${carsJson}');`);
+    if (state.uiBrowser) state.uiBrowser.execute(`if(window.setDealershipCars) window.setDealershipCars(${carsJson});`);
 });
 
 mp.events.add("client:phone:requestPriceDeliveryCar", (price) => {
@@ -34,11 +34,11 @@ mp.events.add("client:phone:requestPriceDeliveryCar", (price) => {
 });
 
 mp.events.add("client:customCar:setTuningConfig", (json) => {
-    if (state.uiBrowser) state.uiBrowser.execute(`if(window.setTuningConfig) window.setTuningConfig('${json}');`);
+    if (state.uiBrowser) state.uiBrowser.execute(`if(window.setTuningConfig) window.setTuningConfig(${json});`);
 });
 
 mp.events.add("client:customCar:setTuningState", (json) => {
-    if (state.uiBrowser) state.uiBrowser.execute(`if(window.setTuningState) window.setTuningState('${json}');`);
+    if (state.uiBrowser) state.uiBrowser.execute(`if(window.setTuningState) window.setTuningState(${json});`);
 });
 
 // VUE → СЕРВЕР ==============

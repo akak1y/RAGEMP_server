@@ -9,7 +9,7 @@ mp.events.add("client:account:submitLogin", (username, password) => { // кно�
 });
 
 mp.events.add("client:account:authError", (msg) => { // ошибка авторизации
-    if (state.uiBrowser) state.uiBrowser.execute(`window.showAuthError("${msg}");`);
+    if (state.uiBrowser) state.uiBrowser.execute(`window.showAuthError(${JSON.stringify(msg)})`);
 });
 
 mp.events.add("client:account:hideAuth", (developer) => { // успешная авторизация
