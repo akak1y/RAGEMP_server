@@ -1,1 +1,7 @@
-{}
+{
+  "scripts": {
+    "test": "npm --prefix packages/main test && npm --prefix client_packages test",
+    "test:server": "npm --prefix packages/main test",
+    "test:client": "npm --prefix client_packages test"
+  }
+}
