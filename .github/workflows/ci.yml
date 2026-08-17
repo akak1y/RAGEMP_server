@@ -12,14 +12,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Синтаксическая проверка бэкенда
+      - name: Синтаксическая проверка сервера
         run: |
           for f in $(find packages/main -name '*.js' -not -path '*/node_modules/*'); do
             node --check "$f" || exit 1
           done
-          echo "OK"
+          echo "OK: server"
+      - name: Синтаксическая проверка клиента
+        run: |
+          for f in $(find client_packages -name '*.js' -not -path '*/node_modules/*'); do
+            node --check "$f" || exit 1
+          done
+          echo "OK: client"
 
-  unit-tests:
+  server-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
