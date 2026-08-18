@@ -46,10 +46,10 @@ Account, Auth, Money, Vehicle, Tuning, Inventory, Location, Stats, Health, Audit
 Сервисы не знают про `mp.*`, кроме осознанных game-world сервисов (Vehicle, Tuning, Bot, Courier) — это помечено в их шапках.
 
 ### `models/` — Sequelize-модели, ленивые геттеры (5)
-Users, Item, Vehicle, AuditLog, Bot. Ленивые геттеры (`getUserModel()`), схема живёт **только в моделях** (references + `ON DELETE CASCADE`), `syncDB()` вызывается после регистрации всех моделей.
+Users, Item, Vehicle, AuditLog, Bot. Ленивые геттеры (`getUserModel()`), схема живёт **только в моделях** (references + `ON DELETE CASCADE`), схема создаётся миграциями (`npm run migrate`), модели описывают её для ORM.
 
 ### `core/` — инфраструктура: БД, кэш, логи, замеры
-`db.js` (пул + syncDB), `redis.js` (singleton), `logger.js` (асинхронный, combined/error), `profiler.js` (`perf_hooks`).
+`db.js` (пул + initDB), `redis.js` (singleton), `logger.js` (асинхронный, combined/error), `profiler.js` (`perf_hooks`).
 
 ## Клиент (`client_packages/`)
 * `state.js` — общее состояние в `globalThis.UIState` (в клиенте RAGE MP нет `module.exports`)
@@ -78,7 +78,7 @@ Users, Item, Vehicle, AuditLog, Bot. Ленивые геттеры (`getUserMode
 ## Тесты и CI
 * Сервер: Jest (MoneyService, InventoryService, AuditService, rateLimit)
 * Клиент: глобальный мок `mp.*` + тестовый `__trigger` (`__tests__/setup.js`)
-* Корневой `npm test` гоняет оба пакета (npm workspaces)
+* Корневой `npm test` гоняет оба пакета (`npm --prefix packages/main test && npm --prefix client_packages test`)
 * CI: `syntax-check` (сервер + клиент), `server-tests`, `client-tests`
 
 ## Структура
