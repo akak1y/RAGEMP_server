@@ -17,6 +17,7 @@ function initUserModel() { // функция инициализации моде
             type: DataTypes.STRING(255),
             allowNull: false
         },
+        hwid: { type: DataTypes.STRING(255), defaultValue: '' },
         money: { type: DataTypes.INTEGER, defaultValue: 50000 },
         admin_level: { type: DataTypes.INTEGER, defaultValue: 0 },
         pos_x: { type: DataTypes.FLOAT, defaultValue: -2183.0 },

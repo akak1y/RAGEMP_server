@@ -2,7 +2,10 @@ const { Sequelize } = require('sequelize');
 const mysql = require('mysql2');
 let gConfig = require('../settings.json');
 
-const dbName = 'ragemp_server';
+const rawDbName = (gConfig.bd && gConfig.bd.name) || 'ragemp_server';
+if (!/^[a-zA-Z0-9_]+$/.test(rawDbName)) throw new Error('[Sequelize] Некорректное имя БД в settings.json (допустимы буквы, цифры, _)');
+const dbName = rawDbName;
+
 const connection = mysql.createConnection({
     host: gConfig.bd.host,
     user: gConfig.bd.user,
@@ -43,17 +46,7 @@ function initDB() {
     })
 };
 
-/**
- * Синхронизация таблиц со всеми зарегистрированными моделями
- */
-async function syncDB() {
-    if (!sequelizeInstance) throw new Error('[Sequelize] Сначала initDB');
-    await sequelizeInstance.sync({ alter: true });
-    console.log('[Sequelize] Структура таблиц базы данных успешно синхронизирована с моделями.');
-}
-
 module.exports = { 
     initDB,
-    syncDB,
     getSequelize: () => sequelizeInstance // геттер для вытаскивания подключения к бд
 }

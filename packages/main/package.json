@@ -4,7 +4,8 @@
   "description": "Игровой сервер RAGE MP",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "migrate": "node scripts/ensure-db.js && sequelize db:migrate"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +20,7 @@
   },
   "devDependencies": {
     "dependency-cruiser": "^17.4.3",
-    "jest": "^30.4.2"
+    "jest": "^30.4.2",
+    "sequelize-cli": "^6.6.5"
   }
 }
