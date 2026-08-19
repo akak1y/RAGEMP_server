@@ -5,7 +5,9 @@ const jwt = require('jsonwebtoken');
 const { WebSocketServer } = require('ws');
 const authService = require('../services/AuthService');
 const auditService = require('../services/AuditService');
+const statsService = require('../services/StatsService');
 const logger = require('../core/logger');
+const metrics = require('../core/metrics');
 const { handleMessage, getCreateSchema } = require('./protocol');
 const config = require('../config');
 
@@ -45,6 +47,7 @@ function broadcast(obj) {
 
 function start() {
     const server = http.createServer((req, res) => {
+        metrics.inc('rage_http_requests_total', 'Admin panel HTTP requests');
         if (req.method === 'POST' && req.url === '/login') {
             let body = '';
             req.on('data', c => body += c);
@@ -65,6 +68,24 @@ function start() {
                 }
             });
             return
+        }
+
+        if (req.method === 'GET' && req.url === '/metrics') {
+            (async () => {
+                metrics.set('rage_players_online', mp.players.length, 'Players currently online');
+                metrics.set('rage_vehicles_spawned', mp.vehicles.length, 'Vehicles currently spawned');
+                metrics.set('rage_uptime_seconds', Math.round(process.uptime()), 'Server uptime in seconds');
+                metrics.set('rage_memory_rss_bytes', process.memoryUsage().rss, 'Process memory (RSS)');
+                metrics.set('rage_ws_clients', clients.size, 'Connected admin WebSocket clients');
+                const eco = await statsService.getCachedEconomy();
+                if (eco) {
+                    metrics.set('rage_accounts_total', eco.total, 'Total registered accounts');
+                    metrics.set('rage_economy_money_total', eco.totalMoney, 'Total money in economy');
+                }
+                res.writeHead(200, { 'Content-Type': 'text/plain; version=0.0.4' });
+                res.end(metrics.render());
+            })();
+            return;
         }
 
         if (req.method === 'GET') {

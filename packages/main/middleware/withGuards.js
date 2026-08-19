@@ -1,4 +1,5 @@
 const logger = require('../core/logger');
+const metrics = require('../core/metrics');
 
 /**
  * Оборачивает обработчик mp.events в цепочку middleware + error boundary
@@ -13,8 +14,12 @@ function withGuards(guards, handler, label = '') {
         for (const guard of guards) {
             if (!(await guard(player))) return;
         }
+        metrics.inc('rage_events_processed_total', 'Game events processed by handlers');
         try { await handler(player, ...args) }
-        catch (err) { logger.error(`[Handler${label ? ' ' + label : ''}] ${err.message}\nStack: ${err.stack}`) }
+        catch (err) {
+            metrics.inc('rage_handler_errors_total', 'Errors caught by error boundary');
+            logger.error(`[Handler ${label}] ${err.message}`)
+        }
     }
 }
 

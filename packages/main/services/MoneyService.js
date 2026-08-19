@@ -1,5 +1,6 @@
 const { Op, Sequelize } = require('sequelize');
 const accountService = require('./AccountService');
+const statsService = require('./StatsService');
 const logger = require('../core/logger');
 
 /**
@@ -34,7 +35,7 @@ class MoneyService {
                 { money: Sequelize.literal(`money + ${amount}`) },
                 { where: { id: userId }, transaction }
             );
-
+            statsService.invalidateEconomyCache().catch(() => {});
             if (affected > 0) {
                 logger.info(`[MoneyService] +$${amount} игроку ID ${userId}${reason ? ` (${reason})` : ''}`);
                 return true;
@@ -66,7 +67,7 @@ class MoneyService {
                 { money: Sequelize.literal(`money - ${amount}`) },
                 { where: { id: userId, money: { [Op.gte]: amount } }, transaction }
             );
-
+            statsService.invalidateEconomyCache().catch(() => {});
             if (affected > 0) {
                 logger.info(`[MoneyService] -$${amount} у игрока ID ${userId}${reason ? ` (${reason})` : ''}`);
                 return true;

@@ -4,6 +4,7 @@ const { getRedis } = require('../core/redis');
 const { getUserModel } = require('../models/Users');
 const logger = require('../core/logger');
 const profile = require('../core/profiler');
+const metrics = require('../core/metrics');
 
 const ECONOMY_CACHE_KEY = 'server:stats:economy';
 const ECONOMY_CACHE_TTL = 60; // как часто экономика перечитывается из MySQL
@@ -16,12 +17,14 @@ class StatsService {
         const redis = getRedis();
 
         const tRedis = performance.now();
-        const cached = await redis.get(ECONOMY_CACHE_KEY);   // реальная операция
+        const cached = await redis.get(ECONOMY_CACHE_KEY);
         const redisMs = (performance.now() - tRedis).toFixed(2);
 
         if (cached) {
+            metrics.inc('rage_cache_hits_total', 'Redis cache hits');
             return { ...JSON.parse(cached), source: 'redis', ms: redisMs };
         }
+        metrics.inc('rage_cache_misses_total', 'Redis cache misses');
 
         const Users = getUserModel();
         const tSql = performance.now();
@@ -79,6 +82,14 @@ class StatsService {
     }
 
     async invalidateEconomyCache() { await getRedis().del(ECONOMY_CACHE_KEY) }
+
+    async getCachedEconomy() {
+        try {
+            const cached = await getRedis().get(ECONOMY_CACHE_KEY);
+            if (cached) return JSON.parse(cached);
+        } catch {}
+        try { return await this.getEconomyStats() } catch { return null }
+    }
 }
 
 module.exports = new StatsService()

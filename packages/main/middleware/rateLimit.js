@@ -1,6 +1,7 @@
 const { getRedis } = require('../core/redis');
 const auditService = require('../services/AuditService');
 const logger = require('../core/logger');
+const metrics = require('../core/metrics');
 
 /**
  * Фабрика middleware для rate-limiting
@@ -43,6 +44,7 @@ function rateLimit(action, maxCalls, windowSec = 5) {
                     if (rowId) await auditService.bumpRepeats(Number(rowId));
                 }
                 player.outputChatBox(`!{#FF3333}[Антиспам] Слишком часто. Подождите ${windowSec} секунд.`);
+                metrics.inc('rage_ratelimit_blocks_total', 'Rate-limit blocks');
                 return false;
             }
             return true;
