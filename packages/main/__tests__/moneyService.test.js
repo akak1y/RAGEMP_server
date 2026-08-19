@@ -7,6 +7,10 @@ jest.mock('../services/AccountService', () => ({
     findById: jest.fn()
 }));
 
+jest.mock('../services/StatsService', () => ({
+    invalidateEconomyCache: jest.fn().mockResolvedValue()
+}));
+
 jest.mock('../core/logger', () => ({
     info: jest.fn(),
     warn: jest.fn(),
