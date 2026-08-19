@@ -45,19 +45,23 @@
           <label :class="{required: (createSchema[active]?.required || []).includes(f)}">
             {{f}}<span v-if="(createSchema[active]?.required || []).includes(f)">*</span>
           </label>
-          <select v-if="createSchema[active]?.options?.[f]"
-                  v-model="createData[f]" ref="createInput">
+          <select v-if="createSchema[active]?.options?.[f]" v-model="createData[f]" ref="createInput">
             <option value="">-- выбери --</option>
             <option v-for="opt in createSchema[active].options[f]" :value="opt">{{opt}}</option>
           </select>
-          <input v-else v-model="createData[f]" ref="createInput"
-                 @keyup.enter="submitCreate">
+          <input v-else v-model="createData[f]" ref="createInput" @keyup.enter="submitCreate">
         </div>
       </div>
       <div class="create-actions">
         <button @click="submitCreate" class="btn-create">Сохранить</button>
         <button @click="cancelCreate">Отмена</button>
       </div>
+    </div>
+
+    <div v-if="active === 'audit'" class="pager">
+      <button @click="auditGo(auditPage - 1)" :disabled="auditPage <= 1">←</button>
+      <span>{{ auditPage }} / {{ auditPages }} ({{ auditTotal }})</span>
+      <button @click="auditGo(auditPage + 1)" :disabled="auditPage >= auditPages">→</button>
     </div>
 
     <table v-if="active!=='map' && rows.length">

@@ -100,6 +100,28 @@ class AuditService {
             await getAuditModel().increment('repeats', { where: { id: rowId } });
         } catch (err) { logger.error(`[AuditService] bumpRepeats ошибка: ${err.message}`) }
     }
+
+    /**
+     * Страница журнала + общее число записей
+     * @param {number} [page=1]
+     * @param {number} [perPage=50]
+     * @param {string|null} [category]
+     * @returns {Promise<{rows: Array, total: number}>}
+     */
+    async getAuditPage(page = 1, perPage = 50, category = null) {
+        await ensureAuditReady();
+        const Model = getAuditModel();
+        const where = category ? { category } : {};
+        const total = await Model.count({ where });
+        const rows = await Model.findAll({
+            where,
+            order: [['created_at', 'DESC']],
+            limit: perPage,
+            offset: (page - 1) * perPage,
+            raw: true
+        });
+        return { rows, total };
+    }
 }
 
 module.exports = new AuditService();

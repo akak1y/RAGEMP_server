@@ -12,8 +12,7 @@ const logger = require('../core/logger');
 const TABLES = {
     accounts: () => getUserModel().findAll({ order: [['id', 'DESC']], raw: true, attributes: ['id', 'username', 'money', 'admin_level'] }),
     vehicles: async () => getVehicleModel().findAll({ order: [['id', 'DESC']], raw: true }),
-    items: async () => getItemModel().findAll({ order: [['id', 'DESC']], raw: true }),
-    audit: () => auditService.getRecent(50)
+    items: async () => getItemModel().findAll({ order: [['id', 'DESC']], raw: true })
 };
 
 const int = (v, min, max, name) => {
@@ -145,6 +144,16 @@ const DELETE_HOOKS = {
 async function handleMessage(socket, msg, broadcast) {
     try {
         if (msg.type === 'get_table') {
+            if (msg.table === 'audit') {
+                const per = 50;
+                const page = Math.max(1, Number(msg.page) || 1);
+                const { rows, total } = await auditService.getAuditPage(page, per, msg.category || null);
+                socket.send(JSON.stringify({
+                    type: 'table', table: 'audit', rows,
+                    page, total, pages: Math.max(1, Math.ceil(total / per))
+                }));
+                return;
+            }
             const fn = TABLES[msg.table];
             if (!fn) return;
             socket.send(JSON.stringify({ type: 'table', table: msg.table, rows: await fn() }));

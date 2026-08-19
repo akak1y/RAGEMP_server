@@ -29,6 +29,9 @@ createApp({
         creating: false,
         createData: {},
         connected: false,
+        auditPage: 1,
+        auditPages: 1,
+        auditTotal: 0
     }),
     computed: {
         rows() { return this.tables[this.active] || []; },
@@ -60,6 +63,10 @@ createApp({
                     this.updateMarkers(this.players);
                 });
                 return
+            }
+            if (t === 'audit') {
+                this.ws.send(JSON.stringify({ type: 'get_table', table: t, page: this.auditPage }));
+                return;
             }
             this.ws.send(JSON.stringify({ type: 'get_table', table: t }));
         },
@@ -142,11 +149,20 @@ createApp({
                 const m = JSON.parse(e.data);
                 if (m.type === 'hello') this.online = m.online;
                 if (m.type === 'players') { this.online = m.online; this.players = m.players; this.updateMarkers(m.players); }
-                if (m.type === 'table') this.tables[m.table] = m.rows;
+                if (m.type === 'table') {
+                    this.tables[m.table] = m.rows;
+                    if (m.table === 'audit') {
+                        this.auditPage = m.page || 1;
+                        this.auditPages = m.pages || 1;
+                        this.auditTotal = m.total || 0;
+                    }
+                }
                 if (m.type === 'audit_row') {
-                    if (!this.tables.audit) this.tables.audit = [];
-                    this.tables.audit.unshift(m.row);
-                    if (this.tables.audit.length > 50) this.tables.audit.pop();
+                    if (this.active === 'audit' && this.auditPage === 1) {
+                        if (!this.tables.audit) this.tables.audit = [];
+                        this.tables.audit.unshift(m.row);
+                        if (this.tables.audit.length > 50) this.tables.audit.pop();
+                    }
                 }
                 if (m.type === 'markers') {
                     this.staticMarkers = m.markers;
@@ -237,6 +253,11 @@ createApp({
             }
             this.ws.send(JSON.stringify({ type: 'create_row', table: this.active, data: this.createData }));
             this.cancelCreate();
+        },
+        auditGo(page) {
+            if (page < 1 || page > this.auditPages) return;
+            this.auditPage = page;
+            this.openTab('audit');
         },
     }
 }).mount('#app');
