@@ -28,6 +28,7 @@ createApp({
         createSchema: {},
         creating: false,
         createData: {},
+        connected: false,
     }),
     computed: {
         rows() { return this.tables[this.active] || []; },
@@ -110,8 +111,33 @@ createApp({
             this.connect();
         },
         connect() {
+            if (this.ws && this.ws.readyState <= 1) this.ws.close();
+
             this.ws = new WebSocket(`ws://${location.host}?token=${this.token}`);
-            this.ws.onopen = () => this.openTab(this.active);
+
+            this.ws.onopen = () => {
+                this._backoff = 500;
+                this.connected = true;
+                document.title = 'RAGE Admin';
+                this.openTab(this.active);
+            };
+
+            this.ws.onclose = (ev) => {
+                this.connected = false;
+
+                if (ev.code === 4001 || ev.code === 4003) {
+                    document.title = '🔒 Доступ отклонён';
+                    this.error = 'Сессия недействительна — перезагрузите страницу';
+                    return;
+                }
+
+                document.title = '⚠ Переподключение…';
+                const delay = this._backoff = Math.min((this._backoff || 500) * 2, 10000);
+                setTimeout(() => this.connect(), delay);
+            };
+
+            this.ws.onerror = () => this.ws.close();
+
             this.ws.onmessage = (e) => {
                 const m = JSON.parse(e.data);
                 if (m.type === 'hello') this.online = m.online;
@@ -128,10 +154,8 @@ createApp({
                 }
                 if (m.type === 'action_result') {
                     this.actionResult = m.result;
-                    clearTimeout(this._actionTimer); 
-                    this._actionTimer = setTimeout(() => {
-                        this.actionResult = null;
-                    }, 5000)
+                    clearTimeout(this._actionTimer);
+                    this._actionTimer = setTimeout(() => { this.actionResult = null; }, 5000)
                 }
                 if (m.type === 'create_schema') {
                     this.createSchema = m.schema;
