@@ -14,7 +14,7 @@ createApp({
         players: [],
         active: 'accounts',
         tables: {},
-        tabs: ['accounts', 'vehicles', 'items', 'audit', 'map'],
+        tabs: ['accounts', 'vehicles', 'items', 'audit', 'metrics', 'map'],
         GAME_BOUNDS: { minX: -5693, minY: -4045, maxX: 6729, maxY: 8392 },
         staticMarkers: [],
         editing: null,
@@ -31,7 +31,9 @@ createApp({
         connected: false,
         auditPage: 1,
         auditPages: 1,
-        auditTotal: 0
+        auditTotal: 0,
+        metricsCountdown: 15,
+        metricsRows: []
     }),
     computed: {
         rows() { return this.tables[this.active] || []; },
@@ -67,6 +69,22 @@ createApp({
             if (t === 'audit') {
                 this.ws.send(JSON.stringify({ type: 'get_table', table: t, page: this.auditPage }));
                 return;
+            }
+            if (this._metricsTimer) {
+                clearInterval(this._metricsTimer);
+                this._metricsTimer = null
+            }
+            if (t === 'metrics') {
+                this.requestMetrics();
+                this.metricsCountdown = 15;
+                this._metricsTimer = setInterval(() => {
+                    this.metricsCountdown--;
+                    if (this.metricsCountdown <= 0) {
+                        this.requestMetrics();
+                        this.metricsCountdown = 15;
+                    }
+                }, 1000);
+                return
             }
             this.ws.send(JSON.stringify({ type: 'get_table', table: t }));
         },
@@ -176,6 +194,7 @@ createApp({
                 if (m.type === 'create_schema') {
                     this.createSchema = m.schema;
                 }
+                if (m.type === 'metrics') this.metricsRows = m.rows;
             };
         },
         drawStaticMarkers() {
@@ -258,6 +277,22 @@ createApp({
             if (page < 1 || page > this.auditPages) return;
             this.auditPage = page;
             this.openTab('audit');
+        },
+        requestMetrics() {
+            if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify({ type: 'get_metrics' }));
+        },
+        refreshMetricsNow() {
+            this.requestMetrics();
+            this.metricsCountdown = 15;
+        },
+        fmtMetric(r) {
+            if (r.name === 'rage_memory_rss_bytes') return (r.value / 1048576).toFixed(1) + ' MB';
+            if (r.name === 'rage_uptime_seconds') {
+                const h = Math.floor(r.value / 3600), m = Math.floor((r.value % 3600) / 60), s = r.value % 60;
+                return `${h}ч ${m}м ${s}с`;
+            }
+            if (r.name === 'rage_economy_money_total') return '$' + Number(r.value).toLocaleString('ru-RU');
+            return r.value;
         },
     }
 }).mount('#app');

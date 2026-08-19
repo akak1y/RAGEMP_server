@@ -38,6 +38,21 @@
       </div>
     </div>
 
+    <div v-if="active === 'metrics'">
+      <p style="color:#8b949e;margin:8px 0">
+        <button @click="refreshMetricsNow()">Обновить</button>
+        Автообновление через {{ metricsCountdown }} с
+      </p>
+      <table v-if="metricsRows.length">
+        <tr><th>Метрика</th><th>Тип</th><th>Значение</th></tr>
+        <tr v-for="r in metricsRows" :key="r.name">
+          <td>{{ r.help }}</td>
+          <td>{{ r.type }}</td>
+          <td><b>{{ fmtMetric(r) }}</b></td>
+        </tr>
+      </table>
+    </div>
+
     <div v-if="creating" class="create-form">
       <h3>Новая запись: {{active}}</h3>
       <div class="create-fields">
@@ -64,7 +79,7 @@
       <button @click="auditGo(auditPage + 1)" :disabled="auditPage >= auditPages">→</button>
     </div>
 
-    <table v-if="active!=='map' && rows.length">
+    <table v-if="!['map','metrics'].includes(active) && rows.length">
       <tr>
         <th v-for="c in columns" :key="c">{{c}}</th>
         <th v-if="['accounts','vehicles','items'].includes(active)">Действия</th>
@@ -86,7 +101,7 @@
         </td>
       </tr>
     </table>
-    <p v-if="active!=='map' && !rows.length">Нет данных</p>
+    <p v-if="!['map','metrics'].includes(active) && !rows.length">Нет данных</p>
   </div>
 </div>
 

@@ -8,7 +8,7 @@ const auditService = require('../services/AuditService');
 const statsService = require('../services/StatsService');
 const logger = require('../core/logger');
 const metrics = require('../core/metrics');
-const { handleMessage, getCreateSchema } = require('./protocol');
+const { handleMessage, getCreateSchema, refreshLiveMetrics, setWsClientsGetter } = require('./protocol');
 const config = require('../config');
 
 let settings = {};
@@ -37,6 +37,8 @@ const MAP_MARKERS = MAP_MARKER_DEFS
     .filter(Boolean);
 
 const clients = new Set();
+
+setWsClientsGetter(() => clients.size);
 
 function broadcast(obj) {
     const data = JSON.stringify(obj);
@@ -72,16 +74,7 @@ function start() {
 
         if (req.method === 'GET' && req.url === '/metrics') {
             (async () => {
-                metrics.set('rage_players_online', mp.players.length, 'Players currently online');
-                metrics.set('rage_vehicles_spawned', mp.vehicles.length, 'Vehicles currently spawned');
-                metrics.set('rage_uptime_seconds', Math.round(process.uptime()), 'Server uptime in seconds');
-                metrics.set('rage_memory_rss_bytes', process.memoryUsage().rss, 'Process memory (RSS)');
-                metrics.set('rage_ws_clients', clients.size, 'Connected admin WebSocket clients');
-                const eco = await statsService.getCachedEconomy();
-                if (eco) {
-                    metrics.set('rage_accounts_total', eco.total, 'Total registered accounts');
-                    metrics.set('rage_economy_money_total', eco.totalMoney, 'Total money in economy');
-                }
+                await refreshLiveMetrics();
                 res.writeHead(200, { 'Content-Type': 'text/plain; version=0.0.4' });
                 res.end(metrics.render());
             })();

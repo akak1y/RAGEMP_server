@@ -6,8 +6,10 @@ const auditService = require('../services/AuditService');
 const healthService = require('../services/HealthService');
 const vehicleService = require('../services/VehicleService');
 const authService = require('../services/AuthService');
+const statsService = require('../services/StatsService');
 const { ItemConfig, VehicleConfig } = require('../config');
 const logger = require('../core/logger');
+const metrics = require('../core/metrics');
 
 const TABLES = {
     accounts: () => getUserModel().findAll({ order: [['id', 'DESC']], raw: true, attributes: ['id', 'username', 'money', 'admin_level'] }),
@@ -141,6 +143,25 @@ const DELETE_HOOKS = {
     vehicles: async (socket, id) => { await vehicleService.despawnVehicle(id, false) }
 };
 
+let getWsClients = () => 0;
+
+function setWsClientsGetter(fn) {
+    getWsClients = fn
+}
+
+async function refreshLiveMetrics() {
+    metrics.set('rage_players_online', mp.players.length, 'Players currently online');
+    metrics.set('rage_vehicles_spawned', mp.vehicles.length, 'Vehicles currently spawned');
+    metrics.set('rage_uptime_seconds', Math.round(process.uptime()), 'Server uptime in seconds');
+    metrics.set('rage_memory_rss_bytes', process.memoryUsage().rss, 'Process memory (RSS)');
+    metrics.set('rage_ws_clients', getWsClients(), 'Connected admin WebSocket clients');
+    const eco = await statsService.getCachedEconomy();
+    if (eco) {
+        metrics.set('rage_accounts_total', eco.total, 'Total registered accounts');
+        metrics.set('rage_economy_money_total', eco.totalMoney, 'Total money in economy');
+    }
+}
+
 async function handleMessage(socket, msg, broadcast) {
     try {
         if (msg.type === 'get_table') {
@@ -157,6 +178,12 @@ async function handleMessage(socket, msg, broadcast) {
             const fn = TABLES[msg.table];
             if (!fn) return;
             socket.send(JSON.stringify({ type: 'table', table: msg.table, rows: await fn() }));
+            return;
+        }
+
+        if (msg.type === 'get_metrics') {
+            await refreshLiveMetrics();
+            socket.send(JSON.stringify({ type: 'metrics', rows: metrics.snapshot() }));
             return;
         }
 
@@ -383,4 +410,4 @@ function getCreateSchema() {
     );
 }
 
-module.exports = { handleMessage, getCreateSchema }
+module.exports = { handleMessage, getCreateSchema, refreshLiveMetrics, setWsClientsGetter }
