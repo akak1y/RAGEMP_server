@@ -58,11 +58,14 @@ Users, Item, Vehicle, AuditLog, Bot. Ленивые геттеры (`getUserMode
 
 ## Веб-админка (`websocket/`)
 * HTTP (статика + `/login`) и WS на одном порту; JWT 8 ч, `admin_level >= 1`; битый токен → 4001/4003
-* `protocol.js` — типы сообщений: `get_table`, `update_cell`, `player_action`, `vehicle_action`, `delete_row`, `create_row`
+* `protocol.js` — типы сообщений: `get_table`, `update_cell`, `player_action`, `vehicle_action`, `delete_row`, `create_row`, `get_metrics`
 * Schema-driven формы: сервер шлёт `create_schema` — фронт генерирует формы сам
 * Whitelist редактируемых полей + серверная валидация; каждое действие → аудит
 * Карта Leaflet с калибровкой `GAME_BOUNDS`; иконки локаций читаются из `config.js` (единый источник правды)
 * Живая лента аудита: pub/sub через `AuditService.subscribe`
+* `get_metrics` (WS) и HTTP `/metrics` — метрики: собственный Prometheus-exporter без внешних зависимостей
+* Вкладка metrics с автообновлением (15 с); аудит — серверная пагинация
+* Автореконнект с экспоненциальным бэкоффом; 4001/4003 — без реконнекта
 
 ## Ключевые решения
 1. **Деньги** — атомарный SQL `UPDATE … WHERE money >= X`; составные операции — внешние транзакции.
