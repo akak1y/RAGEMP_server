@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "migrate": "node scripts/ensure-db.js && sequelize db:migrate"
+    "migrate": "node scripts/ensure-db.js && sequelize db:migrate",
+    "test:int": "jest --config jest.config.integration.js"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "dependency-cruiser": "^17.4.3",
+    "dotenv": "^17.4.2",
     "jest": "^30.4.2",
     "sequelize-cli": "^6.6.5"
   }

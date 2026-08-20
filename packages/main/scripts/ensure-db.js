@@ -8,13 +8,13 @@ const conn = mysql.createConnection({
 });
 
 conn.query(
-    `CREATE DATABASE IF NOT EXISTS \`${env.name}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`,
+    `CREATE DATABASE IF NOT EXISTS \`${env.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`,
     (err) => {
         conn.end();
         if (err) {
             console.error('[ensure-db]', err.message);
             process.exit(1);
         }
-        console.log(`[ensure-db] БД "${env.name}" готова`);
+        console.log(`[ensure-db] БД "${env.database}" готова`);
     }
 );

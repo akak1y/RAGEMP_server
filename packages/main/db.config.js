@@ -1,11 +1,16 @@
 const settings = require('./settings.json');
 
-module.exports = {
-    development: {
-        username: settings.bd.user,
-        password: settings.bd.password,
-        database: settings.bd.name,
-        host: settings.bd.host,
+function getConfig() {
+    return {
+        username: process.env.DB_USER || settings.bd.user,
+        password: process.env.DB_PASSWORD || settings.bd.password,
+        database: process.env.DB_NAME || settings.bd.name,
+        host: process.env.DB_HOST || settings.bd.host,
         dialect: 'mysql'
-    }
-};
+    };
+}
+
+module.exports = {
+    development: getConfig(),
+    test: getConfig()
+}

@@ -7,6 +7,7 @@ conf.json
 .listcache
 .dependency-cruiser.js
 /packages/main/settings.json
+.env.test
 
 *.log
 *.tmp
