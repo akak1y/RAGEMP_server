@@ -1,15 +1,15 @@
 {
-  "bd": {
-    "host": "localhost",
-    "user": "your_mysql_username",
-    "password": "your_mysql_password",
-    "name": "ragemp_server"
-  },
-  "redis": {
-    "url": "redis://localhost:6379"
-  },
-  "admin": {
-    "port": 8081,
-    "jwtSecret": "secret_key"
-  }
+    "bd": {
+        "host": "localhost",
+        "user": "your_mysql_username",
+        "password": "your_mysql_password",
+        "name": "ragemp_server"
+    },
+    "redis": {
+        "url": "redis://localhost:6379"
+    },
+    "admin": {
+        "port": 8081,
+        "jwtSecret": "secret_key"
+    }
 }

@@ -5,7 +5,7 @@ const conn = mysql.createConnection({
     host: env.host,
     port: env.port,
     user: env.username || env.user,
-    password: env.password
+    password: env.password,
 });
 
 conn.query(

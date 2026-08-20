@@ -9,7 +9,7 @@ function makePlayer(id) {
         accountId: id,
         accountName: 'rl_test_' + id,
         ip: '127.0.0.1',
-        outputChatBox: () => {}
+        outputChatBox: () => {},
     };
 }
 

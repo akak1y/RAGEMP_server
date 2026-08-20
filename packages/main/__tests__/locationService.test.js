@@ -8,8 +8,8 @@ jest.mock('../config', () => ({
     HospitalPos: { x: 30, y: 0, z: 0 },
     FuelStationPos: { x: 40, y: 0, z: 0 },
     CourierConfig: {
-        startPos: { x: 50, y: 0, z: 0 }
-    }
+        startPos: { x: 50, y: 0, z: 0 },
+    },
 }));
 
 global.mp = {
@@ -19,9 +19,9 @@ global.mp = {
         constructor(x, y, z) {
             this.x = x;
             this.y = y;
-            this.z = z
+            this.z = z;
         }
-    }
+    },
 };
 
 describe('LocationService', () => {

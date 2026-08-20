@@ -12,7 +12,8 @@ class AuthService {
      * @returns {Promise<string>} Хэш пароля
      */
     async hashPassword(password) {
-        if (!password || typeof password !== 'string') throw new Error('[AuthService] hashPassword: пароль должен быть непустой строкой');
+        if (!password || typeof password !== 'string')
+            throw new Error('[AuthService] hashPassword: пароль должен быть непустой строкой');
         const salt = await bcrypt.genSalt(10);
         return await bcrypt.hash(password, salt);
     }
@@ -63,7 +64,7 @@ class AuthService {
             const user = await accountService.createAccount({
                 username,
                 password: hashedPassword,
-                ...options
+                ...options,
             });
 
             logger.info(`[AuthService] Зарегистрирован новый аккаунт: ${user.username}`);
@@ -75,4 +76,4 @@ class AuthService {
     }
 }
 
-module.exports = new AuthService()
+module.exports = new AuthService();

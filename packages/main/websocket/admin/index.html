@@ -1,112 +1,176 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-<meta charset="utf-8">
-<title>Админка RAGE MP</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-<div id="app">
-  <div v-if="!token">
-    <h2>Вход</h2>
-    <input v-model="login" placeholder="логин">
-    <input v-model="password" type="password" placeholder="пароль">
-    <button @click="doLogin">Войти</button>
-    <p v-if="error" style="color:#f66">{{error}}</p>
-  </div>
+    <head>
+        <meta charset="utf-8" />
+        <title>Админка RAGE MP</title>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <div id="app">
+            <div v-if="!token">
+                <h2>Вход</h2>
+                <input v-model="login" placeholder="логин" />
+                <input v-model="password" type="password" placeholder="пароль" />
+                <button @click="doLogin">Войти</button>
+                <p v-if="error" style="color: #f66">{{error}}</p>
+            </div>
 
-  <div v-else>
-    <h2>
-      Онлайн: {{online}}
-      <span v-if="actionResult"
-            class="action-msg"
-            :class="actionResult.success ? 'ok' : 'fail'">
-        {{actionResult.message}}
-      </span>
-    </h2>
-    <div>
-      <button v-if="canCreate()" @click="startCreate()" class="btn-create">+ Создать</button>
-      <button v-for="t in tabs" :key="t" :class="{active: active===t}" @click="openTab(t)">{{t}}</button>
-    </div>
+            <div v-else>
+                <h2>
+                    Онлайн: {{online}}
+                    <span
+                        v-if="actionResult"
+                        class="action-msg"
+                        :class="actionResult.success ? 'ok' : 'fail'"
+                    >
+                        {{actionResult.message}}
+                    </span>
+                </h2>
+                <div>
+                    <button v-if="canCreate()" @click="startCreate()" class="btn-create">
+                        + Создать
+                    </button>
+                    <button
+                        v-for="t in tabs"
+                        :key="t"
+                        :class="{active: active===t}"
+                        @click="openTab(t)"
+                    >
+                        {{t}}
+                    </button>
+                </div>
 
-    <div v-show="active==='map'" class="map-wrap">
-      <div id="map" style="height:520px;margin-top:10px"></div>
-      <div class="map-btns">
-        <button @click="zoomIn">+</button>
-        <button @click="zoomOut">−</button>
-      </div>
-    </div>
+                <div v-show="active==='map'" class="map-wrap">
+                    <div id="map" style="height: 520px; margin-top: 10px"></div>
+                    <div class="map-btns">
+                        <button @click="zoomIn">+</button>
+                        <button @click="zoomOut">−</button>
+                    </div>
+                </div>
 
-    <div v-if="active === 'metrics'">
-      <p style="color:#8b949e;margin:8px 0">
-        <button @click="refreshMetricsNow()">Обновить</button>
-        Автообновление через {{ metricsCountdown }} с
-      </p>
-      <table v-if="metricsRows.length">
-        <tr><th>Метрика</th><th>Тип</th><th>Значение</th></tr>
-        <tr v-for="r in metricsRows" :key="r.name">
-          <td>{{ r.help }}</td>
-          <td>{{ r.type }}</td>
-          <td><b>{{ fmtMetric(r) }}</b></td>
-        </tr>
-      </table>
-    </div>
+                <div v-if="active === 'metrics'">
+                    <p style="color: #8b949e; margin: 8px 0">
+                        <button @click="refreshMetricsNow()">Обновить</button>
+                        Автообновление через {{ metricsCountdown }} с
+                    </p>
+                    <table v-if="metricsRows.length">
+                        <tr>
+                            <th>Метрика</th>
+                            <th>Тип</th>
+                            <th>Значение</th>
+                        </tr>
+                        <tr v-for="r in metricsRows" :key="r.name">
+                            <td>{{ r.help }}</td>
+                            <td>{{ r.type }}</td>
+                            <td><b>{{ fmtMetric(r) }}</b></td>
+                        </tr>
+                    </table>
+                </div>
 
-    <div v-if="creating" class="create-form">
-      <h3>Новая запись: {{active}}</h3>
-      <div class="create-fields">
-        <div v-for="f in (createSchema[active]?.fields || [])" :key="f" class="create-field">
-          <label :class="{required: (createSchema[active]?.required || []).includes(f)}">
-            {{f}}<span v-if="(createSchema[active]?.required || []).includes(f)">*</span>
-          </label>
-          <select v-if="createSchema[active]?.options?.[f]" v-model="createData[f]" ref="createInput">
-            <option value="">-- выбери --</option>
-            <option v-for="opt in createSchema[active].options[f]" :value="opt">{{opt}}</option>
-          </select>
-          <input v-else v-model="createData[f]" ref="createInput" @keyup.enter="submitCreate">
+                <div v-if="creating" class="create-form">
+                    <h3>Новая запись: {{active}}</h3>
+                    <div class="create-fields">
+                        <div
+                            v-for="f in (createSchema[active]?.fields || [])"
+                            :key="f"
+                            class="create-field"
+                        >
+                            <label
+                                :class="{required: (createSchema[active]?.required || []).includes(f)}"
+                            >
+                                {{f}}<span v-if="(createSchema[active]?.required || []).includes(f)"
+                                    >*</span
+                                >
+                            </label>
+                            <select
+                                v-if="createSchema[active]?.options?.[f]"
+                                v-model="createData[f]"
+                                ref="createInput"
+                            >
+                                <option value="">-- выбери --</option>
+                                <option v-for="opt in createSchema[active].options[f]" :value="opt">
+                                    {{opt}}
+                                </option>
+                            </select>
+                            <input
+                                v-else
+                                v-model="createData[f]"
+                                ref="createInput"
+                                @keyup.enter="submitCreate"
+                            />
+                        </div>
+                    </div>
+                    <div class="create-actions">
+                        <button @click="submitCreate" class="btn-create">Сохранить</button>
+                        <button @click="cancelCreate">Отмена</button>
+                    </div>
+                </div>
+
+                <div v-if="active === 'audit'" class="pager">
+                    <button @click="auditGo(auditPage - 1)" :disabled="auditPage <= 1">←</button>
+                    <span>{{ auditPage }} / {{ auditPages }} ({{ auditTotal }})</span>
+                    <button @click="auditGo(auditPage + 1)" :disabled="auditPage >= auditPages">
+                        →
+                    </button>
+                </div>
+
+                <table v-if="!['map','metrics'].includes(active) && rows.length">
+                    <tr>
+                        <th v-for="c in columns" :key="c">{{c}}</th>
+                        <th v-if="['accounts','vehicles','items'].includes(active)">Действия</th>
+                    </tr>
+                    <tr v-for="r in rows" :key="r.id">
+                        <td
+                            v-for="c in columns"
+                            :key="c"
+                            :class="{editable: isEditable(c)}"
+                            @click="startEdit(r,c)"
+                        >
+                            <input
+                                v-if="editing && editing.id===r.id && editing.field===c"
+                                ref="editInput"
+                                v-model="editValue"
+                                @keyup.enter="commitEdit"
+                                @blur="commitEdit"
+                                @keyup.esc="editing=null"
+                            />
+                            <span v-else>{{cell(r, c)}}</span>
+                        </td>
+                        <td v-if="['accounts','vehicles','items'].includes(active)">
+                            <button
+                                v-if="active==='accounts'"
+                                @click="playerAction('heal', r.id)"
+                                class="btn-heal"
+                            >
+                                Heal
+                            </button>
+                            <button
+                                v-if="active==='accounts'"
+                                @click="playerAction('kill', r.id)"
+                                class="btn-kill"
+                            >
+                                Kill
+                            </button>
+                            <button
+                                v-if="active==='vehicles'"
+                                @click="vehicleAction('respawn', r.id)"
+                                class="btn-heal"
+                            >
+                                Respawn
+                            </button>
+                            <button @click="deleteRow(active, r.id)" class="btn-delete">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                </table>
+                <p v-if="!['map','metrics'].includes(active) && !rows.length">Нет данных</p>
+            </div>
         </div>
-      </div>
-      <div class="create-actions">
-        <button @click="submitCreate" class="btn-create">Сохранить</button>
-        <button @click="cancelCreate">Отмена</button>
-      </div>
-    </div>
 
-    <div v-if="active === 'audit'" class="pager">
-      <button @click="auditGo(auditPage - 1)" :disabled="auditPage <= 1">←</button>
-      <span>{{ auditPage }} / {{ auditPages }} ({{ auditTotal }})</span>
-      <button @click="auditGo(auditPage + 1)" :disabled="auditPage >= auditPages">→</button>
-    </div>
-
-    <table v-if="!['map','metrics'].includes(active) && rows.length">
-      <tr>
-        <th v-for="c in columns" :key="c">{{c}}</th>
-        <th v-if="['accounts','vehicles','items'].includes(active)">Действия</th>
-      </tr>
-      <tr v-for="r in rows" :key="r.id">
-        <td v-for="c in columns" :key="c"
-            :class="{editable: isEditable(c)}"
-            @click="startEdit(r,c)">
-          <input v-if="editing && editing.id===r.id && editing.field===c"
-                 ref="editInput" v-model="editValue"
-                 @keyup.enter="commitEdit" @blur="commitEdit" @keyup.esc="editing=null">
-          <span v-else>{{cell(r, c)}}</span>
-        </td>
-        <td v-if="['accounts','vehicles','items'].includes(active)">
-          <button v-if="active==='accounts'" @click="playerAction('heal', r.id)" class="btn-heal">Heal</button>
-          <button v-if="active==='accounts'" @click="playerAction('kill', r.id)" class="btn-kill">Kill</button>
-          <button v-if="active==='vehicles'" @click="vehicleAction('respawn', r.id)" class="btn-heal">Respawn</button>
-          <button @click="deleteRow(active, r.id)" class="btn-delete">Delete</button>
-        </td>
-      </tr>
-    </table>
-    <p v-if="!['map','metrics'].includes(active) && !rows.length">Нет данных</p>
-  </div>
-</div>
-
-<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js"></script>
-</body>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <script src="app.js"></script>
+    </body>
 </html>

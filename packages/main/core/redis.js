@@ -1,7 +1,9 @@
 const { createClient } = require('redis');
 
 let settings = {};
-try { settings = require('../settings.json') } catch {}
+try {
+    settings = require('../settings.json');
+} catch {}
 
 let redisClient = null;
 
@@ -11,7 +13,9 @@ function buildRedisUrl() {
     const port = process.env.REDIS_PORT || redisCfg.port || 6379;
     const db = process.env.REDIS_DB || redisCfg.db || 0;
     const password = process.env.REDIS_PASSWORD || redisCfg.password;
-    return password ? `redis://:${password}@${host}:${port}/${db}` : `redis://${host}:${port}/${db}`
+    return password
+        ? `redis://:${password}@${host}:${port}/${db}`
+        : `redis://${host}:${port}/${db}`;
 }
 
 async function initRedis() {
@@ -19,11 +23,13 @@ async function initRedis() {
         redisClient = createClient({ url: buildRedisUrl() });
         redisClient.on('connect', () => console.log('[Redis] Успешно подключено к серверу ОЗУ.'));
         redisClient.on('error', (err) => console.error('[Redis Error]', err));
-        await redisClient.connect()
-    } catch (err) { console.error(`[Redis Error] Не удалось запустить Redis: ${err.message}`) }
-};
+        await redisClient.connect();
+    } catch (err) {
+        console.error(`[Redis Error] Не удалось запустить Redis: ${err.message}`);
+    }
+}
 
 module.exports = {
     initRedis,
-    getRedis: () => redisClient 
-}
+    getRedis: () => redisClient,
+};

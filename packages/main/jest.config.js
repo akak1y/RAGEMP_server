@@ -4,5 +4,5 @@ module.exports = {
     testPathIgnorePatterns: ['/node_modules/', '<rootDir>/__tests__/integration/'],
     verbose: true,
     collectCoverageFrom: ['services/*.js'],
-    coveragePathIgnorePatterns: ['node_modules']
+    coveragePathIgnorePatterns: ['node_modules'],
 };

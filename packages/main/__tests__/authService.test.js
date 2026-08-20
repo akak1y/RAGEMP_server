@@ -3,13 +3,13 @@ const accountService = require('../services/AccountService');
 
 jest.mock('../services/AccountService', () => ({
     findByUsername: jest.fn(),
-    createAccount: jest.fn()
+    createAccount: jest.fn(),
 }));
 jest.mock('../core/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
 jest.mock('bcryptjs', () => ({
     genSalt: jest.fn().mockResolvedValue('salt'),
     hash: jest.fn().mockResolvedValue('hash'),
-    compare: jest.fn()
+    compare: jest.fn(),
 }));
 
 describe('AuthService', () => {
@@ -75,7 +75,10 @@ describe('AuthService', () => {
             accountService.createAccount.mockResolvedValue({ username: 'new', password: 'hash' });
             const r = await authService.register('new', 'pass');
             expect(r.success).toBe(true);
-            expect(accountService.createAccount).toHaveBeenCalledWith({ username: 'new', password: 'hash' });
+            expect(accountService.createAccount).toHaveBeenCalledWith({
+                username: 'new',
+                password: 'hash',
+            });
         });
         test('ошибка createAccount', async () => {
             accountService.findByUsername.mockResolvedValue(null);

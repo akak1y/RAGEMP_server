@@ -4,17 +4,17 @@ const accountService = require('../services/AccountService');
 
 jest.mock('../services/AccountService', () => ({
     getModel: jest.fn(),
-    findById: jest.fn()
+    findById: jest.fn(),
 }));
 
 jest.mock('../services/StatsService', () => ({
-    invalidateEconomyCache: jest.fn().mockResolvedValue()
+    invalidateEconomyCache: jest.fn().mockResolvedValue(),
 }));
 
 jest.mock('../core/logger', () => ({
     info: jest.fn(),
     warn: jest.fn(),
-    error: jest.fn()
+    error: jest.fn(),
 }));
 
 describe('MoneyService', () => {
@@ -26,7 +26,7 @@ describe('MoneyService', () => {
         mockTx = { commit: jest.fn(), rollback: jest.fn() };
         mockUserModel = {
             update: jest.fn(),
-            sequelize: { transaction: jest.fn().mockResolvedValue(mockTx) }
+            sequelize: { transaction: jest.fn().mockResolvedValue(mockTx) },
         };
         accountService.getModel.mockReturnValue(mockUserModel);
     });
@@ -124,19 +124,19 @@ describe('MoneyService', () => {
 
     describe('transfer', () => {
         test('успех: commit, оба update внутри транзакции', async () => {
-            mockUserModel.update
-                .mockResolvedValueOnce([1])
-                .mockResolvedValueOnce([1]);
+            mockUserModel.update.mockResolvedValueOnce([1]).mockResolvedValueOnce([1]);
 
             const result = await moneyService.transfer(1, 2, 500, 'pay');
 
             expect(result).toBe(true);
             expect(mockUserModel.update).toHaveBeenCalledTimes(2);
-            expect(mockUserModel.update).toHaveBeenNthCalledWith(1,
+            expect(mockUserModel.update).toHaveBeenNthCalledWith(
+                1,
                 { money: expect.any(Sequelize.Utils.Literal) },
                 { where: { id: 1, money: { [Op.gte]: 500 } }, transaction: mockTx }
             );
-            expect(mockUserModel.update).toHaveBeenNthCalledWith(2,
+            expect(mockUserModel.update).toHaveBeenNthCalledWith(
+                2,
                 { money: expect.any(Sequelize.Utils.Literal) },
                 { where: { id: 2 }, transaction: mockTx }
             );
@@ -156,9 +156,7 @@ describe('MoneyService', () => {
         });
 
         test('получатель исчез: rollback после первого update', async () => {
-            mockUserModel.update
-                .mockResolvedValueOnce([1])
-                .mockResolvedValueOnce([0]);
+            mockUserModel.update.mockResolvedValueOnce([1]).mockResolvedValueOnce([0]);
 
             const result = await moneyService.transfer(1, 2, 500);
 

@@ -1,28 +1,28 @@
 {
-  "name": "rage-server-main",
-  "version": "1.2.0",
-  "description": "Игровой сервер RAGE MP",
-  "main": "index.js",
-  "scripts": {
-    "test": "jest",
-    "migrate": "node scripts/ensure-db.js && sequelize db:migrate",
-    "test:int": "jest --config jest.config.integration.js --runInBand"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "bcryptjs": "^3.0.3",
-    "jsonwebtoken": "^9.0.3",
-    "mysql2": "^3.23.3",
-    "redis": "^4.6.10",
-    "sequelize": "^6.37.8",
-    "ws": "^8.21.3"
-  },
-  "devDependencies": {
-    "dependency-cruiser": "^17.4.3",
-    "dotenv": "^17.4.2",
-    "jest": "^30.4.2",
-    "sequelize-cli": "^6.6.5"
-  }
+    "name": "rage-server-main",
+    "version": "1.2.0",
+    "description": "Игровой сервер RAGE MP",
+    "main": "index.js",
+    "scripts": {
+        "test": "jest",
+        "migrate": "node scripts/ensure-db.js && sequelize db:migrate",
+        "test:int": "jest --config jest.config.integration.js --runInBand"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "bcryptjs": "^3.0.3",
+        "jsonwebtoken": "^9.0.3",
+        "mysql2": "^3.23.3",
+        "redis": "^4.6.10",
+        "sequelize": "^6.37.8",
+        "ws": "^8.21.3"
+    },
+    "devDependencies": {
+        "dependency-cruiser": "^17.4.3",
+        "dotenv": "^17.4.2",
+        "jest": "^30.4.2",
+        "sequelize-cli": "^6.6.5"
+    }
 }

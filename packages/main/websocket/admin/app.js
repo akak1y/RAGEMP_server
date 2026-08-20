@@ -1,7 +1,21 @@
 const { createApp } = Vue;
 
 const TABLE_COLUMNS = {
-    audit: ['id', 'category', 'action', 'actor', 'actor_id', 'target', 'amount', 'repeats', 'success', 'ip', 'hwid', 'details', 'created_at']
+    audit: [
+        'id',
+        'category',
+        'action',
+        'actor',
+        'actor_id',
+        'target',
+        'amount',
+        'repeats',
+        'success',
+        'ip',
+        'hwid',
+        'details',
+        'created_at',
+    ],
 };
 
 createApp({
@@ -21,8 +35,20 @@ createApp({
         editValue: '',
         editable: {
             accounts: ['money', 'admin_level'],
-            vehicles: ['owner_id', 'color_r', 'color_g', 'color_b', 'engine_mod', 'wheel_type', 'wheel_mod', 'brakes_mod', 'transmission_mod', 'turbo_mod', 'fuel'],
-            items: ['count']
+            vehicles: [
+                'owner_id',
+                'color_r',
+                'color_g',
+                'color_b',
+                'engine_mod',
+                'wheel_type',
+                'wheel_mod',
+                'brakes_mod',
+                'transmission_mod',
+                'turbo_mod',
+                'fuel',
+            ],
+            items: ['count'],
         },
         actionResult: null,
         createSchema: {},
@@ -33,14 +59,16 @@ createApp({
         auditPages: 1,
         auditTotal: 0,
         metricsCountdown: 15,
-        metricsRows: []
+        metricsRows: [],
     }),
     computed: {
-        rows() { return this.tables[this.active] || []; },
+        rows() {
+            return this.tables[this.active] || [];
+        },
         columns() {
             if (TABLE_COLUMNS[this.active]) return TABLE_COLUMNS[this.active];
             return this.rows.length ? Object.keys(this.rows[0]) : [];
-        }
+        },
     },
     methods: {
         fmt(v) {
@@ -51,7 +79,7 @@ createApp({
         },
         cell(r, c) {
             const v = r[c];
-            if (c === 'success') return (v === true || v === 1) ? '✔' : '✖';
+            if (c === 'success') return v === true || v === 1 ? '✔' : '✖';
             return this.fmt(v);
         },
         openTab(t) {
@@ -64,7 +92,7 @@ createApp({
                     if (this.map) this.map.invalidateSize();
                     this.updateMarkers(this.players);
                 });
-                return
+                return;
             }
             if (t === 'audit') {
                 this.ws.send(JSON.stringify({ type: 'get_table', table: t, page: this.auditPage }));
@@ -72,7 +100,7 @@ createApp({
             }
             if (this._metricsTimer) {
                 clearInterval(this._metricsTimer);
-                this._metricsTimer = null
+                this._metricsTimer = null;
             }
             if (t === 'metrics') {
                 this.requestMetrics();
@@ -84,7 +112,7 @@ createApp({
                         this.metricsCountdown = 15;
                     }
                 }, 1000);
-                return
+                return;
             }
             this.ws.send(JSON.stringify({ type: 'get_table', table: t }));
         },
@@ -96,8 +124,17 @@ createApp({
         },
         initMap() {
             if (this.map) return;
-            this.map = L.map('map', { crs: L.CRS.Simple, minZoom: -2, maxZoom: 5, attributionControl: false, zoomControl: false });
-            const bounds = [[0, 0], [1000, 1000]];
+            this.map = L.map('map', {
+                crs: L.CRS.Simple,
+                minZoom: -2,
+                maxZoom: 5,
+                attributionControl: false,
+                zoomControl: false,
+            });
+            const bounds = [
+                [0, 0],
+                [1000, 1000],
+            ];
             this.map.fitBounds(bounds);
             const img = new Image();
             img.onload = () => L.imageOverlay('map.jpg', bounds).addTo(this.map);
@@ -118,20 +155,33 @@ createApp({
                 seen.add(p.id);
                 const pos = this.toMap(p.x, p.y);
                 if (!this.markerObjs[p.id]) {
-                    const icon = L.divIcon({ className: '', iconSize: [10, 10], html: `<div class="pm"><span>${p.name}</span></div>` });
+                    const icon = L.divIcon({
+                        className: '',
+                        iconSize: [10, 10],
+                        html: `<div class="pm"><span>${p.name}</span></div>`,
+                    });
                     this.markerObjs[p.id] = L.marker(pos, { icon }).addTo(this.map);
-                } else { this.markerObjs[p.id].setLatLng(pos) }
+                } else {
+                    this.markerObjs[p.id].setLatLng(pos);
+                }
             }
             for (const key of Object.keys(this.markerObjs)) {
                 if (!seen.has(Number(key))) {
                     this.markerObjs[key].remove();
-                    delete this.markerObjs[key]
+                    delete this.markerObjs[key];
                 }
             }
         },
         async doLogin() {
-            const r = await fetch('/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: this.login, password: this.password }) });
-            if (!r.ok) { this.error = 'Отказано'; return; }
+            const r = await fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: this.login, password: this.password }),
+            });
+            if (!r.ok) {
+                this.error = 'Отказано';
+                return;
+            }
             this.token = (await r.json()).token;
             this.connect();
         },
@@ -157,7 +207,7 @@ createApp({
                 }
 
                 document.title = '⚠ Переподключение…';
-                const delay = this._backoff = Math.min((this._backoff || 500) * 2, 10000);
+                const delay = (this._backoff = Math.min((this._backoff || 500) * 2, 10000));
                 setTimeout(() => this.connect(), delay);
             };
 
@@ -166,7 +216,11 @@ createApp({
             this.ws.onmessage = (e) => {
                 const m = JSON.parse(e.data);
                 if (m.type === 'hello') this.online = m.online;
-                if (m.type === 'players') { this.online = m.online; this.players = m.players; this.updateMarkers(m.players); }
+                if (m.type === 'players') {
+                    this.online = m.online;
+                    this.players = m.players;
+                    this.updateMarkers(m.players);
+                }
                 if (m.type === 'table') {
                     this.tables[m.table] = m.rows;
                     if (m.table === 'audit') {
@@ -189,7 +243,9 @@ createApp({
                 if (m.type === 'action_result') {
                     this.actionResult = m.result;
                     clearTimeout(this._actionTimer);
-                    this._actionTimer = setTimeout(() => { this.actionResult = null; }, 5000)
+                    this._actionTimer = setTimeout(() => {
+                        this.actionResult = null;
+                    }, 5000);
                 }
                 if (m.type === 'create_schema') {
                     this.createSchema = m.schema;
@@ -201,17 +257,18 @@ createApp({
             if (!this.map || this.staticDrawn || !this.staticMarkers.length) return;
             for (const mk of this.staticMarkers) {
                 const icon = L.divIcon({
-                    className: '', iconSize: [22, 22],
-                    html: `<div class="sm">${mk.icon}</div>`
+                    className: '',
+                    iconSize: [22, 22],
+                    html: `<div class="sm">${mk.icon}</div>`,
                 });
                 L.marker(this.toMap(mk.x, mk.y), { icon })
                     .addTo(this.map)
                     .bindTooltip(mk.name, { direction: 'top', offset: [0, -10] });
             }
-            this.staticDrawn = true
+            this.staticDrawn = true;
         },
         isEditable(c) {
-            return (this.editable[this.active] || []).includes(c)
+            return (this.editable[this.active] || []).includes(c);
         },
         startEdit(r, c) {
             if (!this.isEditable(c)) return;
@@ -225,10 +282,15 @@ createApp({
         },
         commitEdit() {
             if (!this.editing) return;
-            this.ws.send(JSON.stringify({
-                type: 'update_cell', table: this.active,
-                id: this.editing.id, field: this.editing.field, value: this.editValue
-            }));
+            this.ws.send(
+                JSON.stringify({
+                    type: 'update_cell',
+                    table: this.active,
+                    id: this.editing.id,
+                    field: this.editing.field,
+                    value: this.editValue,
+                })
+            );
             this.editing = null;
         },
         playerAction(action, id) {
@@ -270,7 +332,9 @@ createApp({
                     return;
                 }
             }
-            this.ws.send(JSON.stringify({ type: 'create_row', table: this.active, data: this.createData }));
+            this.ws.send(
+                JSON.stringify({ type: 'create_row', table: this.active, data: this.createData })
+            );
             this.cancelCreate();
         },
         auditGo(page) {
@@ -279,7 +343,8 @@ createApp({
             this.openTab('audit');
         },
         requestMetrics() {
-            if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify({ type: 'get_metrics' }));
+            if (this.ws && this.ws.readyState === 1)
+                this.ws.send(JSON.stringify({ type: 'get_metrics' }));
         },
         refreshMetricsNow() {
             this.requestMetrics();
@@ -288,11 +353,14 @@ createApp({
         fmtMetric(r) {
             if (r.name === 'rage_memory_rss_bytes') return (r.value / 1048576).toFixed(1) + ' MB';
             if (r.name === 'rage_uptime_seconds') {
-                const h = Math.floor(r.value / 3600), m = Math.floor((r.value % 3600) / 60), s = r.value % 60;
+                const h = Math.floor(r.value / 3600),
+                    m = Math.floor((r.value % 3600) / 60),
+                    s = r.value % 60;
                 return `${h}ч ${m}м ${s}с`;
             }
-            if (r.name === 'rage_economy_money_total') return '$' + Number(r.value).toLocaleString('ru-RU');
+            if (r.name === 'rage_economy_money_total')
+                return '$' + Number(r.value).toLocaleString('ru-RU');
             return r.value;
         },
-    }
+    },
 }).mount('#app');

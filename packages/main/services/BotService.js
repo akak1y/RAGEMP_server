@@ -9,12 +9,12 @@ const logger = require('../core/logger');
 const GREETINGS = [
     'Привет, путник! Как дела?',
     'Здравствуй! Хороший день для прогулки.',
-    'О, гости! Рад тебя видеть.'
+    'О, гости! Рад тебя видеть.',
 ];
 
 class BotService {
     constructor() {
-        this.bots = new Map();   // name → { ped, label, accountId, shape, greeted }
+        this.bots = new Map(); // name → { ped, label, accountId, shape, greeted }
         this.shapes = new Map(); // colshape → botName
         mp.events.add('playerReady', (player) => this.sendBotsTo(player));
 
@@ -48,7 +48,7 @@ class BotService {
                 account = await User.create({
                     username: botName,
                     password: 'bot_no_login',
-                    money: 10000
+                    money: 10000,
                 });
                 logger.info(`[BotService] Создан аккаунт для бота: ${botName} (ID ${account.id})`);
             }
@@ -57,16 +57,20 @@ class BotService {
             await Bot.upsert({
                 name: botName,
                 account_id: account.id,
-                position: `${BotSpawnPos.x},${BotSpawnPos.y},${BotSpawnPos.z},${BotSpawnPos.h}`
+                position: `${BotSpawnPos.x},${BotSpawnPos.y},${BotSpawnPos.z},${BotSpawnPos.h}`,
             });
 
             const ped = mp.peds.new(
                 mp.joaat(BotPedModel),
                 new mp.Vector3(BotSpawnPos.x, BotSpawnPos.y, BotSpawnPos.z),
-                BotSpawnPos.h, 0
+                BotSpawnPos.h,
+                0
             );
-            try { ped.rotation = new mp.Vector3(0, 0, BotSpawnPos.h) }
-            catch (err) { logger.error(`[BotService] Ошибка ped.rotation: ${err.message}`) }
+            try {
+                ped.rotation = new mp.Vector3(0, 0, BotSpawnPos.h);
+            } catch (err) {
+                logger.error(`[BotService] Ошибка ped.rotation: ${err.message}`);
+            }
 
             const label = mp.labels.new(
                 botName + ' (' + account.id + ')',
@@ -77,14 +81,24 @@ class BotService {
             const shape = mp.colshapes.newSphere(BotSpawnPos.x, BotSpawnPos.y, BotSpawnPos.z, 5);
             this.shapes.set(shape, botName);
 
-            this.bots.set(botName, { ped, label, accountId: account.id, shape, greeted: new Set() });
-            mp.players.forEach(p => p.call('client:bot:setup', [ped.id, BotSpawnPos.h]));
+            this.bots.set(botName, {
+                ped,
+                label,
+                accountId: account.id,
+                shape,
+                greeted: new Set(),
+            });
+            mp.players.forEach((p) => p.call('client:bot:setup', [ped.id, BotSpawnPos.h]));
             logger.info(`[BotService] Бот ${botName} заспавнен`);
-        } catch (err) { logger.error(`[BotService] Ошибка спавна: ${err.message}`) }
+        } catch (err) {
+            logger.error(`[BotService] Ошибка спавна: ${err.message}`);
+        }
     }
 
     sendBotsTo(player) {
-        for (const [, bot] of this.bots) { player.call('client:bot:setup', [bot.ped.id, BotSpawnPos.h]) }
+        for (const [, bot] of this.bots) {
+            player.call('client:bot:setup', [bot.ped.id, BotSpawnPos.h]);
+        }
     }
 
     getAccountId(botName) {
@@ -92,7 +106,9 @@ class BotService {
         return bot ? bot.accountId : null;
     }
 
-    isBot(name) { return this.bots.has(name) }
+    isBot(name) {
+        return this.bots.has(name);
+    }
 
     findBotName(nick) {
         for (const [name] of this.bots) {
@@ -109,4 +125,4 @@ class BotService {
     }
 }
 
-module.exports = new BotService()
+module.exports = new BotService();

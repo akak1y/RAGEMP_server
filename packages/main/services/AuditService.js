@@ -12,13 +12,18 @@ class AuditService {
 
     subscribe(fn) {
         this._listeners.push(fn);
-        return () => { this._listeners = this._listeners.filter(f => f !== fn); };
+        return () => {
+            this._listeners = this._listeners.filter((f) => f !== fn);
+        };
     }
 
     _emit(row) {
         for (const fn of this._listeners) {
-            try { fn(row) }
-            catch (err) { logger.error(`[AuditService] Ошибка подписчика: ${err.message}`) }
+            try {
+                fn(row);
+            } catch (err) {
+                logger.error(`[AuditService] Ошибка подписчика: ${err.message}`);
+            }
         }
     }
 
@@ -28,8 +33,12 @@ class AuditService {
             const { details, ...rest } = entry;
             const row = await getAuditModel().create({
                 ...rest,
-                details: details === undefined ? null
-                    : (typeof details === 'string' ? details : JSON.stringify(details))
+                details:
+                    details === undefined
+                        ? null
+                        : typeof details === 'string'
+                          ? details
+                          : JSON.stringify(details),
             });
             this._emit(row);
             return row;
@@ -46,13 +55,13 @@ class AuditService {
             actor: player.accountName,
             actor_id: player.accountId,
             ip: player.ip,
-            ...extra
+            ...extra,
         };
         if (withPosition) {
             const p = player.position || {};
             entry.details = {
                 position: `${(p.x || 0).toFixed(1)},${(p.y || 0).toFixed(1)},${(p.z || 0).toFixed(1)}`,
-                ...(extra.details || {})
+                ...(extra.details || {}),
             };
         }
         return this.log(entry);
@@ -73,11 +82,13 @@ class AuditService {
                     success: false,
                     repeats: count,
                     withPosition: true,
-                    ...extra
+                    ...extra,
                 });
                 await redis.del(key);
             }
-        } catch (err) { logger.error(`[AuditService] trackFail ошибка: ${err.message}`) }
+        } catch (err) {
+            logger.error(`[AuditService] trackFail ошибка: ${err.message}`);
+        }
     }
 
     async getRecent(limit = 10, category = null) {
@@ -86,7 +97,7 @@ class AuditService {
             where: category ? { category } : {},
             order: [['created_at', 'DESC']],
             limit,
-            raw: true
+            raw: true,
         });
     }
 
@@ -98,7 +109,9 @@ class AuditService {
         try {
             await ensureAuditReady();
             await getAuditModel().increment('repeats', { where: { id: rowId } });
-        } catch (err) { logger.error(`[AuditService] bumpRepeats ошибка: ${err.message}`) }
+        } catch (err) {
+            logger.error(`[AuditService] bumpRepeats ошибка: ${err.message}`);
+        }
     }
 
     /**
@@ -118,7 +131,7 @@ class AuditService {
             order: [['created_at', 'DESC']],
             limit: perPage,
             offset: (page - 1) * perPage,
-            raw: true
+            raw: true,
         });
         return { rows, total };
     }

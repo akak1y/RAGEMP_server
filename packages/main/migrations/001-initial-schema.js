@@ -18,9 +18,10 @@ module.exports = {
         await queryInterface.createTable('items', {
             id: { type: INTEGER, autoIncrement: true, primaryKey: true },
             owner_id: {
-                type: INTEGER, allowNull: false,
+                type: INTEGER,
+                allowNull: false,
                 references: { model: 'accounts', key: 'id' },
-                onDelete: 'CASCADE'
+                onDelete: 'CASCADE',
             },
             item_id: { type: STRING(50), allowNull: false },
             count: { type: INTEGER, allowNull: false, defaultValue: 1 },
@@ -30,9 +31,10 @@ module.exports = {
         await queryInterface.createTable('vehicles', {
             id: { type: INTEGER, autoIncrement: true, primaryKey: true },
             owner_id: {
-                type: INTEGER, allowNull: false,
+                type: INTEGER,
+                allowNull: false,
                 references: { model: 'accounts', key: 'id' },
-                onDelete: 'CASCADE'
+                onDelete: 'CASCADE',
             },
             model: { type: STRING(50), allowNull: false },
             color_r: { type: INTEGER, defaultValue: 255 },
@@ -81,5 +83,5 @@ module.exports = {
         await queryInterface.dropTable('vehicles');
         await queryInterface.dropTable('items');
         await queryInterface.dropTable('accounts');
-    }
+    },
 };

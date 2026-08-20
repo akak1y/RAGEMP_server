@@ -1,7 +1,20 @@
 {
-  "scripts": {
-    "test": "npm --prefix packages/main test && npm --prefix client_packages test",
-    "test:int": "npm --prefix packages/main run test:int",
-    "test:all": "npm test && npm run test:int"
-  }
+    "name": "ragemp-server",
+    "version": "1.2.0",
+    "private": true,
+    "scripts": {
+        "test": "npm --prefix packages/main test && npm --prefix client_packages test",
+        "test:int": "npm --prefix packages/main run test:int",
+        "test:all": "npm test && npm run test:int",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "format": "prettier --write .",
+        "format:check": "prettier --check ."
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.39.5",
+        "eslint": "^9.39.5",
+        "globals": "^17.11.0",
+        "prettier": "^3.9.6"
+    }
 }

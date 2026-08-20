@@ -38,7 +38,8 @@ class AccountService {
      * @private
      */
     _ensureInitialized() {
-        if (!this._initialized || !this._model) throw new Error('[AccountService] Сервис не инициализирован');
+        if (!this._initialized || !this._model)
+            throw new Error('[AccountService] Сервис не инициализирован');
     }
 
     /**
@@ -46,12 +47,14 @@ class AccountService {
      * @private
      */
     _validateUsername(username) {
-        if (!username || typeof username !== 'string') throw new Error('Username не должно быть пустым');
+        if (!username || typeof username !== 'string')
+            throw new Error('Username не должно быть пустым');
         const trimmed = username.trim().toLowerCase();
-        
+
         if (trimmed.length > 32) throw new Error('Username должно содержать не более 32 символов');
-        if (!/^[a-zA-Z0-9]+$/.test(trimmed)) throw new Error('Username может содержать только буквы и цифры');
-        
+        if (!/^[a-zA-Z0-9]+$/.test(trimmed))
+            throw new Error('Username может содержать только буквы и цифры');
+
         return trimmed;
     }
 
@@ -87,7 +90,7 @@ class AccountService {
         try {
             const validatedUsername = this._validateUsername(username);
             return await this._model.findOne({
-                where: { username: validatedUsername }
+                where: { username: validatedUsername },
             });
         } catch (err) {
             logger.error(`[AccountService] findByUsername error: ${err.message}`);
@@ -108,7 +111,7 @@ class AccountService {
 
         try {
             return await this._model.findOne({
-                where: { hwid: hwid.trim() }
+                where: { hwid: hwid.trim() },
             });
         } catch (err) {
             logger.error(`[AccountService] findByHwid error: ${err.message}`);
@@ -128,7 +131,8 @@ class AccountService {
      */
     async createAccount(data) {
         this._ensureInitialized();
-        if (!data || typeof data !== 'object') throw new Error('Данные аккаунта должны быть объектом');
+        if (!data || typeof data !== 'object')
+            throw new Error('Данные аккаунта должны быть объектом');
         if (!data.password) throw new Error('Требуется пароль');
 
         try {
@@ -141,7 +145,7 @@ class AccountService {
                 admin_level: Number.isInteger(data.admin_level) ? data.admin_level : 0,
                 pos_x: -436.0,
                 pos_y: -162.0,
-                pos_z: 39.0
+                pos_z: 39.0,
             };
 
             const user = await this._model.create(accountData);
@@ -174,23 +178,27 @@ class AccountService {
             return false;
         }
 
-        const allowedFields = { // разрешено менять поля
+        const allowedFields = {
+            // разрешено менять поля
             money: (val) => Number.isInteger(val) && val >= 0,
             admin_level: (val) => Number.isInteger(val) && val >= 0,
             pos_x: (val) => typeof val === 'number',
             pos_y: (val) => typeof val === 'number',
             pos_z: (val) => typeof val === 'number',
             hwid: (val) => typeof val === 'string',
-            last_login: (val) => val instanceof Date || typeof val === 'number'
+            last_login: (val) => val instanceof Date || typeof val === 'number',
         };
 
         const safeData = {};
-        
+
         for (const [key, validator] of Object.entries(allowedFields)) {
             if (key in updateData) {
                 const value = updateData[key];
-                if (validator(value)) { safeData[key] = value }
-                else { logger.warn(`[AccountService] updateAccount: недопустимое значение для ${key}`) }
+                if (validator(value)) {
+                    safeData[key] = value;
+                } else {
+                    logger.warn(`[AccountService] updateAccount: недопустимое значение для ${key}`);
+                }
             }
         }
 
@@ -201,14 +209,16 @@ class AccountService {
 
         try {
             const [affectedRows] = await this._model.update(safeData, {
-                where: { id: userId }
+                where: { id: userId },
             });
 
             if (affectedRows > 0) {
-                logger.info(`[AccountService] Обновлен аккаунт ID ${userId}: ${Object.keys(safeData).join(', ')}`);
+                logger.info(
+                    `[AccountService] Обновлен аккаунт ID ${userId}: ${Object.keys(safeData).join(', ')}`
+                );
                 return true;
             }
-            return false
+            return false;
         } catch (err) {
             logger.error(`[AccountService] updateAccount error: ${err.message}`);
             throw err;
@@ -226,8 +236,8 @@ class AccountService {
         return await this.updateAccount(userId, {
             pos_x: position.x,
             pos_y: position.y,
-            pos_z: position.z
-        })
+            pos_z: position.z,
+        });
     }
 
     /**
@@ -283,7 +293,7 @@ class AccountService {
 
         try {
             const users = await this._model.findAll({ attributes });
-            return users.map(u => u.toJSON());
+            return users.map((u) => u.toJSON());
         } catch (err) {
             logger.error(`[AccountService] getAllAccounts error: ${err.message}`);
             throw err;
@@ -299,7 +309,9 @@ class AccountService {
         try {
             const user = await this.findByUsername(username);
             return user !== null;
-        } catch (err) { return false }
+        } catch (err) {
+            return false;
+        }
     }
 
     /**
@@ -312,4 +324,4 @@ class AccountService {
     }
 }
 
-module.exports = new AccountService()
+module.exports = new AccountService();

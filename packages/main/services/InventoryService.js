@@ -18,9 +18,14 @@ class InventoryService {
         player.inventory = new Array(this.inventorySize).fill(null); // пустой инвентарь
         const dbItems = await getItemModel().findAll({ where: { owner_id: player.accountId } }); // вытаскиваем из бд все предметы этого игрока
 
-        dbItems.forEach(item => { // раскладываем предметы в инвентарь
+        dbItems.forEach((item) => {
+            // раскладываем предметы в инвентарь
             if (item.slot < player.inventory.length) {
-                player.inventory[item.slot] = { dbId: item.id, itemId: item.item_id, count: item.count };
+                player.inventory[item.slot] = {
+                    dbId: item.id,
+                    itemId: item.item_id,
+                    count: item.count,
+                };
             }
         });
         this.syncInventory(player);
@@ -31,11 +36,13 @@ class InventoryService {
      * @param {mp.Player} player - Игрок
      */
     syncInventory(player) {
-        const clientData = player.inventory.map(slot => slot ? { itemId: slot.itemId, count: slot.count } : null);
+        const clientData = player.inventory.map((slot) =>
+            slot ? { itemId: slot.itemId, count: slot.count } : null
+        );
         player.call('client:inventory:update', [
             JSON.stringify(clientData),
-            JSON.stringify(ItemConfig)
-        ])
+            JSON.stringify(ItemConfig),
+        ]);
     }
 
     /**
@@ -47,7 +54,10 @@ class InventoryService {
      */
     hasItem(player, itemId, amount = 1) {
         if (!Array.isArray(player.inventory)) return false;
-        const total = player.inventory.reduce((sum, slot) => (slot && slot.itemId === itemId) ? sum + slot.count : sum, 0);
+        const total = player.inventory.reduce(
+            (sum, slot) => (slot && slot.itemId === itemId ? sum + slot.count : sum),
+            0
+        );
         return total >= amount;
     }
 
@@ -73,7 +83,7 @@ class InventoryService {
         }
         if (space < amount) return false; // инвентарь не вместит
 
-        const planned = player.inventory.map(s => s ? { ...s } : null);
+        const planned = player.inventory.map((s) => (s ? { ...s } : null));
         const writes = [];
         let remaining = amount;
 
@@ -87,7 +97,7 @@ class InventoryService {
             }
         }
         while (remaining > 0) {
-            const freeSlot = planned.findIndex(s => s === null); // ищем пустую ячейку
+            const freeSlot = planned.findIndex((s) => s === null); // ищем пустую ячейку
             if (freeSlot === -1) break; // не случится благодаря проверке вместимости выше
             const add = Math.min(config.maxStack, remaining);
             planned[freeSlot] = { dbId: null, itemId, count: add };
@@ -100,11 +110,20 @@ class InventoryService {
         try {
             for (const w of writes) {
                 if (w.type === 'update') {
-                    await Item.update({ count: w.count }, { where: { id: w.dbId }, transaction: t });
+                    await Item.update(
+                        { count: w.count },
+                        { where: { id: w.dbId }, transaction: t }
+                    );
                 } else {
-                    const created = await Item.create({
-                        owner_id: player.accountId, item_id: itemId, count: w.count, slot: w.slot
-                    }, { transaction: t });
+                    const created = await Item.create(
+                        {
+                            owner_id: player.accountId,
+                            item_id: itemId,
+                            count: w.count,
+                            slot: w.slot,
+                        },
+                        { transaction: t }
+                    );
                     planned[w.slot].dbId = created.id;
                 }
             }
@@ -130,7 +149,7 @@ class InventoryService {
     async removeItem(player, itemId, amount = 1) {
         if (!this.hasItem(player, itemId, amount)) return false;
 
-        const planned = player.inventory.map(s => s ? { ...s } : null);
+        const planned = player.inventory.map((s) => (s ? { ...s } : null));
         const writes = [];
         let remaining = amount;
 
@@ -143,7 +162,9 @@ class InventoryService {
                 if (slot.count <= 0) {
                     planned[i] = null;
                     writes.push({ type: 'destroy', dbId: slot.dbId });
-                } else { writes.push({ type: 'update', dbId: slot.dbId, count: slot.count }) }
+                } else {
+                    writes.push({ type: 'update', dbId: slot.dbId, count: slot.count });
+                }
             }
         }
 
@@ -151,8 +172,14 @@ class InventoryService {
         const t = await Item.sequelize.transaction();
         try {
             for (const w of writes) {
-                if (w.type === 'update') { await Item.update({ count: w.count }, { where: { id: w.dbId }, transaction: t }) }
-                else { await Item.destroy({ where: { id: w.dbId }, transaction: t }) }
+                if (w.type === 'update') {
+                    await Item.update(
+                        { count: w.count },
+                        { where: { id: w.dbId }, transaction: t }
+                    );
+                } else {
+                    await Item.destroy({ where: { id: w.dbId }, transaction: t });
+                }
             }
             await t.commit();
         } catch (err) {
@@ -161,7 +188,9 @@ class InventoryService {
             return false;
         }
         player.inventory = planned;
-        logger.info(`[InventoryService] У игрока ${player.accountName} удалено: ${itemId} x${amount}`);
+        logger.info(
+            `[InventoryService] У игрока ${player.accountName} удалено: ${itemId} x${amount}`
+        );
         this.syncInventory(player);
         return true;
     }

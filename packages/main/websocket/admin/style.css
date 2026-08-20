@@ -1,193 +1,205 @@
-body{
-    font-family:monospace;
-    background:#111;
-    color:#eee;
-    padding:20px
+body {
+    font-family: monospace;
+    background: #111;
+    color: #eee;
+    padding: 20px;
 }
-table{
-    border-collapse:collapse;
-    margin-top:10px
+table {
+    border-collapse: collapse;
+    margin-top: 10px;
 }
-td,th{
-    border:1px solid #444;
-    padding:4px 8px;
-    font-size:13px
+td,
+th {
+    border: 1px solid #444;
+    padding: 4px 8px;
+    font-size: 13px;
 }
-th{
-    background:#222
+th {
+    background: #222;
 }
-button{
-    margin:2px;
-    padding:4px 10px;
-    background:#234;
-    color:#eee;
-    border:1px solid #456;
-    cursor:pointer
+button {
+    margin: 2px;
+    padding: 4px 10px;
+    background: #234;
+    color: #eee;
+    border: 1px solid #456;
+    cursor: pointer;
 }
-button.active{
-    background:#468
+button.active {
+    background: #468;
 }
-input{
-    background:#222;
-    color:#eee;
-    border:1px solid #444;
-    padding:4px
+input {
+    background: #222;
+    color: #eee;
+    border: 1px solid #444;
+    padding: 4px;
 }
-#map{
-    background:#0a0f1a
+#map {
+    background: #0a0f1a;
 }
-.leaflet-container{
-    background:#0a0f1a
+.leaflet-container {
+    background: #0a0f1a;
 }
-.leaflet-layer{
-    filter:saturate(.85) brightness(.8) contrast(1.1)
+.leaflet-layer {
+    filter: saturate(0.85) brightness(0.8) contrast(1.1);
 }
-.leaflet-marker-icon{
-    transition:transform 2.8s linear
+.leaflet-marker-icon {
+    transition: transform 2.8s linear;
 }
-.map-wrap{
-    position:relative
+.map-wrap {
+    position: relative;
 }
-.map-btns{
-    position:absolute;
-    top:16px;
-    right:10px;
-    z-index:1000
+.map-btns {
+    position: absolute;
+    top: 16px;
+    right: 10px;
+    z-index: 1000;
 }
-.pm{
-    width:10px;
-    height:10px;
-    background:#4f4;
-    border-radius:50%;
-    box-shadow:0 0 10px #4f4,0 0 20px #4f4;
-    position:relative
+.pm {
+    width: 10px;
+    height: 10px;
+    background: #4f4;
+    border-radius: 50%;
+    box-shadow:
+        0 0 10px #4f4,
+        0 0 20px #4f4;
+    position: relative;
 }
-.pm span{
-    position:absolute;
-    top:12px;
-    left:50%;
-    transform:translateX(-50%);
-    font:11px monospace;
-    color:#cfc;
-    white-space:nowrap;
-    text-shadow:0 0 4px #000
+.pm span {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font: 11px monospace;
+    color: #cfc;
+    white-space: nowrap;
+    text-shadow: 0 0 4px #000;
 }
-.pm::before{
-    content:'';
-    position:absolute;
-    inset:-6px;
-    border:1px solid rgba(68,255,68,.5);
-    border-radius:50%;
-    animation:pulse 1.6s infinite;
-    pointer-events:none
+.pm::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border: 1px solid rgba(68, 255, 68, 0.5);
+    border-radius: 50%;
+    animation: pulse 1.6s infinite;
+    pointer-events: none;
 }
-@keyframes pulse{
-    0%{transform:scale(.6);opacity:1}
-    100%{transform:scale(1.6);opacity:0}
+@keyframes pulse {
+    0% {
+        transform: scale(0.6);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.6);
+        opacity: 0;
+    }
 }
-.sm{
-    font-size:18px;
-    text-align:center;
-    line-height:22px;
-    filter:drop-shadow(0 0 3px #000);
-    cursor:pointer
+.sm {
+    font-size: 18px;
+    text-align: center;
+    line-height: 22px;
+    filter: drop-shadow(0 0 3px #000);
+    cursor: pointer;
 }
-.editable{
-    cursor:pointer;
-    background:#1a2a1a
+.editable {
+    cursor: pointer;
+    background: #1a2a1a;
 }
-.editable:hover{
-    background:#2a4a2a
+.editable:hover {
+    background: #2a4a2a;
 }
-.btn-heal{
-    background:#234;
-    color:#4f4;
-    border:1px solid #4f4
+.btn-heal {
+    background: #234;
+    color: #4f4;
+    border: 1px solid #4f4;
 }
-.btn-kill{
-    background:#423;
-    color:#f84;
-    border:1px solid #f84
+.btn-kill {
+    background: #423;
+    color: #f84;
+    border: 1px solid #f84;
 }
-.btn-delete{
-    background:#422;
-    color:#f44;
-    border:1px solid #f44
+.btn-delete {
+    background: #422;
+    color: #f44;
+    border: 1px solid #f44;
 }
-.btn-heal:hover,.btn-kill:hover,.btn-delete:hover{
-    opacity:.8
+.btn-heal:hover,
+.btn-kill:hover,
+.btn-delete:hover {
+    opacity: 0.8;
 }
-.action-msg{
-    font-size:14px;
-    margin-left:14px;
-    font-weight:normal;
-    vertical-align:middle
+.action-msg {
+    font-size: 14px;
+    margin-left: 14px;
+    font-weight: normal;
+    vertical-align: middle;
 }
-.action-msg.ok{
-    color:#4f4
+.action-msg.ok {
+    color: #4f4;
 }
-.action-msg.fail{
-    color:#f44
+.action-msg.fail {
+    color: #f44;
 }
-.btn-create{
-    background:#234;
-    color:#4f4;
-    border:1px solid #4f4;
-    padding:4px 10px
+.btn-create {
+    background: #234;
+    color: #4f4;
+    border: 1px solid #4f4;
+    padding: 4px 10px;
 }
-.btn-create:hover{
-    opacity:.85
+.btn-create:hover {
+    opacity: 0.85;
 }
-.create-form{
-    background:#0f2318;
-    border:1px solid #2ea043;
-    padding:14px;
-    margin:12px 0;
-    border-radius:6px
+.create-form {
+    background: #0f2318;
+    border: 1px solid #2ea043;
+    padding: 14px;
+    margin: 12px 0;
+    border-radius: 6px;
 }
-.create-fields{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    margin-bottom:10px
+.create-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
 }
-.create-field{
-    display:flex;
-    flex-direction:column;
-    min-width:140px
+.create-field {
+    display: flex;
+    flex-direction: column;
+    min-width: 140px;
 }
-.create-field label{
-    font-size:12px;
-    color:#8b949e;
-    margin-bottom:2px
+.create-field label {
+    font-size: 12px;
+    color: #8b949e;
+    margin-bottom: 2px;
 }
-.create-field label.required{
-    color:#c9d1d9
+.create-field label.required {
+    color: #c9d1d9;
 }
-.create-field label.required span{
-    color:#f44;
-    margin-left:2px
+.create-field label.required span {
+    color: #f44;
+    margin-left: 2px;
 }
-.create-field input, .create-field select{
-    background:#0d1117;
-    color:#c9d1d9;
-    border:1px solid #30363d;
-    padding:4px 8px;
-    font-size:14px
+.create-field input,
+.create-field select {
+    background: #0d1117;
+    color: #c9d1d9;
+    border: 1px solid #30363d;
+    padding: 4px 8px;
+    font-size: 14px;
 }
-.create-actions{
-    display:flex;
-    gap:8px
+.create-actions {
+    display: flex;
+    gap: 8px;
 }
-.pager{
+.pager {
     display: flex;
     gap: 10px;
     align-items: center;
-    margin: 8px 0
+    margin: 8px 0;
 }
-.pager button{
-    padding: 4px 10px
+.pager button {
+    padding: 4px 10px;
 }
-.pager button:disabled{
-    opacity: .4
+.pager button:disabled {
+    opacity: 0.4;
 }

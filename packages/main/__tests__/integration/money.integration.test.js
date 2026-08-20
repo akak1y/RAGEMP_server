@@ -26,7 +26,7 @@ describe('MoneyService — интеграционные тесты', () => {
 
         const success = await moneyService.addMoney(user.id, 50, 'тест');
         expect(success).toBe(true);
-        
+
         const updated = await User.findByPk(user.id);
         expect(updated.money).toBe(150);
     });

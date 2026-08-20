@@ -28,26 +28,30 @@ class StatsService {
 
         const Users = getUserModel();
         const tSql = performance.now();
-        const [row] = await profile('Stats:EconomySQL', () => Users.findAll({
-            attributes: [
-                [fn('COUNT', col('id')), 'total'],
-                [fn('SUM', col('money')), 'totalMoney'],
-                [fn('AVG', col('money')), 'avgMoney'],
-                [fn('MAX', col('money')), 'maxMoney']
-            ],
-            raw: true
-        }));
-        const sqlMs = (performance.now() - tSql).toFixed(2); 
+        const [row] = await profile('Stats:EconomySQL', () =>
+            Users.findAll({
+                attributes: [
+                    [fn('COUNT', col('id')), 'total'],
+                    [fn('SUM', col('money')), 'totalMoney'],
+                    [fn('AVG', col('money')), 'avgMoney'],
+                    [fn('MAX', col('money')), 'maxMoney'],
+                ],
+                raw: true,
+            })
+        );
+        const sqlMs = (performance.now() - tSql).toFixed(2);
 
         const stats = {
             total: Number(row.total),
             totalMoney: Number(row.totalMoney || 0),
             avgMoney: Math.round(Number(row.avgMoney || 0)),
-            maxMoney: Number(row.maxMoney || 0)
+            maxMoney: Number(row.maxMoney || 0),
         };
 
         await redis.set(ECONOMY_CACHE_KEY, JSON.stringify(stats), { EX: ECONOMY_CACHE_TTL });
-        logger.info(`[Stats] Экономика перечитана из MySQL и закэширована на ${ECONOMY_CACHE_TTL}с`);
+        logger.info(
+            `[Stats] Экономика перечитана из MySQL и закэширована на ${ECONOMY_CACHE_TTL}с`
+        );
 
         return { ...stats, source: 'mysql', ms: sqlMs };
     }
@@ -70,26 +74,32 @@ class StatsService {
             attributes: ['username', 'money'],
             order: [['money', 'DESC']],
             limit,
-            raw: true
+            raw: true,
         });
     }
 
     getOnlineStats() {
         return {
             online: mp.players.length,
-            vehicles: mp.vehicles.length
+            vehicles: mp.vehicles.length,
         };
     }
 
-    async invalidateEconomyCache() { await getRedis().del(ECONOMY_CACHE_KEY) }
+    async invalidateEconomyCache() {
+        await getRedis().del(ECONOMY_CACHE_KEY);
+    }
 
     async getCachedEconomy() {
         try {
             const cached = await getRedis().get(ECONOMY_CACHE_KEY);
             if (cached) return JSON.parse(cached);
         } catch {}
-        try { return await this.getEconomyStats() } catch { return null }
+        try {
+            return await this.getEconomyStats();
+        } catch {
+            return null;
+        }
     }
 }
 
-module.exports = new StatsService()
+module.exports = new StatsService();

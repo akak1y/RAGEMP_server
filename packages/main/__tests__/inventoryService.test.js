@@ -2,21 +2,21 @@ const inventoryService = require('../services/InventoryService');
 const { getItemModel } = require('../models/Item');
 
 jest.mock('../models/Item', () => ({
-    getItemModel: jest.fn()
+    getItemModel: jest.fn(),
 }));
 
 jest.mock('../config', () => ({
     ItemConfig: {
         burger: { name: 'Бургер', weight: 0.2, maxStack: 5 },
-        water:  { name: 'Вода', weight: 0.3, maxStack: 10 },
-        phone:  { name: 'Смартфон iFruit', weight: 0.5, maxStack: 1 }
-    }
+        water: { name: 'Вода', weight: 0.3, maxStack: 10 },
+        phone: { name: 'Смартфон iFruit', weight: 0.5, maxStack: 1 },
+    },
 }));
 
 jest.mock('../core/logger', () => ({
     info: jest.fn(),
     warn: jest.fn(),
-    error: jest.fn()
+    error: jest.fn(),
 }));
 
 describe('InventoryService', () => {
@@ -28,7 +28,7 @@ describe('InventoryService', () => {
         jest.clearAllMocks();
         mockTransaction = {
             commit: jest.fn(),
-            rollback: jest.fn()
+            rollback: jest.fn(),
         };
         mockItemModel = {
             findAll: jest.fn(),
@@ -36,8 +36,8 @@ describe('InventoryService', () => {
             create: jest.fn(),
             destroy: jest.fn(),
             sequelize: {
-                transaction: jest.fn().mockResolvedValue(mockTransaction)
-            }
+                transaction: jest.fn().mockResolvedValue(mockTransaction),
+            },
         };
         getItemModel.mockReturnValue(mockItemModel);
 
@@ -45,7 +45,7 @@ describe('InventoryService', () => {
             accountId: 1,
             accountName: 'TestPlayer',
             inventory: new Array(20).fill(null),
-            call: jest.fn()
+            call: jest.fn(),
         };
     });
 
@@ -83,16 +83,19 @@ describe('InventoryService', () => {
 
             const result = await inventoryService.giveItem(mockPlayer, 'burger', 3);
             expect(result).toBe(true);
-            expect(mockItemModel.create).toHaveBeenCalledWith({
-                owner_id: 1,
-                item_id: 'burger',
-                count: 3,
-                slot: 0
-            }, { transaction: mockTransaction });
+            expect(mockItemModel.create).toHaveBeenCalledWith(
+                {
+                    owner_id: 1,
+                    item_id: 'burger',
+                    count: 3,
+                    slot: 0,
+                },
+                { transaction: mockTransaction }
+            );
             expect(mockPlayer.inventory[0]).toEqual({
                 dbId: 101,
                 itemId: 'burger',
-                count: 3
+                count: 3,
             });
         });
 
@@ -136,7 +139,12 @@ describe('InventoryService', () => {
         });
 
         test('синхронизирует инвентарь с клиентом', async () => {
-            mockItemModel.create.mockResolvedValue({ id: 101, item_id: 'burger', count: 1, slot: 0 });
+            mockItemModel.create.mockResolvedValue({
+                id: 101,
+                item_id: 'burger',
+                count: 1,
+                slot: 0,
+            });
             await inventoryService.giveItem(mockPlayer, 'burger', 1);
             expect(mockPlayer.call).toHaveBeenCalledWith(
                 'client:inventory:update',
@@ -145,7 +153,12 @@ describe('InventoryService', () => {
         });
 
         test('коммитит транзакцию при успехе', async () => {
-            mockItemModel.create.mockResolvedValue({ id: 101, item_id: 'burger', count: 1, slot: 0 });
+            mockItemModel.create.mockResolvedValue({
+                id: 101,
+                item_id: 'burger',
+                count: 1,
+                slot: 0,
+            });
             await inventoryService.giveItem(mockPlayer, 'burger', 1);
             expect(mockTransaction.commit).toHaveBeenCalled();
             expect(mockTransaction.rollback).not.toHaveBeenCalled();
@@ -179,7 +192,10 @@ describe('InventoryService', () => {
             const result = await inventoryService.removeItem(mockPlayer, 'burger', 3);
             expect(result).toBe(true);
             expect(mockPlayer.inventory[0]).toBeNull();
-            expect(mockItemModel.destroy).toHaveBeenCalledWith({ where: { id: 100 }, transaction: mockTransaction });
+            expect(mockItemModel.destroy).toHaveBeenCalledWith({
+                where: { id: 100 },
+                transaction: mockTransaction,
+            });
         });
 
         test('возвращает false, если предмета нет', async () => {
@@ -208,7 +224,7 @@ describe('InventoryService', () => {
         test('загружает предметы из БД в память', async () => {
             mockItemModel.findAll.mockResolvedValue([
                 { id: 100, item_id: 'burger', count: 5, slot: 0 },
-                { id: 101, item_id: 'water',  count: 3, slot: 2 }
+                { id: 101, item_id: 'water', count: 3, slot: 2 },
             ]);
 
             await inventoryService.loadPlayerInventory(mockPlayer);
@@ -216,12 +232,12 @@ describe('InventoryService', () => {
             expect(mockPlayer.inventory[0]).toEqual({
                 dbId: 100,
                 itemId: 'burger',
-                count: 5
+                count: 5,
             });
             expect(mockPlayer.inventory[2]).toEqual({
                 dbId: 101,
                 itemId: 'water',
-                count: 3
+                count: 3,
             });
             expect(mockPlayer.inventory[1]).toBeNull();
         });

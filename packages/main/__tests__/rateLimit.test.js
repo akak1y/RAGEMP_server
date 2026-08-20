@@ -1,17 +1,17 @@
 const rateLimit = require('../middleware/rateLimit');
 
 jest.mock('../core/redis', () => ({
-    getRedis: jest.fn()
+    getRedis: jest.fn(),
 }));
 
 jest.mock('../services/AuditService', () => ({
     logPlayer: jest.fn(),
-    bumpRepeats: jest.fn()
+    bumpRepeats: jest.fn(),
 }));
 
 jest.mock('../core/logger', () => ({
     warn: jest.fn(),
-    error: jest.fn()
+    error: jest.fn(),
 }));
 
 const { getRedis } = require('../core/redis');
@@ -27,7 +27,7 @@ describe('rateLimit middleware', () => {
             incr: jest.fn(),
             expire: jest.fn(),
             get: jest.fn(),
-            set: jest.fn()
+            set: jest.fn(),
         };
         getRedis.mockReturnValue(mockRedis);
         mockPlayer = { accountId: 1, accountName: 'Test', outputChatBox: jest.fn() };
@@ -66,7 +66,9 @@ describe('rateLimit middleware', () => {
         const result = await guard(mockPlayer);
 
         expect(result).toBe(false);
-        expect(mockPlayer.outputChatBox).toHaveBeenCalledWith(expect.stringContaining('Слишком часто'));
+        expect(mockPlayer.outputChatBox).toHaveBeenCalledWith(
+            expect.stringContaining('Слишком часто')
+        );
         expect(auditService.logPlayer).toHaveBeenCalled();
         expect(mockRedis.set).toHaveBeenCalled();
     });

@@ -10,7 +10,7 @@ const { getUserModel } = require('../models/Users');
 
 global.mp = {
     players: { length: 3 },
-    vehicles: { length: 7 }
+    vehicles: { length: 7 },
 };
 
 describe('StatsService', () => {
@@ -24,7 +24,9 @@ describe('StatsService', () => {
     });
 
     test('тёплый кэш: источник redis, MySQL не трогаем', async () => {
-        redis.get.mockResolvedValue(JSON.stringify({ total: 5, totalMoney: 100, avgMoney: 20, maxMoney: 50 }));
+        redis.get.mockResolvedValue(
+            JSON.stringify({ total: 5, totalMoney: 100, avgMoney: 20, maxMoney: 50 })
+        );
         const s = await statsService.getEconomyStats();
         expect(s.source).toBe('redis');
         expect(s.total).toBe(5);
@@ -33,7 +35,9 @@ describe('StatsService', () => {
 
     test('холодный кэш: агрегация из MySQL + запись в Redis', async () => {
         redis.get.mockResolvedValue(null);
-        Users.findAll.mockResolvedValue([{ total: '5', totalMoney: '100', avgMoney: '20', maxMoney: '50' }]);
+        Users.findAll.mockResolvedValue([
+            { total: '5', totalMoney: '100', avgMoney: '20', maxMoney: '50' },
+        ]);
         const s = await statsService.getEconomyStats();
         expect(s.source).toBe('mysql');
         expect(s.total).toBe(5);

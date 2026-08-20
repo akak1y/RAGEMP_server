@@ -10,7 +10,7 @@ module.exports = async () => {
     execSync('npm run migrate', {
         cwd: path.resolve(__dirname, '../..'),
         stdio: 'inherit',
-        env: { ...process.env }
+        env: { ...process.env },
     });
     console.log('Миграции применены');
 };

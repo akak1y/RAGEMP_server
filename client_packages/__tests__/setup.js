@@ -24,16 +24,16 @@ global.mp = {
         call: jest.fn(),
         callRemote: jest.fn(),
         __trigger: (name, ...args) => {
-            (handlers.get(name) || []).forEach(fn => fn(...args));
+            (handlers.get(name) || []).forEach((fn) => fn(...args));
         },
-        __handlers: handlers
+        __handlers: handlers,
     },
 
     keys: { bind: jest.fn() },
 
     gui: {
         chat: { show: jest.fn(), activate: jest.fn(), push: jest.fn() },
-        cursor: { show: jest.fn() }
+        cursor: { show: jest.fn() },
     },
 
     game: {
@@ -41,27 +41,27 @@ global.mp = {
         controls: {
             disableControlAction: jest.fn(),
             enableControlAction: jest.fn(),
-            disableAllControlActions: jest.fn()
+            disableAllControlActions: jest.fn(),
         },
         gameplay: { getDistanceBetweenCoords: jest.fn(() => 0) },
         vehicle: { getDisplayNameFromVehicleModel: jest.fn(() => 'adder') },
-        ped: { setBlockingOfNonTemporaryEvents: jest.fn() }
+        ped: { setBlockingOfNonTemporaryEvents: jest.fn() },
     },
 
     browsers: {
-        new: jest.fn(() => ({ execute: jest.fn() }))
+        new: jest.fn(() => ({ execute: jest.fn() })),
     },
 
     players: {
         local: {
             position: new Vector3(),
             vehicle: null,
-            getHeading: jest.fn(() => 0)
-        }
+            getHeading: jest.fn(() => 0),
+        },
     },
 
     peds: { atRemoteId: jest.fn(() => null) },
     vehicles: { exists: jest.fn(() => false) },
     markers: { new: jest.fn(() => ({ destroy: jest.fn() })) },
-    blips: { new: jest.fn(() => ({ destroy: jest.fn() })) }
+    blips: { new: jest.fn(() => ({ destroy: jest.fn() })) },
 };

@@ -9,15 +9,19 @@ global.mp = {
         constructor(x, y, z) {
             this.x = x;
             this.y = y;
-            this.z = z
+            this.z = z;
         }
     },
-    players: { exists: jest.fn(() => true) }
+    players: { exists: jest.fn(() => true) },
 };
 
 const makePlayer = () => ({
-    health: 0, heading: 1, dimension: 1,
-    spawn: jest.fn(), removeAllWeapons: jest.fn(), outputChatBox: jest.fn()
+    health: 0,
+    heading: 1,
+    dimension: 1,
+    spawn: jest.fn(),
+    removeAllWeapons: jest.fn(),
+    outputChatBox: jest.fn(),
 });
 
 describe('HealthService', () => {
@@ -46,7 +50,9 @@ describe('HealthService', () => {
             expect(p.outputChatBox).toHaveBeenCalledTimes(1);
             expect(p.spawn).not.toHaveBeenCalled();
             jest.advanceTimersByTime(5000);
-            expect(p.spawn).toHaveBeenCalledWith(expect.objectContaining({ x: HospitalPos.x, y: HospitalPos.y, z: HospitalPos.z }));
+            expect(p.spawn).toHaveBeenCalledWith(
+                expect.objectContaining({ x: HospitalPos.x, y: HospitalPos.y, z: HospitalPos.z })
+            );
             expect(p.health).toBe(100);
             expect(p.removeAllWeapons).toHaveBeenCalled();
             expect(p.heading).toBe(HospitalPos.h);

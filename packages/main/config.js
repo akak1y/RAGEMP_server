@@ -1,46 +1,73 @@
 module.exports = {
     ItemConfig: {
-        "burger": { name: "Бургер", weight: 0.2, maxStack: 5 },
-        "water": { name: "Вода", weight: 0.3, maxStack: 10 },
-        "phone": { name: "Смартфон iFruit", weight: 0.5, maxStack: 1 }
+        burger: { name: 'Бургер', weight: 0.2, maxStack: 5 },
+        water: { name: 'Вода', weight: 0.3, maxStack: 10 },
+        phone: { name: 'Смартфон iFruit', weight: 0.5, maxStack: 1 },
     },
     VehicleConfig: {
-        "adder": { name: "Truffade Adder", price: 100000 },
-        "turismor": { name: "Grotti Turismo R", price: 50000 },
-        "faggio": { name: "Pegassi Faggio", price: 5000 },
-        "oppressor2": { name: "Oppressor", price: 10000 },
-        "blazer5": { name: "Blazer", price: 15000 },
-        "kamacho": { name: "Canis Kamacho", price: 9000 },
-        "guardian": { name: "Guardian", price: 2000 },
-        "monster3": { name: "Monster3", price: 3000 },
-        "pigalle": { name: "Pigalle", price: 4000 },
-        "futo": { name: "Futo", price: 5000 }
+        adder: { name: 'Truffade Adder', price: 100000 },
+        turismor: { name: 'Grotti Turismo R', price: 50000 },
+        faggio: { name: 'Pegassi Faggio', price: 5000 },
+        oppressor2: { name: 'Oppressor', price: 10000 },
+        blazer5: { name: 'Blazer', price: 15000 },
+        kamacho: { name: 'Canis Kamacho', price: 9000 },
+        guardian: { name: 'Guardian', price: 2000 },
+        monster3: { name: 'Monster3', price: 3000 },
+        pigalle: { name: 'Pigalle', price: 4000 },
+        futo: { name: 'Futo', price: 5000 },
     },
     PhoneConfig: {
-        deliveryCar: 200
+        deliveryCar: 200,
     },
     TuningConfig: {
         colorPrice: 1000, // цена покраски
-        colors: [ // палитра цветов
+        colors: [
+            // палитра цветов
             { name: 'Черный', value: { r: 0, g: 0, b: 0 } },
             { name: 'Белый', value: { r: 255, g: 255, b: 255 } },
             { name: 'Красный', value: { r: 200, g: 0, b: 0 } },
-            { name: 'Желтый', value: { r: 255, g: 215, b: 0 } }
+            { name: 'Желтый', value: { r: 255, g: 215, b: 0 } },
         ],
-        performanceMods: { // технические моды
-            engine: { title: 'Двигатель', modType: 11, topLevel: 3, price: 15000, currentField: 'engine_mod' },
-            brakes: { title: 'Тормоза', modType: 12, topLevel: 2, price: 10000, currentField: 'brakes_mod' },
-            transmission: { title: 'Коробка передач', modType: 13, topLevel: 2, price: 12000, currentField: 'transmission_mod' },
-            turbo: { title: 'Турбо-наддув', modType: 18, topLevel: 0, price: 25000, currentField: 'turbo_mod' }
+        performanceMods: {
+            // технические моды
+            engine: {
+                title: 'Двигатель',
+                modType: 11,
+                topLevel: 3,
+                price: 15000,
+                currentField: 'engine_mod',
+            },
+            brakes: {
+                title: 'Тормоза',
+                modType: 12,
+                topLevel: 2,
+                price: 10000,
+                currentField: 'brakes_mod',
+            },
+            transmission: {
+                title: 'Коробка передач',
+                modType: 13,
+                topLevel: 2,
+                price: 12000,
+                currentField: 'transmission_mod',
+            },
+            turbo: {
+                title: 'Турбо-наддув',
+                modType: 18,
+                topLevel: 0,
+                price: 25000,
+                currentField: 'turbo_mod',
+            },
         },
-        wheels: { // диски
+        wheels: {
+            // диски
             title: 'Диски',
             options: [
                 { name: 'Сток', wheelType: 0, wheelId: -1, price: 100 },
                 { name: 'Спортивные', wheelType: 0, wheelId: 5, price: 1000 },
-                { name: 'Внедорожные', wheelType: 2, wheelId: 8, price: 2000 }
-            ]
-        }
+                { name: 'Внедорожные', wheelType: 2, wheelId: 8, price: 2000 },
+            ],
+        },
     },
     DealershipPos: { x: -474.0, y: -95.0, z: 39.0 },
     GaragePos: { x: -439.2, y: -102.7, z: 40.5, h: 33.0 },
@@ -63,12 +90,12 @@ module.exports = {
         vehicleSpawnPoints: [
             { x: -402, y: -125, z: 38.4, h: 299 },
             { x: -401.5, y: -126.3, z: 38.5, h: 299 },
-            { x: -400.7, y: -127.6, z: 38.5, h: 299 }
+            { x: -400.7, y: -127.6, z: 38.5, h: 299 },
         ],
         deliveryPoints: [
             { x: -533.1, y: -165.1, z: 37.3 },
             { x: -367.7, y: -239.9, z: 35.08 },
-            { x: -273.7, y: 26.9, z: 53.75 }
-        ]
-    }
-}
+            { x: -273.7, y: 26.9, z: 53.75 },
+        ],
+    },
+};

@@ -9,7 +9,9 @@ const MAX_HEALTH = 100;
  */
 class HealthService {
     onPlayerDeath(player) {
-        player.outputChatBox('!{#FF3333}Вы потеряли сознание. Очнётесь в больнице через 5 секунд...');
+        player.outputChatBox(
+            '!{#FF3333}Вы потеряли сознание. Очнётесь в больнице через 5 секунд...'
+        );
         setTimeout(() => {
             if (!mp.players.exists(player)) return; // если вышел с сервера без сознания
             this.respawnAtHospital(player);
@@ -33,4 +35,4 @@ class HealthService {
     }
 }
 
-module.exports = new HealthService()
+module.exports = new HealthService();

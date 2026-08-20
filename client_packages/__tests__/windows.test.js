@@ -6,7 +6,12 @@ describe('windows: windowStateChanged', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        state.openWindowsState = { inventory: false, phone: false, dealership: false, carCustom: false };
+        state.openWindowsState = {
+            inventory: false,
+            phone: false,
+            dealership: false,
+            carCustom: false,
+        };
         state.isAnyUiWindowOpen = false;
     });
 

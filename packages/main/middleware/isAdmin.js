@@ -1,6 +1,6 @@
 /**
  * Middleware: проверка уровня администратора
- * 
+ *
  * @param {number} [minLevel=1] - Минимальный уровень админа
  * @returns {Function} middleware (player) => boolean
  */
@@ -15,4 +15,4 @@ function isAdmin(minLevel = 1) {
     };
 }
 
-module.exports = isAdmin
+module.exports = isAdmin;

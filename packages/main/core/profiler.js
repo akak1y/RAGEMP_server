@@ -12,14 +12,22 @@ async function profile(label, fn) {
     try {
         const result = await fn();
         const duration = performance.now() - start;
-        
-        logger.info(label + " выполнена успешно за " + duration.toFixed(3) + " мс");
-        return result
+
+        logger.info(label + ' выполнена успешно за ' + duration.toFixed(3) + ' мс');
+        return result;
     } catch (error) {
         const duration = performance.now() - start;
-        logger.error(label + " РУХНУЛА через " + duration.toFixed(3) + " мс. Причина: " + error.message + "\nStack: " + error.stack);
-        throw error
+        logger.error(
+            label +
+                ' РУХНУЛА через ' +
+                duration.toFixed(3) +
+                ' мс. Причина: ' +
+                error.message +
+                '\nStack: ' +
+                error.stack
+        );
+        throw error;
     }
 }
 
-module.exports = profile
+module.exports = profile;

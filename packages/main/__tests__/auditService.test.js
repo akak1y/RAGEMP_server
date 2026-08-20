@@ -4,7 +4,7 @@ const { getRedis } = require('../core/redis');
 
 jest.mock('../models/AuditLog', () => ({
     getAuditModel: jest.fn(),
-    ensureAuditReady: jest.fn().mockResolvedValue(true)
+    ensureAuditReady: jest.fn().mockResolvedValue(true),
 }));
 
 jest.mock('../core/redis', () => ({ getRedis: jest.fn() }));
@@ -14,13 +14,18 @@ jest.mock('../core/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: je
 describe('AuditService', () => {
     let mockModel, mockRedis;
     const fakePlayer = {
-        accountName: 'akak', accountId: 4, ip: '127.0.0.1',
-        position: { x: 1, y: 2, z: 3 }
+        accountName: 'akak',
+        accountId: 4,
+        ip: '127.0.0.1',
+        position: { x: 1, y: 2, z: 3 },
     };
 
     beforeEach(() => {
         jest.clearAllMocks();
-        mockModel = { create: jest.fn().mockResolvedValue({}), findAll: jest.fn().mockResolvedValue([]) };
+        mockModel = {
+            create: jest.fn().mockResolvedValue({}),
+            findAll: jest.fn().mockResolvedValue([]),
+        };
         getAuditModel.mockReturnValue(mockModel);
         mockRedis = { incr: jest.fn(), expire: jest.fn(), del: jest.fn() };
         getRedis.mockReturnValue(mockRedis);
@@ -29,17 +34,25 @@ describe('AuditService', () => {
     describe('logPlayer', () => {
         test('без withPosition — details пустой', async () => {
             await auditService.logPlayer(fakePlayer, 'pay', { category: 'money', amount: 500 });
-            expect(mockModel.create).toHaveBeenCalledWith(expect.objectContaining({
-                actor: 'akak', actor_id: 4, ip: '127.0.0.1',
-                category: 'money', amount: 500, details: null
-            }));
+            expect(mockModel.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    actor: 'akak',
+                    actor_id: 4,
+                    ip: '127.0.0.1',
+                    category: 'money',
+                    amount: 500,
+                    details: null,
+                })
+            );
         });
 
         test('withPosition — позиция в details', async () => {
             await auditService.logPlayer(fakePlayer, 'buy_vehicle', { withPosition: true });
-            expect(mockModel.create).toHaveBeenCalledWith(expect.objectContaining({
-                details: expect.stringContaining('1.0,2.0,3.0')
-            }));
+            expect(mockModel.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    details: expect.stringContaining('1.0,2.0,3.0'),
+                })
+            );
         });
     });
 
@@ -53,9 +66,14 @@ describe('AuditService', () => {
         test('на пороге — одна строка с repeats + очистка ключа', async () => {
             mockRedis.incr.mockResolvedValue(20);
             await auditService.trackFail(fakePlayer, 'buy_fail');
-            expect(mockModel.create).toHaveBeenCalledWith(expect.objectContaining({
-                action: 'buy_fail', success: false, repeats: 20, category: 'security'
-            }));
+            expect(mockModel.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    action: 'buy_fail',
+                    success: false,
+                    repeats: 20,
+                    category: 'security',
+                })
+            );
             expect(mockRedis.del).toHaveBeenCalledWith('audit:fail:buy_fail:4');
         });
 

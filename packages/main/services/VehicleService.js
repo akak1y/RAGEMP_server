@@ -1,11 +1,10 @@
 const { getVehicleModel } = require('../models/Vehicle');
 const { VehicleConfig } = require('../config');
-const moneyService = require('./MoneyService');
 const logger = require('../core/logger');
 
 /**
  * Сервис управления транспортом
- * 
+ *
  * Примечание: это game-world сервис - использует mp.vehicles
  */
 class VehicleService {
@@ -28,7 +27,10 @@ class VehicleService {
         const config = VehicleConfig[model];
         if (!config) return { success: false, error: 'unknown_model' };
 
-        await getVehicleModel().create( { owner_id: userId, model: model, fuel: 100 }, { transaction } );
+        await getVehicleModel().create(
+            { owner_id: userId, model: model, fuel: 100 },
+            { transaction }
+        );
         logger.info(`[VehicleService] Игрок ID ${userId} купил ${config.name}`);
         return { success: true, error: null };
     }
@@ -72,24 +74,30 @@ class VehicleService {
      */
     spawnVehicle(carData, coords, heading, dimension) {
         const veh = mp.vehicles.new(mp.joaat(carData.model), coords, {
-            heading: heading, engine: true, locked: false, dimension: dimension
+            heading: heading,
+            engine: true,
+            locked: false,
+            dimension: dimension,
         });
         veh.setVariable('fuel', Number(carData.fuel || 100));
         veh.prevPos = { x: veh.position.x, y: veh.position.y, z: veh.position.z };
         veh.vehicleDbId = carData.id;
         veh.setVariable('dbId', carData.id);
-        veh.setVariable("customColor", {
+        veh.setVariable('customColor', {
             r: carData.color_r,
             g: carData.color_g,
-            b: carData.color_b
+            b: carData.color_b,
         });
-        veh.setVariable("customMod_11", carData.engine_mod !== null ? carData.engine_mod : -1);
-        veh.setVariable("customMod_12", carData.brakes_mod !== null ? carData.brakes_mod : -1);
-        veh.setVariable("customMod_13", carData.transmission_mod !== null ? carData.transmission_mod : -1);
-        veh.setVariable("customMod_18", carData.turbo_mod !== null ? carData.turbo_mod : -1);
-        veh.setVariable("customWheels", {
+        veh.setVariable('customMod_11', carData.engine_mod !== null ? carData.engine_mod : -1);
+        veh.setVariable('customMod_12', carData.brakes_mod !== null ? carData.brakes_mod : -1);
+        veh.setVariable(
+            'customMod_13',
+            carData.transmission_mod !== null ? carData.transmission_mod : -1
+        );
+        veh.setVariable('customMod_18', carData.turbo_mod !== null ? carData.turbo_mod : -1);
+        veh.setVariable('customWheels', {
             type: carData.wheel_type !== null ? carData.wheel_type : 0,
-            id: carData.wheel_mod !== null ? carData.wheel_mod : -1
+            id: carData.wheel_mod !== null ? carData.wheel_mod : -1,
         });
 
         this.spawnedVehicles.set(carData.id, veh);
@@ -140,17 +148,18 @@ class VehicleService {
         this.lastFuelTick = now;
         if (dt <= 0) return;
 
-        for (const [dbId, veh] of this.spawnedVehicles) {
+        for (const [_dbId, veh] of this.spawnedVehicles) {
             try {
                 if (veh.getVariable('courierWork')) continue;
                 if (!veh || !mp.vehicles.exists(veh)) continue;
-                const driver = veh.getOccupants().find(p => p.seat === 0);
+                const driver = veh.getOccupants().find((p) => p.seat === 0);
                 if (!driver) continue;
 
                 const pos = veh.position;
                 let kmh = 0;
                 const prev = veh.prevPos;
-                if (prev) kmh = Math.hypot(pos.x - prev.x, pos.y - prev.y, pos.z - prev.z) / dt * 3.6;
+                if (prev)
+                    kmh = (Math.hypot(pos.x - prev.x, pos.y - prev.y, pos.z - prev.z) / dt) * 3.6;
                 veh.prevPos = pos;
 
                 const rate = this.getConsumptionRate(kmh);
@@ -161,9 +170,12 @@ class VehicleService {
 
                 if (next <= 0 && current > 0) {
                     veh.engine = false;
-                    if (driver && driver.outputChatBox) driver.outputChatBox('!{#FF3333}[Топливо] Бак пуст — нужна заправка!');
+                    if (driver && driver.outputChatBox)
+                        driver.outputChatBox('!{#FF3333}[Топливо] Бак пуст — нужна заправка!');
                 }
-            } catch (err) { logger.error(`[VehicleService] tickFuel error: ${err.message}`) }
+            } catch (err) {
+                logger.error(`[VehicleService] tickFuel error: ${err.message}`);
+            }
         }
     }
 
@@ -173,7 +185,7 @@ class VehicleService {
     startFuelTick() {
         if (this.fuelTimer) return;
         this.lastFuelTick = Date.now();
-        this.fuelTimer = setInterval(() => this.tickFuel(), 1000)
+        this.fuelTimer = setInterval(() => this.tickFuel(), 1000);
     }
 
     /**
@@ -187,7 +199,8 @@ class VehicleService {
         if (!veh) return { success: false, error: 'not_found' };
 
         const spawned = this.spawnedVehicles.get(vehicleDbId);
-        if (!spawned || !mp.vehicles.exists(spawned)) return { success: false, error: 'not_spawned' };
+        if (!spawned || !mp.vehicles.exists(spawned))
+            return { success: false, error: 'not_spawned' };
 
         const current = Number(spawned.getVariable('fuel') || 0);
         if (current >= 100) return { success: false, error: 'full' };
@@ -203,13 +216,13 @@ class VehicleService {
      * @param {Object} [transaction] - Sequelize-транзакция
      * @returns {boolean} true, если машина была в мире
      */
-    setFuel(dbId, value, transaction = null) {
+    setFuel(dbId, value, _transaction = null) {
         const veh = this.spawnedVehicles.get(dbId);
         if (veh && mp.vehicles.exists(veh)) {
             veh.setVariable('fuel', Number(value));
-            return true
+            return true;
         }
-        return false
+        return false;
     }
 
     /**
@@ -220,8 +233,11 @@ class VehicleService {
         const veh = this.spawnedVehicles.get(dbId);
         if (!veh) return;
         const fuel = veh.getVariable('fuel');
-        try { await getVehicleModel().update({ fuel }, { where: { id: dbId } }) }
-        catch (err) { logger.error(`[VehicleService] despawnVehicle fuel save error: ${err.message}`) }
+        try {
+            await getVehicleModel().update({ fuel }, { where: { id: dbId } });
+        } catch (err) {
+            logger.error(`[VehicleService] despawnVehicle fuel save error: ${err.message}`);
+        }
 
         if (mp.vehicles.exists(veh)) veh.destroy();
 
@@ -258,4 +274,4 @@ class VehicleService {
     }
 }
 
-module.exports = new VehicleService()
+module.exports = new VehicleService();

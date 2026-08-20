@@ -28,7 +28,7 @@ describe('ON DELETE CASCADE — интеграционные тесты', () => 
             owner_id: user.id,
             item_id: 'burger',
             count: 5,
-            slot: 1
+            slot: 1,
         });
 
         await User.destroy({ where: { id: user.id } });

@@ -37,7 +37,9 @@ class MoneyService {
             );
             statsService.invalidateEconomyCache().catch(() => {});
             if (affected > 0) {
-                logger.info(`[MoneyService] +$${amount} игроку ID ${userId}${reason ? ` (${reason})` : ''}`);
+                logger.info(
+                    `[MoneyService] +$${amount} игроку ID ${userId}${reason ? ` (${reason})` : ''}`
+                );
                 return true;
             }
             return false;
@@ -69,10 +71,14 @@ class MoneyService {
             );
             statsService.invalidateEconomyCache().catch(() => {});
             if (affected > 0) {
-                logger.info(`[MoneyService] -$${amount} у игрока ID ${userId}${reason ? ` (${reason})` : ''}`);
+                logger.info(
+                    `[MoneyService] -$${amount} у игрока ID ${userId}${reason ? ` (${reason})` : ''}`
+                );
                 return true;
             }
-            logger.warn(`[MoneyService] У игрока ID ${userId} недостаточно средств для -$${amount}`);
+            logger.warn(
+                `[MoneyService] У игрока ID ${userId} недостаточно средств для -$${amount}`
+            );
             return false;
         } catch (err) {
             logger.error(`[MoneyService] Ошибка takeMoney: ${err.message}`);
@@ -100,16 +106,24 @@ class MoneyService {
                 { money: Sequelize.literal(`money - ${amount}`) },
                 { where: { id: fromId, money: { [Op.gte]: amount } }, transaction: t }
             );
-            if (!taken) { await t.rollback(); return false; } // недостаточно средств
+            if (!taken) {
+                await t.rollback();
+                return false;
+            } // недостаточно средств
 
             const [added] = await User.update(
                 { money: Sequelize.literal(`money + ${amount}`) },
                 { where: { id: toId }, transaction: t }
             );
-            if (!added) { await t.rollback(); return false; } // получатель исчез из БД
+            if (!added) {
+                await t.rollback();
+                return false;
+            } // получатель исчез из БД
 
             await t.commit();
-            logger.info(`[MoneyService] Перевод $${amount}: ID ${fromId} → ID ${toId}${reason ? ` (${reason})` : ''}`);
+            logger.info(
+                `[MoneyService] Перевод $${amount}: ID ${fromId} → ID ${toId}${reason ? ` (${reason})` : ''}`
+            );
             return true;
         } catch (err) {
             await t.rollback();
@@ -129,4 +143,4 @@ class MoneyService {
     }
 }
 
-module.exports = new MoneyService()
+module.exports = new MoneyService();

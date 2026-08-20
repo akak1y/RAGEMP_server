@@ -6,12 +6,12 @@ const logger = require('../core/logger');
 
 /**
  * Сервис тюнинга транспорта (LSC)
- * 
+ *
  * Примечание: это game-world сервис — работает с измерениями и переменными машин
  */
 class TuningService {
     constructor() {
-        this.tuningVehicles = new Map()
+        this.tuningVehicles = new Map();
     }
 
     /**
@@ -19,9 +19,11 @@ class TuningService {
      * @private
      */
     _findColorOption(option) {
-        return TuningConfig.colors.find(c =>
-            c.value.r === option.r && c.value.g === option.g && c.value.b === option.b
-        ) || null;
+        return (
+            TuningConfig.colors.find(
+                (c) => c.value.r === option.r && c.value.g === option.g && c.value.b === option.b
+            ) || null
+        );
     }
 
     /**
@@ -29,9 +31,11 @@ class TuningService {
      * @private
      */
     _findWheelOption(option) {
-        return TuningConfig.wheels.options.find(o =>
-            o.wheelType === option.wheelType && o.wheelId === option.wheelId
-        ) || null;
+        return (
+            TuningConfig.wheels.options.find(
+                (o) => o.wheelType === option.wheelType && o.wheelId === option.wheelId
+            ) || null
+        );
     }
 
     /**
@@ -61,10 +65,16 @@ class TuningService {
      * @returns {boolean}
      */
     isInstalled(carData, categoryKey, option = {}) {
-        if (categoryKey === 'color') return carData.color_r === option.r && carData.color_g === option.g && carData.color_b === option.b;
+        if (categoryKey === 'color')
+            return (
+                carData.color_r === option.r &&
+                carData.color_g === option.g &&
+                carData.color_b === option.b
+            );
         const perf = TuningConfig.performanceMods[categoryKey];
-        if (perf)  return carData[perf.currentField] === perf.topLevel;
-        if (categoryKey === 'wheels') return carData.wheel_type === option.wheelType && carData.wheel_mod === option.wheelId;
+        if (perf) return carData[perf.currentField] === perf.topLevel;
+        if (categoryKey === 'wheels')
+            return carData.wheel_type === option.wheelType && carData.wheel_mod === option.wheelId;
         return false;
     }
 
@@ -87,24 +97,43 @@ class TuningService {
             return { success: false, error: 'invalid_option' };
         }
         if (categoryKey === 'wheels' && !this._findWheelOption(option)) {
-            logger.warn(`[TuningService] Некорректный комплект дисков от игрока ${player.accountName}`);
+            logger.warn(
+                `[TuningService] Некорректный комплект дисков от игрока ${player.accountName}`
+            );
             return { success: false, error: 'invalid_option' };
         }
-        if (categoryKey !== 'color' && categoryKey !== 'wheels' && !TuningConfig.performanceMods[categoryKey]) {
-            logger.warn(`[TuningService] Некорректная категория "${categoryKey}" от игрока ${player.accountName}`);
+        if (
+            categoryKey !== 'color' &&
+            categoryKey !== 'wheels' &&
+            !TuningConfig.performanceMods[categoryKey]
+        ) {
+            logger.warn(
+                `[TuningService] Некорректная категория "${categoryKey}" от игрока ${player.accountName}`
+            );
             return { success: false, error: 'invalid_category' };
         }
 
-        if (this.isInstalled(carData, categoryKey, option))  return { success: false, error: 'already_installed' };
+        if (this.isInstalled(carData, categoryKey, option))
+            return { success: false, error: 'already_installed' };
 
         const realPrice = this.getPrice(categoryKey, option);
-        if (clientPrice !== realPrice) logger.warn(`[Cheat Detect] Игрок ${player.accountName} прислал цену $${clientPrice} за ${categoryKey}, серверная цена $${realPrice}`);
+        if (clientPrice !== realPrice)
+            logger.warn(
+                `[Cheat Detect] Игрок ${player.accountName} прислал цену $${clientPrice} за ${categoryKey}, серверная цена $${realPrice}`
+            );
 
-        const paid = await moneyService.takeMoney(player.accountId, realPrice, `тюнинг: ${categoryKey}`, transaction);
+        const paid = await moneyService.takeMoney(
+            player.accountId,
+            realPrice,
+            `тюнинг: ${categoryKey}`,
+            transaction
+        );
         if (!paid) return { success: false, error: 'not_enough_money' };
 
         await this._applyUpgrade(veh, categoryKey, option, transaction);
-        logger.info(`[TuningService] Игрок ${player.accountName} установил ${categoryKey} за $${realPrice}`);
+        logger.info(
+            `[TuningService] Игрок ${player.accountName} установил ${categoryKey} за $${realPrice}`
+        );
         return { success: true, error: null, realPrice };
     }
 
@@ -117,26 +146,38 @@ class TuningService {
         const vehicleDbId = veh.vehicleDbId;
 
         if (categoryKey === 'color') {
-            await VehicleModel.update({
-                color_r: option.r, color_g: option.g, color_b: option.b
-            }, { where: { id: vehicleDbId }, transaction });
-            veh.setVariable("customColor", { r: option.r, g: option.g, b: option.b });
+            await VehicleModel.update(
+                {
+                    color_r: option.r,
+                    color_g: option.g,
+                    color_b: option.b,
+                },
+                { where: { id: vehicleDbId }, transaction }
+            );
+            veh.setVariable('customColor', { r: option.r, g: option.g, b: option.b });
             return;
         }
 
         const perf = TuningConfig.performanceMods[categoryKey];
         if (perf) {
             // [ИЗМЕНЕНО] записываем ТОПОВЫЙ уровень в БД (не 0, а topLevel) — задел на будущее расширение
-            await VehicleModel.update({ [perf.currentField]: perf.topLevel }, { where: { id: vehicleDbId }, transaction });
+            await VehicleModel.update(
+                { [perf.currentField]: perf.topLevel },
+                { where: { id: vehicleDbId }, transaction }
+            );
             veh.setVariable(`customMod_${perf.modType}`, perf.topLevel);
             return;
         }
 
         if (categoryKey === 'wheels') {
-            await VehicleModel.update({
-                wheel_type: option.wheelType, wheel_mod: option.wheelId
-            }, { where: { id: vehicleDbId }, transaction });
-            veh.setVariable("customWheels", { type: option.wheelType, id: option.wheelId });
+            await VehicleModel.update(
+                {
+                    wheel_type: option.wheelType,
+                    wheel_mod: option.wheelId,
+                },
+                { where: { id: vehicleDbId }, transaction }
+            );
+            veh.setVariable('customWheels', { type: option.wheelType, id: option.wheelId });
         }
     }
 
@@ -152,7 +193,7 @@ class TuningService {
             brakes: carData.brakes_mod,
             transmission: carData.transmission_mod,
             turbo: carData.turbo_mod,
-            wheels: { wheelType: carData.wheel_type, wheelId: carData.wheel_mod }
+            wheels: { wheelType: carData.wheel_type, wheelId: carData.wheel_mod },
         };
     }
 

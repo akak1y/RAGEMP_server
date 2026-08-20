@@ -2,19 +2,22 @@ const { Sequelize } = require('sequelize');
 const mysql = require('mysql2');
 
 let settings = {};
-try { settings = require('../settings.json') } catch {}
+try {
+    settings = require('../settings.json');
+} catch {}
 
 function getDbConfig() {
     const bd = settings.bd || {};
     const rawDbName = process.env.DB_NAME || bd.name || 'ragemp_server';
-    if (!/^[a-zA-Z0-9_]+$/.test(rawDbName)) throw new Error('[Sequelize] Некорректное имя БД (допустимы буквы, цифры, _)');
+    if (!/^[a-zA-Z0-9_]+$/.test(rawDbName))
+        throw new Error('[Sequelize] Некорректное имя БД (допустимы буквы, цифры, _)');
     return {
         host: process.env.DB_HOST || bd.host || 'localhost',
         port: Number(process.env.DB_PORT || bd.port || 3306),
         user: process.env.DB_USER || bd.user || 'root',
         password: process.env.DB_PASSWORD || bd.password || '',
-        name: rawDbName
-    }
+        name: rawDbName,
+    };
 }
 
 let sequelizeInstance = null;
@@ -28,7 +31,7 @@ function initDB() {
             port: cfg.port,
             user: cfg.user,
             password: cfg.password,
-            multipleStatements: true
+            multipleStatements: true,
         });
 
         const initDbQueries = `
@@ -48,7 +51,7 @@ function initDB() {
                     dialectModule: mysql,
                     logging: false,
                     pool: { max: 20, min: 0, acquire: 30000, idle: 10000 },
-                    dialectOptions: { multipleStatements: true }
+                    dialectOptions: { multipleStatements: true },
                 });
                 console.log(`[Sequelize] Подключено к ${cfg.name}`);
                 resolve(sequelizeInstance);
@@ -63,5 +66,5 @@ function initDB() {
 module.exports = {
     initDB,
     getSequelize: () => sequelizeInstance,
-    getDbConfig // для интеграционных тестов
+    getDbConfig, // для интеграционных тестов
 };

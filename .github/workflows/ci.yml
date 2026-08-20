@@ -1,106 +1,117 @@
 name: CI
 
 on:
-  push:
-    branches: [master]
+    push:
+        branches: [master]
 
 jobs:
-  syntax-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Синтаксическая проверка сервера
-        run: |
-          for f in $(find packages/main -name '*.js' -not -path '*/node_modules/*'); do
-            node --check "$f" || exit 1
-          done
-          echo "OK: server"
-      - name: Синтаксическая проверка клиента
-        run: |
-          for f in $(find client_packages -name '*.js' -not -path '*/node_modules/*'); do
-            node --check "$f" || exit 1
-          done
-          echo "OK: client"
+    syntax-check:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+            - name: Синтаксическая проверка сервера
+              run: |
+                  for f in $(find packages/main -name '*.js' -not -path '*/node_modules/*'); do
+                    node --check "$f" || exit 1
+                  done
+                  echo "OK: server"
+            - name: Синтаксическая проверка клиента
+              run: |
+                  for f in $(find client_packages -name '*.js' -not -path '*/node_modules/*'); do
+                    node --check "$f" || exit 1
+                  done
+                  echo "OK: client"
 
-  server-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: packages/main/package-lock.json
-      - name: Зависимости пакета
-        run: npm ci
-        working-directory: packages/main
-      - name: Запуск Jest-тестов сервера
-        run: npm test
-        working-directory: packages/main
+    server-tests:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: 'npm'
+                  cache-dependency-path: packages/main/package-lock.json
+            - name: Зависимости пакета
+              run: npm ci
+              working-directory: packages/main
+            - name: Запуск Jest-тестов сервера
+              run: npm test
+              working-directory: packages/main
 
-  client-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: client_packages/package-lock.json
-      - name: Зависимости клиента
-        run: npm ci
-        working-directory: client_packages
-      - name: Запуск Jest-тестов клиента
-        run: npm test
-        working-directory: client_packages
+    client-tests:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: 'npm'
+                  cache-dependency-path: client_packages/package-lock.json
+            - name: Зависимости клиента
+              run: npm ci
+              working-directory: client_packages
+            - name: Запуск Jest-тестов клиента
+              run: npm test
+              working-directory: client_packages
 
-  integration-tests:
-    runs-on: ubuntu-latest
-    needs: server-tests
-    env:
-      DB_HOST: localhost
-      DB_PORT: 3307
-      DB_USER: root
-      DB_PASSWORD: test_password
-      DB_NAME: ragemp_test
-      REDIS_HOST: localhost
-      REDIS_PORT: 6380
-      REDIS_DB: 1
-    services:
-      mysql:
-        image: mysql:8.0
+    integration-tests:
+        runs-on: ubuntu-latest
+        needs: server-tests
         env:
-          MYSQL_ROOT_PASSWORD: test_password
-          MYSQL_DATABASE: ragemp_test
-        ports:
-          - 3307:3306
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6380:6379
-        options: >-
-          --health-cmd="redis-cli ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: packages/main/package-lock.json
-      - run: npm ci
-        working-directory: packages/main
-      - run: npx sequelize-cli db:migrate
-        working-directory: packages/main
-      - run: npm run test:int
-        working-directory: packages/main
+            DB_HOST: localhost
+            DB_PORT: 3307
+            DB_USER: root
+            DB_PASSWORD: test_password
+            DB_NAME: ragemp_test
+            REDIS_HOST: localhost
+            REDIS_PORT: 6380
+            REDIS_DB: 1
+        services:
+            mysql:
+                image: mysql:8.0
+                env:
+                    MYSQL_ROOT_PASSWORD: test_password
+                    MYSQL_DATABASE: ragemp_test
+                ports:
+                    - 3307:3306
+                options: >-
+                    --health-cmd="mysqladmin ping"
+                    --health-interval=10s
+                    --health-timeout=5s
+                    --health-retries=3
+            redis:
+                image: redis:7-alpine
+                ports:
+                    - 6380:6379
+                options: >-
+                    --health-cmd="redis-cli ping"
+                    --health-interval=10s
+                    --health-timeout=5s
+                    --health-retries=5
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+                  cache-dependency-path: packages/main/package-lock.json
+            - run: npm ci
+              working-directory: packages/main
+            - run: npx sequelize-cli db:migrate
+              working-directory: packages/main
+            - run: npm run test:int
+              working-directory: packages/main
+
+    lint:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: 'npm'
+            - run: npm ci
+            - run: npm run lint

@@ -35,8 +35,10 @@ class Metrics {
     // JSON-снапшот всех метрик для веб-админки
     snapshot() {
         const rows = [];
-        for (const [name, m] of this.counters) rows.push({ name, help: m.help, type: 'counter', value: m.value });
-        for (const [name, m] of this.gauges) rows.push({ name, help: m.help, type: 'gauge', value: m.value });
+        for (const [name, m] of this.counters)
+            rows.push({ name, help: m.help, type: 'counter', value: m.value });
+        for (const [name, m] of this.gauges)
+            rows.push({ name, help: m.help, type: 'gauge', value: m.value });
         return rows;
     }
 }

@@ -2,7 +2,9 @@ const fs = require('fs');
 const path = require('path');
 
 const logsDir = path.join(__dirname, '..', 'logs');
-if (!fs.existsSync(logsDir)) { fs.mkdirSync(logsDir) } // создаём папку логов если нет
+if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir);
+} // создаём папку логов если нет
 
 function writeLog(level, message) {
     const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
@@ -25,7 +27,7 @@ function writeLog(level, message) {
 const logger = {
     info: (msg) => writeLog('info', msg),
     warn: (msg) => writeLog('warn', msg),
-    error: (msg) => writeLog('error', msg)
+    error: (msg) => writeLog('error', msg),
 };
 
 module.exports = logger;
