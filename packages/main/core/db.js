@@ -10,6 +10,7 @@ function getDbConfig() {
     if (!/^[a-zA-Z0-9_]+$/.test(rawDbName)) throw new Error('[Sequelize] Некорректное имя БД (допустимы буквы, цифры, _)');
     return {
         host: process.env.DB_HOST || bd.host || 'localhost',
+        port: Number(process.env.DB_PORT || bd.port || 3306),
         user: process.env.DB_USER || bd.user || 'root',
         password: process.env.DB_PASSWORD || bd.password || '',
         name: rawDbName
@@ -24,6 +25,7 @@ function initDB() {
 
         const connection = mysql.createConnection({
             host: cfg.host,
+            port: cfg.port,
             user: cfg.user,
             password: cfg.password,
             multipleStatements: true
@@ -41,6 +43,7 @@ function initDB() {
             try {
                 sequelizeInstance = new Sequelize(cfg.name, cfg.user, cfg.password, {
                     host: cfg.host,
+                    port: cfg.port,
                     dialect: 'mysql',
                     dialectModule: mysql,
                     logging: false,
