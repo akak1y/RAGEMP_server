@@ -98,4 +98,13 @@ module.exports = {
             { x: -273.7, y: 26.9, z: 53.75 },
         ],
     },
+    ShopConfig: {
+        position: { x: -420.0, y: -110.0, z: 40.0 },
+        name: 'Шестёрочка 24/7',
+        items: [
+            { itemId: 'burger', price: 50 },
+            { itemId: 'water', price: 30 },
+            { itemId: 'phone', price: 500 },
+        ],
+    },
 };
