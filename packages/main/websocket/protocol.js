@@ -252,6 +252,18 @@ async function handleMessage(socket, msg, broadcast) {
 
             if (msg.table === 'vehicles' && msg.field === 'fuel') vehicleService.setFuel(id, value);
 
+            if (msg.table === 'accounts' && msg.field === 'money') {
+                const player = mp.players.toArray().find((p) => p.accountId === id);
+                if (player) {
+                    player.money = value;
+                    player.call('client:updateMoney', [value]);
+                }
+            }
+
+            if (msg.table === 'accounts' && msg.field === 'money') {
+                statsService.invalidateEconomyCache().catch(() => {});
+            }
+
             await auditService.log({
                 success: 1,
                 category: 'web_edit',
@@ -263,8 +275,9 @@ async function handleMessage(socket, msg, broadcast) {
                 details: { field: msg.field, value },
             });
 
-            if (broadcast)
+            if (broadcast) {
                 broadcast({ type: 'table', table: msg.table, rows: await TABLES[msg.table]() });
+            }
         }
     } catch (err) {
         logger.error(`[Admin] protocol error: ${err.message}`);

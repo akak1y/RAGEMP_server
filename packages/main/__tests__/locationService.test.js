@@ -12,7 +12,7 @@ jest.mock('../config', () => ({
     },
     ShopConfig: {
         position: { x: 60, y: 0, z: 0 },
-    }
+    },
 }));
 
 global.mp = {
