@@ -10,6 +10,6 @@ module.exports = async () => {
         );
         await sequelize.sync({ force: true });
         await sequelize.close();
-        console.log('БД очищена');
+        console.log('✅ БД очищена');
     } catch (err) { console.error('Ошибка очистки:', err.message) }
 };

@@ -1,14 +1,17 @@
 const { Sequelize } = require('sequelize');
 const mysql = require('mysql2');
-const settings = require('../settings.json');
+
+let settings = {};
+try { settings = require('../settings.json') } catch {}
 
 function getDbConfig() {
-    const rawDbName = process.env.DB_NAME || (settings.bd && settings.bd.name) || 'ragemp_server';
+    const bd = settings.bd || {};
+    const rawDbName = process.env.DB_NAME || bd.name || 'ragemp_server';
     if (!/^[a-zA-Z0-9_]+$/.test(rawDbName)) throw new Error('[Sequelize] Некорректное имя БД (допустимы буквы, цифры, _)');
     return {
-        host: process.env.DB_HOST || settings.bd.host,
-        user: process.env.DB_USER || settings.bd.user,
-        password: process.env.DB_PASSWORD || settings.bd.password,
+        host: process.env.DB_HOST || bd.host || 'localhost',
+        user: process.env.DB_USER || bd.user || 'root',
+        password: process.env.DB_PASSWORD || bd.password || '',
         name: rawDbName
     }
 }

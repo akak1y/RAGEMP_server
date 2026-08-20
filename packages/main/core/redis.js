@@ -1,13 +1,21 @@
 const { createClient } = require('redis');
-let gConfig = require('../settings.json');
-let redisClient = null; // хранилище
+
+let settings = {};
+try { settings = require('../settings.json') } catch {}
+
+let redisClient = null;
+
+function buildRedisUrl() {
+    const redisCfg = settings.redis || {};
+    const host = process.env.REDIS_HOST || redisCfg.host || 'localhost';
+    const port = process.env.REDIS_PORT || redisCfg.port || 6379;
+    const password = process.env.REDIS_PASSWORD || redisCfg.password;
+    return password ? `redis://:${password}@${host}:${port}` : `redis://${host}:${port}`
+}
 
 async function initRedis() {
     try {
-        redisClient = createClient({ // создаём клиент
-            url: gConfig.redis.url
-        });
-        // регистрируем события
+        redisClient = createClient({ url: buildRedisUrl() });
         redisClient.on('connect', () => console.log('[Redis] Успешно подключено к серверу ОЗУ.'));
         redisClient.on('error', (err) => console.error('[Redis Error]', err));
         await redisClient.connect()

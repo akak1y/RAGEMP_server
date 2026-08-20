@@ -1,7 +1,7 @@
 {
   "scripts": {
     "test": "npm --prefix packages/main test && npm --prefix client_packages test",
-    "test:server": "npm --prefix packages/main test",
-    "test:client": "npm --prefix client_packages test"
+    "test:int": "npm --prefix packages/main run test:int",
+    "test:all": "npm test && npm run test:int"
   }
 }
