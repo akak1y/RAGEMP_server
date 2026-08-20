@@ -83,6 +83,7 @@ Users, Item, Vehicle, AuditLog, Bot. Ленивые геттеры (`getUserMode
 * Клиент: глобальный мок `mp.*` + тестовый `__trigger` (`__tests__/setup.js`)
 * Корневой `npm test` гоняет оба пакета (`npm --prefix packages/main test && npm --prefix client_packages test`)
 * CI: `syntax-check` (сервер + клиент), `server-tests`, `client-tests`
+* Интеграционные тесты: реальные MySQL (`ragemp_test`) и Redis (DB 1),  миграции в globalSetup, последовательный прогон (`--runInBand`), полный дроп БД в teardown; env-приоритет над settings.json
 
 ## Структура
 

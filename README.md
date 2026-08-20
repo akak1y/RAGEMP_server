@@ -126,12 +126,18 @@ npm run dev   # Vite на http://localhost:5173
 2. В `packages/main` выполни `npm run migrate` — создастся БД и все таблицы (миграции).
 3. Запусти сервер.
 
-**Тесты:**
+---
+
+## 🧪 Тестирование
 ```bash
-npm test            # сервер + клиент (workspaces)
-npm run test:server
-npm run test:client
+npm test          # из корня: unit-тесты сервера + клиента
+npm run test:int  # интеграционные тесты (реальные MySQL + Redis)
+npm run test:all  # вообще всё
 ```
+
+- 132 unit-теста, покрытие сервера ~90%
+- 10 интеграционных: атомарность денег, ON DELETE CASCADE, кэш-aside экономика, rate-limit (INCR/TTL)
+- Изоляция: отдельная БД `ragemp_test` + Redis DB 1, `--runInBand`, полный дроп в teardown
 
 ---
 
@@ -139,7 +145,6 @@ npm run test:client
 
 - [ ] Фракции (полиция, медик, банды) — стейт-машины иерархии, зарплаты, ранги
 - [ ] Canvas-движок карты вместо Leaflet (тайлы, viewport culling)
-- [ ] Интеграционные тесты с реальной БД в Docker
 
 ---
 
