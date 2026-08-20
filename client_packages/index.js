@@ -10,6 +10,7 @@ require('./vehicleSync');
 require('./interactions');
 require('./keys');
 require('./bridges');
+require('./shop');
 
 /**
  * Входная точка клиента: создание браузера и подключение доменных модулей.

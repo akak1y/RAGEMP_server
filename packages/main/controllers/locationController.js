@@ -60,3 +60,10 @@ mp.events.add(
         'customCar:requestPos'
     )
 );
+
+mp.events.add(
+    'server:shop:requestPos',
+    withGuards([isLoggedIn], (player) => {
+        player.call('client:shop:setPos', [locationService.getPosition('shop')]);
+    })
+);

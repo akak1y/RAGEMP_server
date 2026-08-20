@@ -5,6 +5,7 @@ const {
     HospitalPos,
     FuelStationPos,
     CourierConfig,
+    ShopConfig,
 } = require('../config');
 const { isNear } = require('../utils/distance');
 const logger = require('../core/logger');
@@ -44,6 +45,11 @@ class LocationService {
                 pos: CourierConfig.startPos,
                 blip: { sprite: 478, color: 5, name: 'Курьер', scale: 1.0 },
                 marker: { type: 1, size: 1.5, color: [255, 200, 0, 150], zOffset: -1.0 },
+            },
+            shop: {
+                pos: ShopConfig.position,
+                blip: { sprite: 52, color: 2, name: '24/7', scale: 0.9 },
+                marker: { type: 1, size: 1.5, color: [0, 120, 255, 150], zOffset: -1.0 },
             },
         };
     }

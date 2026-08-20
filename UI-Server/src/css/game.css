@@ -298,3 +298,87 @@
     border-radius: 3px;
     transition: width 0.3s;
 }
+
+.shop-window {
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    transform: translateY(-50%);
+    background: rgba(20, 20, 20, 0.95);
+    padding: 30px;
+    border-radius: 12px;
+    width: 400px;
+    color: #fff;
+    border: 1px solid #2ecc71;
+}
+
+.shop-window h2 {
+    margin: 0 0 10px;
+    text-align: center;
+}
+
+.shop-window .shop-desc {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #8a8a8a;
+}
+
+.shop-window .item-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 20px 0;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.shop-window .item-card {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 12px;
+    border-radius: 6px;
+}
+
+.shop-window .item-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.shop-window .item-name {
+    font-weight: bold;
+}
+
+.shop-window .item-price {
+    color: #2ecc71;
+}
+
+.shop-window .buy-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 8px;
+    background: #2ecc71;
+    border: none;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.shop-window .buy-btn:hover {
+    background: #27ae60;
+}
+
+.shop-window .result-message {
+    padding: 10px;
+    border-radius: 4px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.shop-window .result-message.success {
+    background: #2ecc71;
+}
+
+.shop-window .result-message.error {
+    background: #e74c3c;
+}

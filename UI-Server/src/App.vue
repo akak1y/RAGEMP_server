@@ -28,6 +28,8 @@
             @buy="onBuyCar"
             @close="closeWindow('dealership')"
         />
+        <!--магазин-->
+        <Shop v-if="windows.shop" :config="shopConfig" @close="closeWindow('shop')" />
         <!--тюнинг-->
         <CarCustom v-if="windows.carCustom" :config="tuningConfig" :state="tuningState" />
         <!--перехватываем нажатие клавиш-->
@@ -69,6 +71,7 @@ import Inventory from './components/Inventory.vue';
 import Phone from './components/Phone.vue';
 import Dealership from './components/Dealership.vue';
 import CarCustom from './components/CarCustom.vue';
+import Shop from './components/Shop.vue';
 
 const debugLogs = ref([]);
 const windowDebug = ref(false);
@@ -87,12 +90,19 @@ const payDeliveryCar = ref(true);
 const priceDeliveryCar = ref(0);
 const tuningConfig = ref(null);
 const tuningState = ref(null);
-const windows = ref({ inventory: false, phone: false, dealership: false, carCustom: false });
+const windows = ref({
+    inventory: false,
+    phone: false,
+    dealership: false,
+    carCustom: false,
+    shop: false,
+});
 const focusTrap = ref(null);
 const speed = ref(0);
 const vehicleModel = ref('');
 const inVehicle = ref(false);
 const fuel = ref(100);
+const shopConfig = ref({ name: 'Магазин', items: [] });
 
 const addDebugLog = (text, type = 'info') => {
     const now = new Date();
@@ -316,6 +326,14 @@ onMounted(() => {
         vehicleModel.value = model || '';
         inVehicle.value = !!inVeh;
         fuel.value = Number(fuelVal) || 0;
+    };
+
+    window.setShopConfig = (json) => {
+        try {
+            shopConfig.value = typeof json === 'string' ? JSON.parse(json) : json;
+        } catch (e) {
+            console.error('[Vue Error] Не удалось распарсить конфиг магазина:', e);
+        }
     };
 });
 </script>

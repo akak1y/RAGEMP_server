@@ -14,6 +14,7 @@ globalThis.UIState = {
         phone: false,
         dealership: false,
         carCustom: false,
+        shop: false,
     },
     positions: {
         dealership: null,
@@ -22,5 +23,6 @@ globalThis.UIState = {
         fuel: null,
         courierStart: null,
         courierTarget: null,
+        shop: null,
     },
 };

@@ -12,9 +12,11 @@ mp.keys.bind(0x45, true, () => {
         state.isAnyUiWindowOpen ||
         !state.positions.dealership ||
         !state.positions.garage ||
-        !state.positions.carCustom
-    )
+        !state.positions.carCustom ||
+        !state.positions.shop
+    ) {
         return;
+    }
 
     const playerPos = mp.players.local.position;
     const interactionRadius = 2.5;
@@ -75,6 +77,13 @@ mp.keys.bind(0x45, true, () => {
             position: state.positions.courierTarget,
             onInteract: () => {
                 mp.events.callRemote('server:courier:interact');
+            },
+        },
+        {
+            name: 'shop',
+            position: state.positions.shop,
+            onInteract: () => {
+                mp.events.callRemote('server:shop:requestConfig');
             },
         },
     ];

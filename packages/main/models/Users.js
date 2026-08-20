@@ -26,7 +26,7 @@ function initUserModel() {
             admin_level: { type: DataTypes.INTEGER, defaultValue: 0 },
             pos_x: { type: DataTypes.FLOAT, defaultValue: -2183.0 },
             pos_y: { type: DataTypes.FLOAT, defaultValue: 4268.0 },
-            pos_z: { type: DataTypes.FLOAT, defaultValue: 48.0 },
+            pos_z: { type: DataTypes.FLOAT, defaultValue: 47.0 },
         },
         {
             tableName: 'accounts',

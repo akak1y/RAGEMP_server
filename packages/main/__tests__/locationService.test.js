@@ -10,6 +10,9 @@ jest.mock('../config', () => ({
     CourierConfig: {
         startPos: { x: 50, y: 0, z: 0 },
     },
+    ShopConfig: {
+        position: { x: 60, y: 0, z: 0 },
+    }
 }));
 
 global.mp = {
@@ -27,10 +30,10 @@ global.mp = {
 describe('LocationService', () => {
     beforeEach(() => jest.clearAllMocks());
 
-    test('initialize: 6 локаций, маркер + blip на каждую', () => {
+    test('initialize: 7 локаций, маркер + blip на каждую', () => {
         locationService.initialize();
-        expect(global.mp.markers.new).toHaveBeenCalledTimes(6);
-        expect(global.mp.blips.new).toHaveBeenCalledTimes(6);
+        expect(global.mp.markers.new).toHaveBeenCalledTimes(7);
+        expect(global.mp.blips.new).toHaveBeenCalledTimes(7);
     });
 
     test('getPosition: координаты или null', () => {
