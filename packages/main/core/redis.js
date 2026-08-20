@@ -9,8 +9,9 @@ function buildRedisUrl() {
     const redisCfg = settings.redis || {};
     const host = process.env.REDIS_HOST || redisCfg.host || 'localhost';
     const port = process.env.REDIS_PORT || redisCfg.port || 6379;
+    const db = process.env.REDIS_DB || redisCfg.db || 0;
     const password = process.env.REDIS_PASSWORD || redisCfg.password;
-    return password ? `redis://:${password}@${host}:${port}` : `redis://${host}:${port}`
+    return password ? `redis://:${password}@${host}:${port}/${db}` : `redis://${host}:${port}/${db}`
 }
 
 async function initRedis() {

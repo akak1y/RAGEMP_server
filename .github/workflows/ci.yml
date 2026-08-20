@@ -68,6 +68,7 @@ jobs:
       DB_NAME: ragemp_test
       REDIS_HOST: localhost
       REDIS_PORT: 6380
+      REDIS_DB: 1
     services:
       mysql:
         image: mysql:8.0

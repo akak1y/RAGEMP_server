@@ -6,7 +6,7 @@
   "scripts": {
     "test": "jest",
     "migrate": "node scripts/ensure-db.js && sequelize db:migrate",
-    "test:int": "jest --config jest.config.integration.js"
+    "test:int": "jest --config jest.config.integration.js --runInBand"
   },
   "keywords": [],
   "author": "",
