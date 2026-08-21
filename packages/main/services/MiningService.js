@@ -1,6 +1,5 @@
 const { MiningConfig, BotSpawnPos } = require('../config');
 const inventoryService = require('./InventoryService');
-const moneyService = require('./MoneyService');
 const auditService = require('./AuditService');
 const { isNear } = require('../utils/distance');
 const logger = require('../core/logger');
@@ -54,10 +53,6 @@ class MiningService {
         }
 
         const shiftCount = this.shiftStats.get(player.accountId) || 0;
-        if (shiftCount >= MiningConfig.maxOrePerShift) {
-            logger.warn(`[MiningService] completeMine: лимит за смену у ${player.accountName}`);
-            return false;
-        }
 
         const given = await inventoryService.giveItem(player, 'ore', 1);
         if (!given) {
@@ -74,9 +69,7 @@ class MiningService {
             details: { shiftCount: shiftCount + 1 },
         });
 
-        logger.info(
-            `[MiningService] ${player.accountName} добыл руду (${shiftCount + 1}/${MiningConfig.maxOrePerShift})`
-        );
+        logger.info(`[MiningService] ${player.accountName} добыл руду`);
         return true;
     }
 
@@ -101,7 +94,7 @@ class MiningService {
         }
 
         const totalPrice = MiningConfig.oreSellPrice * oreCount;
-        const moneyOk = await moneyService.addMoney(player.accountId, totalPrice, 'mining');
+        const moneyOk = await player.addMoney(totalPrice, 'mining');
         if (!moneyOk) {
             await inventoryService.giveItem(player, 'ore', oreCount);
             return { success: false, message: 'Ошибка денег' };

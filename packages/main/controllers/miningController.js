@@ -48,9 +48,8 @@ mp.events.add(
         async (player) => {
             const ok = await miningService.completeMine(player);
             if (ok) {
-                const left =
-                    MiningConfig.maxOrePerShift - miningService.getShiftCount(player.accountId);
-                player.outputChatBox(`!{#4CAF50}[Шахта] Руда добыта! Осталось за смену: ${left}`);
+                const count = miningService.getShiftCount(player.accountId);
+                player.outputChatBox(`!{#4CAF50}[Шахта] Руда добыта! Всего за смену: ${count}`);
             } else {
                 player.outputChatBox('!{#FF3333}[Шахта] Добыча не удалась.');
             }

@@ -30,6 +30,16 @@
         />
         <!--магазин-->
         <Shop v-if="windows.shop" :config="shopConfig" @close="closeWindow('shop')" />
+        <!--окно продажи руды-->
+        <MiningSell
+            v-if="windows.miningSell"
+            :info="miningSellInfo"
+            @close="closeWindow('miningSell')"
+        />
+        <!--прогресс добычи-->
+        <div v-if="miningProgress !== null" class="mining-progress">
+            <div class="mining-progress-fill" :style="{ width: miningProgress + '%' }"></div>
+        </div>
         <!--тюнинг-->
         <CarCustom v-if="windows.carCustom" :config="tuningConfig" :state="tuningState" />
         <!--перехватываем нажатие клавиш-->
@@ -72,6 +82,7 @@ import Phone from './components/Phone.vue';
 import Dealership from './components/Dealership.vue';
 import CarCustom from './components/CarCustom.vue';
 import Shop from './components/Shop.vue';
+import MiningSell from './components/MiningSell.vue';
 
 const debugLogs = ref([]);
 const windowDebug = ref(false);
@@ -103,6 +114,8 @@ const vehicleModel = ref('');
 const inVehicle = ref(false);
 const fuel = ref(100);
 const shopConfig = ref({ name: 'Магазин', items: [] });
+const miningSellInfo = ref({ oreCount: 0, price: 0, total: 0 });
+const miningProgress = ref(null);
 
 const addDebugLog = (text, type = 'info') => {
     const now = new Date();
@@ -334,6 +347,19 @@ onMounted(() => {
         } catch (e) {
             console.error('[Vue Error] Не удалось распарсить конфиг магазина:', e);
         }
+    };
+    window.setMiningSellInfo = (json) => {
+        try {
+            miningSellInfo.value = typeof json === 'string' ? JSON.parse(json) : json;
+        } catch (e) {
+            console.error('[Vue Error] Не удалось распарсить данные продажи:', e);
+        }
+    };
+    window.updateMiningProgress = (pct) => {
+        miningProgress.value = pct;
+    };
+    window.hideMiningProgress = () => {
+        miningProgress.value = null;
     };
 });
 </script>

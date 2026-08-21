@@ -6,12 +6,14 @@ const {
     FuelStationPos,
     CourierConfig,
     ShopConfig,
+    MiningConfig,
+    BotSpawnPos,
 } = require('../config');
 const { isNear } = require('../utils/distance');
 const logger = require('../core/logger');
 
 /**
- * Сервис игровых локаций (маркеры и blips)
+ * Сервис игровых локаций (маркеры, blips, объекты)
  */
 class LocationService {
     constructor() {
@@ -51,7 +53,27 @@ class LocationService {
                 blip: { sprite: 52, color: 2, name: '24/7', scale: 0.9 },
                 marker: { type: 1, size: 1.5, color: [0, 120, 255, 150], zOffset: -1.0 },
             },
+            // шахта: камни как 3D-объекты без маркеров
+            ...MiningConfig.rocks.reduce((acc, pos, i) => {
+                acc[`rock_${i}`] = {
+                    pos,
+                    blip: null,
+                    marker: null,
+                    object: { model: 'prop_rock_4_a', zOffset: -0.3, rotZ: i * 37 },
+                };
+                return acc;
+            }, {}),
+            // скупщик руды: невидимая зона
+            mining_sell: {
+                pos: BotSpawnPos,
+                blip: null,
+                marker: null,
+            },
         };
+
+        Object.keys(this.locations).forEach((key) => {
+            if (!this.locations[key]) delete this.locations[key];
+        });
     }
 
     /**
@@ -60,7 +82,6 @@ class LocationService {
     initialize() {
         for (const [_key, loc] of Object.entries(this.locations)) {
             if (loc.blip) {
-                // blip: null — локация только с маркером
                 mp.blips.new(loc.blip.sprite, loc.pos, {
                     name: loc.blip.name,
                     color: loc.blip.color,
@@ -68,14 +89,21 @@ class LocationService {
                     shortRange: true,
                 });
             }
-            mp.markers.new(
-                loc.marker.type,
-                new mp.Vector3(loc.pos.x, loc.pos.y, loc.pos.z + loc.marker.zOffset),
-                loc.marker.size,
-                {
-                    color: loc.marker.color,
-                }
-            );
+            if (loc.marker) {
+                mp.markers.new(
+                    loc.marker.type,
+                    new mp.Vector3(loc.pos.x, loc.pos.y, loc.pos.z + loc.marker.zOffset),
+                    loc.marker.size,
+                    { color: loc.marker.color }
+                );
+            }
+            if (loc.object) {
+                mp.objects.new(
+                    mp.joaat(loc.object.model),
+                    new mp.Vector3(loc.pos.x, loc.pos.y, loc.pos.z + loc.object.zOffset),
+                    new mp.Vector3(0, 0, loc.object.rotZ)
+                );
+            }
         }
         logger.info(
             `[LocationService] Создано локаций на карте: ${Object.keys(this.locations).length}`

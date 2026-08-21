@@ -13,11 +13,21 @@ jest.mock('../config', () => ({
     ShopConfig: {
         position: { x: 60, y: 0, z: 0 },
     },
+    BotSpawnPos: { x: 70, y: 0, z: 0 },
+    MiningConfig: {
+        rocks: [
+            { x: -484.0, y: -134.0, z: 37.84 },
+            { x: -491.0, y: -142.0, z: 37.91 },
+            { x: -478.0, y: -147.0, z: 37.65 },
+        ],
+    },
 }));
 
 global.mp = {
     blips: { new: jest.fn() },
     markers: { new: jest.fn() },
+    objects: { new: jest.fn() },
+    joaat: jest.fn((s) => s),
     Vector3: class {
         constructor(x, y, z) {
             this.x = x;
@@ -30,10 +40,11 @@ global.mp = {
 describe('LocationService', () => {
     beforeEach(() => jest.clearAllMocks());
 
-    test('initialize: 7 локаций, маркер + blip на каждую', () => {
+    test('initialize: 7 маркеров + 7 блипов + 3 камня', () => {
         locationService.initialize();
         expect(global.mp.markers.new).toHaveBeenCalledTimes(7);
         expect(global.mp.blips.new).toHaveBeenCalledTimes(7);
+        expect(global.mp.objects.new).toHaveBeenCalledTimes(3);
     });
 
     test('getPosition: координаты или null', () => {

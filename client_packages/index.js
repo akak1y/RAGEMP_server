@@ -11,6 +11,7 @@ require('./interactions');
 require('./keys');
 require('./bridges');
 require('./shop');
+require('./mining');
 
 /**
  * Входная точка клиента: создание браузера и подключение доменных модулей.

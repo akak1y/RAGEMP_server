@@ -42,6 +42,13 @@ describe('Шахта — интеграционные тесты', () => {
             },
             call: () => {},
             inventory: null,
+            addMoney: jest.fn().mockImplementation(async (amount) => {
+                await User.update(
+                    { money: sequelize.literal(`money + ${amount}`) },
+                    { where: { id: user.id } }
+                );
+                return true;
+            }),
         };
         await inventoryService.loadPlayerInventory(player);
 
@@ -62,11 +69,13 @@ describe('Шахта — интеграционные тесты', () => {
 
         const updated = await User.findByPk(user.id);
         expect(updated.money).toBe(3 * MiningConfig.oreSellPrice);
-        const after = await getItemModel().findAll({ where: { owner_id: user.id, item_id: 'ore' } });
+        const after = await getItemModel().findAll({
+            where: { owner_id: user.id, item_id: 'ore' },
+        });
         expect(after.length).toBe(0);
     });
 
-    test('лимит за смену: сверх maxOrePerShift не добыть', async () => {
+    test('античит: добыча быстрее mineTimeMs отклоняется', async () => {
         const User = getUserModel();
         const user = await User.create({ username: 'miner2', password: 'x', money: 0 });
         const player = {
@@ -79,12 +88,11 @@ describe('Шахта — интеграционные тесты', () => {
             },
             call: () => {},
             inventory: null,
+            addMoney: jest.fn().mockResolvedValue(true),
         };
         await inventoryService.loadPlayerInventory(player);
 
-        miningService.shiftStats.set(user.id, MiningConfig.maxOrePerShift);
         miningService.startWork(player, 0);
-        miningService.activeMiners.get(user.id).startedAt -= MiningConfig.mineTimeMs + 100;
         expect(await miningService.completeMine(player)).toBe(false);
     });
 });

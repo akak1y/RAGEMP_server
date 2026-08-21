@@ -87,6 +87,25 @@ mp.keys.bind(0x45, true, () => {
             },
         },
     ];
+    // шахта: камни
+    if (Array.isArray(state.positions.miningRocks)) {
+        state.positions.miningRocks.forEach((rock, i) => {
+            interactionZones.push({
+                name: 'rock_' + i,
+                position: rock,
+                onInteract: () => mp.events.callRemote('server:mining:start', i),
+            });
+        });
+    }
+    // шахта: скупщик руды
+    if (state.positions.bot) {
+        interactionZones.push({
+            name: 'mining_sell',
+            position: state.positions.bot,
+            radius: 4,
+            onInteract: () => mp.events.callRemote('server:mining:requestSellInfo'),
+        });
+    }
     for (const zone of interactionZones) {
         // проверяем каждую зону
         if (!zone.position) continue;
@@ -99,7 +118,7 @@ mp.keys.bind(0x45, true, () => {
             zone.position.z,
             true
         );
-        if (distance <= interactionRadius) {
+        if (distance <= (zone.radius || interactionRadius)) {
             zone.onInteract();
             break;
         }

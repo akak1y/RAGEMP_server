@@ -1,11 +1,9 @@
 const miningService = require('../services/MiningService');
 const inventoryService = require('../services/InventoryService');
-const moneyService = require('../services/MoneyService');
 const auditService = require('../services/AuditService');
 const { MiningConfig, BotSpawnPos } = require('../config');
 
 jest.mock('../services/InventoryService');
-jest.mock('../services/MoneyService');
 jest.mock('../services/AuditService');
 
 const atRock = () => ({
@@ -64,27 +62,20 @@ describe('MiningService', () => {
             expect(await miningService.completeMine(player)).toBe(false);
             expect(inventoryService.giveItem).not.toHaveBeenCalled();
         });
-
-        test('лимит за смену', async () => {
-            const player = atRock();
-            miningService.shiftStats.set(1, MiningConfig.maxOrePerShift);
-
-            expect(await miningService.completeMine(player)).toBe(false);
-        });
     });
 
     describe('sellAllOre', () => {
         test('успешно продаёт всю руду боту', async () => {
             const player = atBot();
+            player.addMoney = jest.fn().mockResolvedValue(true);
 
             inventoryService.countItem.mockReturnValue(5);
             inventoryService.removeItem.mockResolvedValue(true);
-            moneyService.addMoney.mockResolvedValue(true);
             auditService.logPlayer.mockResolvedValue({ id: 1 });
 
             const result = await miningService.sellAllOre(player);
             expect(result.success).toBe(true);
-            expect(moneyService.addMoney).toHaveBeenCalledWith(1, 125, 'mining'); // 5 * 25
+            expect(player.addMoney).toHaveBeenCalledWith(125, 'mining');
         });
 
         test('нет руды — продажа отклонена', async () => {
@@ -93,7 +84,6 @@ describe('MiningService', () => {
 
             const result = await miningService.sellAllOre(player);
             expect(result.success).toBe(false);
-            expect(moneyService.addMoney).not.toHaveBeenCalled();
         });
 
         test('далеко от бота — продажа отклонена', async () => {
