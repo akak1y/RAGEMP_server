@@ -34,6 +34,7 @@ mp.events.add('client:account:hideAuth', (developer) => {
     mp.events.callRemote('server:fuel:requestPos');
     mp.events.callRemote('server:courier:requestPos');
     mp.events.callRemote('server:shop:requestPos');
+    mp.events.callRemote('server:mining:requestPos');
     mp.events.callRemote('server:phone:requestPriceDeliveryCar');
     if (state.uiBrowser) state.uiBrowser.execute(`window.changeScreen("game");`); // меняем окно авторизации на игровой худ
     state.playerIsDeveloper = developer;

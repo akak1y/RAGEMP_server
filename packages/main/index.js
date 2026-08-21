@@ -50,6 +50,7 @@ async function refreshStatsCache() {
         require('./controllers/locationController');
         require('./controllers/tuningController');
         require('./controllers/shopController');
+        require('./controllers/miningController');
         locationService.initialize();
         logger.info('[System] Все системы сервера RAGE MP успешно запущены и готовы!');
 

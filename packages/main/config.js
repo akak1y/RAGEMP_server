@@ -3,6 +3,7 @@ module.exports = {
         burger: { name: 'Бургер', weight: 0.2, maxStack: 5 },
         water: { name: 'Вода', weight: 0.3, maxStack: 10 },
         phone: { name: 'Смартфон iFruit', weight: 0.5, maxStack: 1 },
+        ore: { name: 'Железная руда', weight: 1.0, maxStack: 10 },
     },
     VehicleConfig: {
         adder: { name: 'Truffade Adder', price: 100000 },
@@ -106,5 +107,18 @@ module.exports = {
             { itemId: 'water', price: 30 },
             { itemId: 'phone', price: 500 },
         ],
+    },
+    MiningConfig: {
+        // Позиции камней (поставь свои после проверки в игре)
+        rocks: [
+            { x: -440.0, y: -130.0, z: 39.0 },
+            { x: -442.0, y: -128.0, z: 39.0 },
+            { x: -438.0, y: -132.0, z: 39.0 },
+        ],
+        mineTimeMs: 5000,
+        maxOrePerShift: 20,
+        oreSellPrice: 25,
+        interactRadius: 3.0,
+        cooldownMs: 1000,
     },
 };

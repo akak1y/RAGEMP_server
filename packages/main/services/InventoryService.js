@@ -46,19 +46,24 @@ class InventoryService {
     }
 
     /**
-     * Проверка наличия предмета у игрока
-     * @param {mp.Player} player - Игрок
-     * @param {string} itemId - ID предмета
-     * @param {number} [amount=1] - Сколько штук нужно
-     * @returns {boolean}
+     * Количество предметов у игрока
+     * @param {mp.Player} player
+     * @param {string} itemId
+     * @returns {number}
      */
-    hasItem(player, itemId, amount = 1) {
-        if (!Array.isArray(player.inventory)) return false;
-        const total = player.inventory.reduce(
+    countItem(player, itemId) {
+        if (!Array.isArray(player.inventory)) return 0;
+        return player.inventory.reduce(
             (sum, slot) => (slot && slot.itemId === itemId ? sum + slot.count : sum),
             0
         );
-        return total >= amount;
+    }
+
+    /**
+     * Проверка наличия предмета у игрока
+     */
+    hasItem(player, itemId, amount = 1) {
+        return this.countItem(player, itemId) >= amount;
     }
 
     /**
