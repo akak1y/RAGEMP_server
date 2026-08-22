@@ -15,7 +15,11 @@ mp.events.add(
         [isLoggedIn],
         (player) => {
             player.call('client:mining:setData', [
-                JSON.stringify({ rocks: MiningConfig.rocks, botPos: BotSpawnPos }),
+                JSON.stringify({
+                    rocks: MiningConfig.rocks,
+                    botPos: BotSpawnPos,
+                    active: miningService.getRocksActive(),
+                }),
             ]);
         },
         'mining:requestPos'
@@ -64,6 +68,12 @@ mp.events.add(
         [isLoggedIn],
         (player) => {
             const oreCount = inventoryService.countItem(player, 'ore');
+            if (oreCount === 0) {
+                player.outputChatBox(
+                    '!{#FF3333}[Игнат] Сначала накопай руду в шахте, а потом приходи!'
+                );
+                return;
+            }
             player.call('client:mining:sellInfo', [
                 JSON.stringify({
                     oreCount,
@@ -85,5 +95,16 @@ mp.events.add(
             player.call('client:mining:sellResult', [result.success, result.message]);
         },
         'mining:sell'
+    )
+);
+
+mp.events.add(
+    'server:mining:enterZone',
+    withGuards(
+        [isLoggedIn, rateLimit('mining:enter', 5, 10)],
+        (player) => {
+            miningService.greetPlayer(player);
+        },
+        'mining:enter'
     )
 );

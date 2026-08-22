@@ -71,6 +71,8 @@ class LocationService {
             },
         };
 
+        this.rockObjects = {};
+
         Object.keys(this.locations).forEach((key) => {
             if (!this.locations[key]) delete this.locations[key];
         });
@@ -98,11 +100,14 @@ class LocationService {
                 );
             }
             if (loc.object) {
-                mp.objects.new(
+                const obj = mp.objects.new(
                     mp.joaat(loc.object.model),
                     new mp.Vector3(loc.pos.x, loc.pos.y, loc.pos.z + loc.object.zOffset),
-                    new mp.Vector3(0, 0, loc.object.rotZ)
+                    new mp.Vector3(loc.object.rotX || 0, loc.object.rotY || 0, loc.object.rotZ || 0)
                 );
+                if (_key.startsWith('rock_')) {
+                    this.rockObjects[Number(_key.split('_')[1])] = obj;
+                }
             }
         }
         logger.info(
@@ -131,6 +136,34 @@ class LocationService {
         const loc = this.getPosition(key);
         if (!loc || !position) return false;
         return isNear(position, loc, radius);
+    }
+
+    /**
+     * Скрыть исчерпанный камень
+     */
+    hideRock(index) {
+        const obj = this.rockObjects[index];
+        if (obj) {
+            try {
+                obj.destroy();
+            } catch (e) {}
+            this.rockObjects[index] = null;
+        }
+    }
+
+    /**
+     * Заспавнить камень заново
+     */
+    showRock(index) {
+        if (typeof mp === 'undefined') return;
+        if (this.rockObjects[index]) return;
+        const loc = this.locations['rock_' + index];
+        if (!loc || !loc.object) return;
+        this.rockObjects[index] = mp.objects.new(
+            mp.joaat(loc.object.model),
+            new mp.Vector3(loc.pos.x, loc.pos.y, loc.pos.z + loc.object.zOffset),
+            new mp.Vector3(loc.object.rotX || 0, loc.object.rotY || 0, loc.object.rotZ || 0)
+        );
     }
 }
 

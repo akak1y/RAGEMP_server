@@ -1,6 +1,7 @@
 const { MiningConfig, BotSpawnPos } = require('../config');
 const inventoryService = require('./InventoryService');
 const auditService = require('./AuditService');
+const locationService = require('./LocationService');
 const { isNear } = require('../utils/distance');
 const logger = require('../core/logger');
 
@@ -11,6 +12,10 @@ class MiningService {
     constructor() {
         this.activeMiners = new Map();
         this.shiftStats = new Map();
+        // состояние камней: исчерпан / время респавна
+        this.rockState = MiningConfig.rocks.map(() => ({ depleted: false, respawnAt: 0 }));
+        const t = setInterval(() => this.respawnCheck(), 3000);
+        if (t.unref) t.unref();
     }
 
     /**
@@ -20,6 +25,7 @@ class MiningService {
         if (!player || !player.accountId) return false;
         const rock = MiningConfig.rocks[rockIndex];
         if (!rock) return false;
+        if (this.rockState[rockIndex].depleted) return false;
         if (!isNear(player.position, rock, MiningConfig.interactRadius)) return false;
 
         this.activeMiners.set(player.accountId, { rockIndex, startedAt: Date.now() });
@@ -62,6 +68,7 @@ class MiningService {
 
         this.shiftStats.set(player.accountId, shiftCount + 1);
         this.activeMiners.delete(player.accountId);
+        this.depleteRock(record.rockIndex);
 
         auditService.logPlayer(player, 'mining_complete', {
             category: 'economy',
@@ -120,6 +127,72 @@ class MiningService {
         this.activeMiners.delete(player.accountId);
         this.shiftStats.delete(player.accountId);
         logger.info(`[MiningService] ${player.accountName} завершил смену`);
+    }
+
+    /**
+     * Случайный интервал респавна
+     */
+    randomRespawnDelay() {
+        const min = MiningConfig.rockRespawnMinMs;
+        const max = MiningConfig.rockRespawnMaxMs;
+        return min + Math.floor(Math.random() * (max - min));
+    }
+
+    /**
+     * Исчерпать камень: спрятать объект и уведомить клиентов
+     */
+    depleteRock(index) {
+        this.rockState[index] = {
+            depleted: true,
+            respawnAt: Date.now() + this.randomRespawnDelay(),
+        };
+        locationService.hideRock(index);
+        this.broadcastRocks();
+        logger.info(`[MiningService] Камень ${index} исчерпан`);
+    }
+
+    /**
+     * Проверка респавна (каждые 3 сек)
+     */
+    respawnCheck() {
+        const now = Date.now();
+        let changed = false;
+        this.rockState.forEach((st, i) => {
+            if (st.depleted && now >= st.respawnAt) {
+                this.rockState[i] = { depleted: false, respawnAt: 0 };
+                locationService.showRock(i);
+                changed = true;
+                logger.info(`[MiningService] Камень ${i} заспавнен заново`);
+            }
+        });
+        if (changed) this.broadcastRocks();
+    }
+
+    /**
+     * Актуальное состояние камней всем игрокам
+     */
+    broadcastRocks() {
+        if (typeof mp === 'undefined' || !mp.players) return;
+        const active = this.getRocksActive();
+        mp.players.forEach((p) => p.call('client:mining:rocksUpdate', [JSON.stringify(active)]));
+    }
+
+    getRocksActive() {
+        return this.rockState.map((s) => !s.depleted);
+    }
+
+    /**
+     * Реплики бота-скупщика
+     */
+    greetPlayer(player) {
+        const phrases = [
+            'Эй, шахтёр! Неси руду, если есть!',
+            'Закупаю руду по хорошей цене, подходи!',
+            'Чем больше руды — тем больше денег, брат.',
+            'Шахта ждёт тебя, а я жду добычу!',
+        ];
+        const msg = phrases[Math.floor(Math.random() * phrases.length)];
+        player.outputChatBox(`!{#f39c12}[Игнат] ${msg}`);
     }
 
     getShiftCount(playerId) {

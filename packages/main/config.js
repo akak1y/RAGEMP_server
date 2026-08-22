@@ -75,7 +75,7 @@ module.exports = {
     CarCustomPos: { x: -403.5, y: -71.6, z: 44.5, h: 52.0 },
     CustomBoxPos: { x: -401.3, y: -84.2, z: 53.9, h: 298.0 },
     HospitalPos: { x: -449.6, y: -133.1, z: 39.1, h: 120.6 },
-    BotSpawnPos: { x: -453.3, y: -85.1, z: 40.0, h: 215.6 },
+    BotSpawnPos: { x: -491.22, y: -133.64, z: 38.91, h: 333.5 },
     BotPedModel: 'g_m_m_korboss_01',
     FuelStationPos: { x: -374.4, y: -87.4, z: 45.7 },
     FuelPricePerLiter: 3, // цена за литр
@@ -110,13 +110,15 @@ module.exports = {
     },
     MiningConfig: {
         rocks: [
-            { x: -484.0, y: -134.0, z: 37.84 },
-            { x: -491.0, y: -142.0, z: 37.91 },
-            { x: -478.0, y: -147.0, z: 37.65 },
+            { x: -484.0, y: -134.0, z: 37.84, rotX: 5, rotY: 12, rotZ: 37 },
+            { x: -491.0, y: -142.0, z: 37.91, rotX: -8, rotY: -25, rotZ: 142 },
+            { x: -478.0, y: -147.0, z: 37.65, rotX: 3, rotY: 45, rotZ: 287 },
         ],
         mineTimeMs: 5000,
         oreSellPrice: 25,
         interactRadius: 3.0,
         cooldownMs: 1000,
+        rockRespawnMinMs: 20000,
+        rockRespawnMaxMs: 60000,
     },
 };

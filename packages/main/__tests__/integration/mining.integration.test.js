@@ -26,10 +26,14 @@ beforeEach(async () => {
     await getRedis().flushDb();
     miningService.activeMiners.clear();
     miningService.shiftStats.clear();
+    miningService.rockState.forEach((s) => {
+        s.depleted = false;
+        s.respawnAt = 0;
+    });
 });
 
 describe('Шахта — интеграционные тесты', () => {
-    test('полный цикл: добыл → руда в БД → продал боту → деньги', async () => {
+    test('полный цикл: 3 камня → руда в БД → продал боту → деньги', async () => {
         const User = getUserModel();
         const user = await User.create({ username: 'miner1', password: 'x', money: 0 });
         const player = {
@@ -52,10 +56,16 @@ describe('Шахта — интеграционные тесты', () => {
         };
         await inventoryService.loadPlayerInventory(player);
 
-        for (let i = 0; i < 3; i++) {
-            miningService.startWork(player, 0);
+        for (let i = 0; i < MiningConfig.rocks.length; i++) {
+            player.position = {
+                x: MiningConfig.rocks[i].x,
+                y: MiningConfig.rocks[i].y,
+                z: MiningConfig.rocks[i].z,
+            };
+            expect(miningService.startWork(player, i)).toBe(true);
             miningService.activeMiners.get(user.id).startedAt -= MiningConfig.mineTimeMs + 100;
             expect(await miningService.completeMine(player)).toBe(true);
+            expect(miningService.rockState[i].depleted).toBe(true);
         }
 
         const items = await getItemModel().findAll({
@@ -75,12 +85,37 @@ describe('Шахта — интеграционные тесты', () => {
         expect(after.length).toBe(0);
     });
 
-    test('античит: добыча быстрее mineTimeMs отклоняется', async () => {
+    test('исчерпанный камень не даёт добыть повторно', async () => {
         const User = getUserModel();
         const user = await User.create({ username: 'miner2', password: 'x', money: 0 });
         const player = {
             accountId: user.id,
             accountName: 'miner2',
+            position: {
+                x: MiningConfig.rocks[0].x,
+                y: MiningConfig.rocks[0].y,
+                z: MiningConfig.rocks[0].z,
+            },
+            call: () => {},
+            inventory: null,
+            addMoney: jest.fn().mockResolvedValue(true),
+        };
+        await inventoryService.loadPlayerInventory(player);
+
+        miningService.startWork(player, 0);
+        miningService.activeMiners.get(user.id).startedAt -= MiningConfig.mineTimeMs + 100;
+        expect(await miningService.completeMine(player)).toBe(true);
+
+        miningService.startWork(player, 0);
+        expect(await miningService.completeMine(player)).toBe(false);
+    });
+
+    test('античит: добыча быстрее mineTimeMs отклоняется', async () => {
+        const User = getUserModel();
+        const user = await User.create({ username: 'miner3', password: 'x', money: 0 });
+        const player = {
+            accountId: user.id,
+            accountName: 'miner3',
             position: {
                 x: MiningConfig.rocks[0].x,
                 y: MiningConfig.rocks[0].y,
