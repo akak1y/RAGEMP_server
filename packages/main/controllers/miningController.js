@@ -97,14 +97,3 @@ mp.events.add(
         'mining:sell'
     )
 );
-
-mp.events.add(
-    'server:mining:enterZone',
-    withGuards(
-        [isLoggedIn, rateLimit('mining:enter', 5, 10)],
-        (player) => {
-            miningService.greetPlayer(player);
-        },
-        'mining:enter'
-    )
-);

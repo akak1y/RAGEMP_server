@@ -12,6 +12,12 @@ const {
 const { isNear } = require('../utils/distance');
 const logger = require('../core/logger');
 
+const ROCK_VARIANTS = [
+    { rotX: 5, rotY: 12, rotZ: 37 },
+    { rotX: -8, rotY: -25, rotZ: 142 },
+    { rotX: 3, rotY: 45, rotZ: 287 },
+];
+
 /**
  * Сервис игровых локаций (маркеры, blips, объекты)
  */
@@ -55,11 +61,18 @@ class LocationService {
             },
             // шахта: камни как 3D-объекты без маркеров
             ...MiningConfig.rocks.reduce((acc, pos, i) => {
+                const v = ROCK_VARIANTS[i % ROCK_VARIANTS.length];
                 acc[`rock_${i}`] = {
                     pos,
                     blip: null,
                     marker: null,
-                    object: { model: 'prop_rock_4_a', zOffset: -0.3, rotZ: i * 37 },
+                    object: {
+                        model: 'prop_rock_4_a',
+                        zOffset: -0.3,
+                        rotX: v.rotX,
+                        rotY: v.rotY,
+                        rotZ: v.rotZ,
+                    },
                 };
                 return acc;
             }, {}),
@@ -100,11 +113,19 @@ class LocationService {
                 );
             }
             if (loc.object) {
+                const rot = new mp.Vector3(
+                    loc.object.rotX || 0,
+                    loc.object.rotY || 0,
+                    loc.object.rotZ || 0
+                );
                 const obj = mp.objects.new(
                     mp.joaat(loc.object.model),
                     new mp.Vector3(loc.pos.x, loc.pos.y, loc.pos.z + loc.object.zOffset),
-                    new mp.Vector3(loc.object.rotX || 0, loc.object.rotY || 0, loc.object.rotZ || 0)
+                    rot
                 );
+                try {
+                    obj.rotation = rot;
+                } catch (e) {}
                 if (_key.startsWith('rock_')) {
                     this.rockObjects[Number(_key.split('_')[1])] = obj;
                 }
@@ -159,11 +180,22 @@ class LocationService {
         if (this.rockObjects[index]) return;
         const loc = this.locations['rock_' + index];
         if (!loc || !loc.object) return;
-        this.rockObjects[index] = mp.objects.new(
+
+        const rot = new mp.Vector3(
+            loc.object.rotX || 0,
+            loc.object.rotY || 0,
+            loc.object.rotZ || 0
+        );
+        const obj = mp.objects.new(
             mp.joaat(loc.object.model),
             new mp.Vector3(loc.pos.x, loc.pos.y, loc.pos.z + loc.object.zOffset),
-            new mp.Vector3(loc.object.rotX || 0, loc.object.rotY || 0, loc.object.rotZ || 0)
+            rot
         );
+        try {
+            obj.rotation = rot;
+        } catch (e) {}
+
+        this.rockObjects[index] = obj;
     }
 }
 

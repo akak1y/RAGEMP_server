@@ -133,17 +133,3 @@
     text-align: center;
     padding: 40px 20px;
 }
-
-/* Подсказка внизу */
-.controls-hint {
-    position: absolute;
-    top: 30px;
-    left: 45px;
-    color: rgba(255, 255, 255, 0.6);
-    font-family: 'Verdana', sans-serif;
-    font-size: 16px;
-    background: rgba(0, 0, 0, 0.6);
-    padding: 6px 12px;
-    border-radius: 4px;
-    border: 1px solid #333;
-}

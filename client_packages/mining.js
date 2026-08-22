@@ -9,17 +9,22 @@ const HAMMER_ANIM = 'hammer_a';
 
 let channel = null;
 let progressTimer = null;
-let dustTimer = null;
-let pickaxe = null;
 
 mp.events.add('client:mining:setData', (json) => {
     try {
         const data = JSON.parse(json);
         state.positions.miningRocks = (data.rocks || []).map((r) => new mp.Vector3(r.x, r.y, r.z));
         state.positions.bot = new mp.Vector3(data.botPos.x, data.botPos.y, data.botPos.z);
+        state.miningRocksActive = data.active || (data.rocks || []).map(() => true);
     } catch (e) {
         mp.gui.chat.push('!{#FF3333}[Шахта] Ошибка данных локаций');
     }
+});
+
+mp.events.add('client:mining:rocksUpdate', (json) => {
+    try {
+        state.miningRocksActive = JSON.parse(json);
+    } catch (e) {}
 });
 
 function playMiningAnim(durationMs) {
@@ -65,49 +70,6 @@ function stopAllTasks() {
     } catch (e) {}
 }
 
-function attachPickaxe() {
-    setTimeout(() => {
-        try {
-            const hash = mp.game.joaat('prop_tool_pickaxe');
-            const p = mp.players.local.position;
-            pickaxe = mp.objects.new(
-                hash,
-                new mp.Vector3(p.x, p.y, p.z - 5),
-                new mp.Vector3(0, 0, 0)
-            );
-            pickaxe.attachTo(
-                mp.players.local,
-                57005,
-                new mp.Vector3(0.08, 0.02, 0.05),
-                new mp.Vector3(15, 0, 60),
-                false,
-                false,
-                false,
-                0,
-                false
-            );
-        } catch (e) {}
-    }, 300);
-}
-
-function spawnDust() {
-    try {
-        const p = mp.players.local.position;
-        mp.game.graphics.requestNamedPtfxAsset('core');
-        mp.game.graphics.useParticleFxAssetNext('core');
-        mp.game.graphics.startParticleFxNonLoopedAtCoord(
-            'ent_dst_dust',
-            p.x,
-            p.y,
-            p.z - 0.8,
-            0,
-            0,
-            0,
-            0.6
-        );
-    } catch (e) {}
-}
-
 function setProgress(pct) {
     if (state.uiBrowser) {
         state.uiBrowser.execute(
@@ -123,15 +85,7 @@ function hideProgress() {
 }
 
 function stopVisuals() {
-    if (dustTimer) clearInterval(dustTimer);
-    dustTimer = null;
     stopAllTasks();
-    if (pickaxe) {
-        try {
-            pickaxe.destroy();
-        } catch (e) {}
-        pickaxe = null;
-    }
 }
 
 function cancelChannel() {
@@ -166,8 +120,6 @@ mp.events.add('client:mining:startChannel', (rockIndex, durationMs) => {
     };
 
     playMiningAnim(durationMs);
-    attachPickaxe();
-    dustTimer = setInterval(spawnDust, 800);
 
     progressTimer = setInterval(() => {
         if (!channel) return;
@@ -184,6 +136,37 @@ mp.events.add('client:mining:startChannel', (rockIndex, durationMs) => {
         if (pct >= 100) finishChannel();
     }, 100);
 });
+
+let hintShown = false;
+const dist2d = (a, b) => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+
+setInterval(() => {
+    const p = mp.players.local.position;
+    let near = null;
+
+    if (Array.isArray(state.positions.miningRocks)) {
+        state.positions.miningRocks.forEach((rock, i) => {
+            if (state.miningRocksActive[i] === false) return;
+            if (dist2d(p, rock) <= 3.0) near = 'rock';
+        });
+    }
+    if (state.positions.bot && dist2d(p, state.positions.bot) <= 3.0) near = 'bot';
+
+    if (near && !hintShown) {
+        hintShown = true;
+        const text = near === 'bot' ? 'Продать руду' : 'Добывать';
+        if (state.uiBrowser) {
+            state.uiBrowser.execute(
+                `if(window.showInteractHint) window.showInteractHint(${JSON.stringify(text)});`
+            );
+        }
+    } else if (!near && hintShown) {
+        hintShown = false;
+        if (state.uiBrowser) {
+            state.uiBrowser.execute(`if(window.hideInteractHint) window.hideInteractHint();`);
+        }
+    }
+}, 500);
 
 mp.events.add('client:mining:sellInfo', (json) => {
     if (!state.uiBrowser) return;

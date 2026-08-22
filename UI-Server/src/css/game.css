@@ -462,3 +462,28 @@
     background: #555;
     cursor: not-allowed;
 }
+
+.controls-hint {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.55);
+    color: rgba(255, 255, 255, 0.85);
+    font-family: 'Verdana', sans-serif;
+    font-size: 14px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.controls-hint .hint-key {
+    background: #f39c12;
+    color: #111;
+    font-weight: bold;
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 4px;
+}

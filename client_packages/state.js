@@ -9,6 +9,7 @@ globalThis.UIState = {
     playerIsDeveloper: false,
     isCameraRotateActive: false,
     isAnyUiWindowOpen: false,
+    miningRocksActive: [],
     openWindowsState: {
         inventory: false,
         phone: false,

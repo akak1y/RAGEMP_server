@@ -93,7 +93,13 @@ mp.keys.bind(0x45, true, () => {
             interactionZones.push({
                 name: 'rock_' + i,
                 position: rock,
-                onInteract: () => mp.events.callRemote('server:mining:start', i),
+                onInteract: () => {
+                    if (state.miningRocksActive[i] === false) {
+                        mp.gui.chat.push('!{#FF3333}[Шахта] Камень исчерпан, жди респавн.');
+                        return;
+                    }
+                    mp.events.callRemote('server:mining:start', i);
+                },
             });
         });
     }

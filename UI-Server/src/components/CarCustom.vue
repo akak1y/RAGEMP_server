@@ -44,9 +44,7 @@
             </div>
         </div>
         <!-- подсказка ESC -->
-        <div class="controls-hint">
-            <span>[ESC] — Выйти из LSC</span>
-        </div>
+        <div class="controls-hint"><span class="hint-key">ESC</span> Выйти из LSC</div>
     </div>
 </template>
 

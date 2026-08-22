@@ -110,9 +110,9 @@ module.exports = {
     },
     MiningConfig: {
         rocks: [
-            { x: -484.0, y: -134.0, z: 37.84, rotX: 5, rotY: 12, rotZ: 37 },
-            { x: -491.0, y: -142.0, z: 37.91, rotX: -8, rotY: -25, rotZ: 142 },
-            { x: -478.0, y: -147.0, z: 37.65, rotX: 3, rotY: 45, rotZ: 287 },
+            { x: -484.0, y: -134.0, z: 37.84 },
+            { x: -491.0, y: -142.0, z: 37.91 },
+            { x: -478.0, y: -147.0, z: 37.65 },
         ],
         mineTimeMs: 5000,
         oreSellPrice: 25,

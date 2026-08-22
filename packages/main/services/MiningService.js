@@ -181,20 +181,6 @@ class MiningService {
         return this.rockState.map((s) => !s.depleted);
     }
 
-    /**
-     * Реплики бота-скупщика
-     */
-    greetPlayer(player) {
-        const phrases = [
-            'Эй, шахтёр! Неси руду, если есть!',
-            'Закупаю руду по хорошей цене, подходи!',
-            'Чем больше руды — тем больше денег, брат.',
-            'Шахта ждёт тебя, а я жду добычу!',
-        ];
-        const msg = phrases[Math.floor(Math.random() * phrases.length)];
-        player.outputChatBox(`!{#f39c12}[Игнат] ${msg}`);
-    }
-
     getShiftCount(playerId) {
         return this.shiftStats.get(playerId) || 0;
     }

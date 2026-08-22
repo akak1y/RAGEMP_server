@@ -2,6 +2,10 @@
     <!--экран авторизации-->
     <Auth v-if="currentScreen === 'auth'" :error="errorMessage" @submit-login="onLoginSubmit" />
     <div v-else class="game-ui">
+        <!--подсказка взаимодействия-->
+        <div v-if="interactHint" class="controls-hint">
+            <span class="hint-key">E</span> {{ interactHint }}
+        </div>
         <!--худ-->
         <Hud
             :money="money"
@@ -116,6 +120,7 @@ const fuel = ref(100);
 const shopConfig = ref({ name: 'Магазин', items: [] });
 const miningSellInfo = ref({ oreCount: 0, price: 0, total: 0 });
 const miningProgress = ref(null);
+const interactHint = ref('');
 
 const addDebugLog = (text, type = 'info') => {
     const now = new Date();
@@ -360,6 +365,12 @@ onMounted(() => {
     };
     window.hideMiningProgress = () => {
         miningProgress.value = null;
+    };
+    window.showInteractHint = (text) => {
+        interactHint.value = text;
+    };
+    window.hideInteractHint = () => {
+        interactHint.value = '';
     };
 });
 </script>

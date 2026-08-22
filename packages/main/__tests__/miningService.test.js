@@ -152,11 +152,5 @@ describe('MiningService', () => {
             const active = miningService.getRocksActive();
             expect(active).toEqual([false, true, false]);
         });
-
-        test('greetPlayer: не падает', () => {
-            const player = { outputChatBox: jest.fn() };
-            miningService.greetPlayer(player);
-            expect(player.outputChatBox).toHaveBeenCalled();
-        });
     });
 });
