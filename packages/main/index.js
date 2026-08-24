@@ -28,18 +28,30 @@ async function refreshStatsCache() {
 }
 
 (async () => {
+    const bootStart = Date.now();
+
     try {
-        await initDB();
+        const dbsStart = Date.now();
+        await Promise.all([initDB(), initRedis()]);
+        console.log(`[Boot] БД и кэш: ${Date.now() - dbsStart}ms`);
+
+        const modelsStart = Date.now();
         require('./models/Users').getUserModel();
         require('./models/Item').getItemModel();
         require('./models/Vehicle').getVehicleModel();
         require('./models/AuditLog').getAuditModel();
         require('./models/Bot').getBotModel();
+        console.log(`[Boot] Модели: ${Date.now() - modelsStart}ms`);
+
+        const migrateStart = Date.now();
+        const sequelize = getSequelize();
+        await sequelize.sync({ alter: false });
+        await applyMigrations(sequelize);
+        console.log(`[Boot] Миграции/индексы: ${Date.now() - migrateStart}ms`);
+
         accountService.initialize();
 
-        await initRedis();
-        logger.info('[System] Базы данных и кэш успешно запущены.');
-
+        const ctrlStart = Date.now();
         require('./controllers/moneyApi');
         require('./controllers/commandSystem');
         require('./controllers/authController');
@@ -51,23 +63,81 @@ async function refreshStatsCache() {
         require('./controllers/tuningController');
         require('./controllers/shopController');
         require('./controllers/miningController');
+        console.log(`[Boot] Контроллеры: ${Date.now() - ctrlStart}ms`);
+
         locationService.initialize();
-        logger.info('[System] Все системы сервера RAGE MP успешно запущены и готовы!');
 
         adminServer = require('./websocket/adminServer');
         adminServer.start();
 
         const botService = require('./services/BotService');
         await botService.spawn('Ignat');
-        logger.info('[System] Бот заспавнен');
 
         await refreshStatsCache();
         refreshInterval = setInterval(refreshStatsCache, 600000);
+
+        logger.info(`[System] Все системы запущены за ${Date.now() - bootStart}ms`);
     } catch (err) {
         logger.error(`[System ERROR] Ошибка запуска сервера: ${err.message}`);
         process.exit(1);
     }
 })();
+
+/**
+ * Создать индекс, если существуют таблица и колонки, и индекса ещё нет
+ */
+async function ensureIndex(sequelize, table, indexName, columns) {
+    const cols = columns.split(',').map((c) => c.trim());
+
+    const [meta] = await sequelize.query(
+        `SELECT column_name AS c
+         FROM information_schema.columns
+         WHERE table_schema = DATABASE() AND table_name = ?`,
+        { replacements: [table] }
+    );
+    if (!meta.length) {
+        console.warn(`[Migrations] skip ${indexName}: таблица ${table} не найдена`);
+        return;
+    }
+    const existing = new Set(meta.map((r) => r.c));
+    for (const col of cols) {
+        if (!existing.has(col)) {
+            console.warn(`[Migrations] skip ${indexName}: нет колонки ${col} в ${table}`);
+            return;
+        }
+    }
+
+    const [rows] = await sequelize.query(
+        `SELECT COUNT(1) AS cnt FROM information_schema.statistics
+         WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?`,
+        { replacements: [table, indexName] }
+    );
+    if (Number(rows[0].cnt) > 0) return;
+
+    await sequelize.query(`CREATE INDEX ${indexName} ON ${table}(${columns})`);
+    console.log(`[Migrations] Создан индекс ${indexName} на ${table}(${columns})`);
+}
+
+async function applyMigrations(sequelize) {
+    const Item = require('./models/Item').getItemModel();
+    const Vehicle = require('./models/Vehicle').getVehicleModel();
+    const Audit = require('./models/AuditLog').getAuditModel();
+
+    const indexes = [
+        [Item.getTableName(), 'idx_items_owner', 'owner_id'],
+        [Vehicle.getTableName(), 'idx_vehicles_owner', 'owner_id'],
+        [Audit.getTableName(), 'idx_audit_actor', 'actor_id'],
+        [Audit.getTableName(), 'idx_audit_created', 'created_at'],
+        [Audit.getTableName(), 'idx_audit_category', 'category'],
+    ];
+    for (const [table, name, cols] of indexes) {
+        try {
+            await ensureIndex(sequelize, table, name, cols);
+        } catch (e) {
+            console.warn(`[Migrations] warn (${name}): ${e.message}`);
+        }
+    }
+}
 
 async function shutdown(signal) {
     logger.info(`[${signal}] Получен сигнал остановки, закрываем подключения...`);
