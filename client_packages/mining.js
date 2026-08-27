@@ -1,8 +1,6 @@
 const state = globalThis.UIState;
-
-/**
- * Шахта: ченнелинг добычи и продажа руды боту.
- */
+const hud = require('./hud');
+const anim = require('./anim');
 
 const HAMMER_DICT = 'amb@world_human_hammering@male@';
 const HAMMER_ANIM = 'hammer_a';
@@ -22,78 +20,21 @@ mp.events.add('client:mining:setData', (json) => {
 });
 
 mp.events.add('client:mining:rocksUpdate', (json) => {
-    try {
-        state.miningRocksActive = JSON.parse(json);
-    } catch (e) {}
+    try { state.miningRocksActive = JSON.parse(json); } catch (e) {}
 });
 
 function playMiningAnim(durationMs) {
-    try {
-        mp.players.local.taskStartScenarioInPlace('WORLD_HUMAN_CONST_DRILL', -1, true);
-        return;
-    } catch (e) {}
-
-    try {
-        mp.game.streaming.requestAnimDict(HAMMER_DICT);
-    } catch (e) {
-        return;
-    }
-    setTimeout(() => {
-        try {
-            mp.players.local.taskPlayAnim(
-                HAMMER_DICT,
-                HAMMER_ANIM,
-                8.0,
-                -8.0,
-                durationMs,
-                1,
-                0,
-                false,
-                false
-            );
-        } catch (e) {}
-    }, 500);
-}
-
-function stopAllTasks() {
-    const p = mp.players.local;
-    try {
-        p.clearTasks();
-        return;
-    } catch (e) {}
-    try {
-        mp.game.ped.clearPedTasks(p.handle);
-        return;
-    } catch (e) {}
-    try {
-        p.clearTasksImmediately();
-    } catch (e) {}
-}
-
-function setProgress(pct) {
-    if (state.uiBrowser) {
-        state.uiBrowser.execute(
-            `if(window.updateMiningProgress) window.updateMiningProgress(${pct.toFixed(1)});`
-        );
-    }
-}
-
-function hideProgress() {
-    if (state.uiBrowser) {
-        state.uiBrowser.execute(`if(window.hideMiningProgress) window.hideMiningProgress();`);
-    }
-}
-
-function stopVisuals() {
-    stopAllTasks();
+    if (anim.playScenario('WORLD_HUMAN_CONST_DRILL')) return;
+    if (!anim.requestAnimDict(HAMMER_DICT)) return;
+    setTimeout(() => anim.playAnim(HAMMER_DICT, HAMMER_ANIM, durationMs), 500);
 }
 
 function cancelChannel() {
     channel = null;
     if (progressTimer) clearInterval(progressTimer);
     progressTimer = null;
-    stopVisuals();
-    hideProgress();
+    anim.stopAllTasks();
+    hud.hideMiningProgress();
     mp.gui.chat.push('!{#FF3333}[Шахта] Добыча прервана.');
 }
 
@@ -102,29 +43,21 @@ function finishChannel() {
     channel = null;
     if (progressTimer) clearInterval(progressTimer);
     progressTimer = null;
-    stopVisuals();
-    hideProgress();
+    anim.stopAllTasks();
+    hud.hideMiningProgress();
     mp.events.callRemote('server:mining:complete', rockIndex);
 }
 
 mp.events.add('client:mining:startChannel', (rockIndex, durationMs) => {
     if (channel) return;
-
     const startPos = mp.players.local.position;
-    channel = {
-        rockIndex,
-        startedAt: Date.now(),
-        durationMs,
-        lastX: startPos.x,
-        lastY: startPos.y,
-    };
-
+    channel = { rockIndex, startedAt: Date.now(), durationMs, lastX: startPos.x, lastY: startPos.y };
     playMiningAnim(durationMs);
 
     progressTimer = setInterval(() => {
         if (!channel) return;
         const pct = Math.min(100, ((Date.now() - channel.startedAt) / channel.durationMs) * 100);
-        setProgress(pct);
+        hud.updateMiningProgress(pct);
 
         const p = mp.players.local.position;
         const dx = p.x - channel.lastX;
@@ -154,23 +87,15 @@ setInterval(() => {
 
     if (near && !hintShown) {
         hintShown = true;
-        const text = near === 'bot' ? 'Продать руду' : 'Добывать';
-        if (state.uiBrowser) {
-            state.uiBrowser.execute(
-                `if(window.showInteractHint) window.showInteractHint(${JSON.stringify(text)});`
-            );
-        }
+        hud.showInteractHint(near === 'bot' ? 'Продать руду' : 'Добывать');
     } else if (!near && hintShown) {
         hintShown = false;
-        if (state.uiBrowser) {
-            state.uiBrowser.execute(`if(window.hideInteractHint) window.hideInteractHint();`);
-        }
+        hud.hideInteractHint();
     }
 }, 500);
 
 mp.events.add('client:mining:sellInfo', (json) => {
-    if (!state.uiBrowser) return;
-    state.uiBrowser.execute(`
+    hud.callUi(`
         if(window.setMiningSellInfo) window.setMiningSellInfo(${json});
         if(window.toggleWindow) window.toggleWindow('miningSell');
     `);
@@ -178,9 +103,7 @@ mp.events.add('client:mining:sellInfo', (json) => {
 
 mp.events.add('client:mining:sellResult', (success, message) => {
     mp.gui.chat.push(success ? `!{#4CAF50}[Шахта] ${message}` : `!{#FF3333}[Шахта] ${message}`);
-    if (success && state.uiBrowser) {
-        state.uiBrowser.execute(`if(window.toggleWindow) window.toggleWindow('miningSell');`);
-    }
+    if (success) hud.callUi(`if(window.toggleWindow) window.toggleWindow('miningSell');`);
 });
 
 mp.events.add('client:server:miningSell', () => {
