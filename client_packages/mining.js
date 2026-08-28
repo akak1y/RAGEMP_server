@@ -1,6 +1,9 @@
 const state = globalThis.UIState;
-const hud = require('./hud');
-const anim = require('./anim');
+require('./anim');
+require('./ui');
+
+const ui = globalThis.ui;
+const anim = globalThis.anim;
 
 const HAMMER_DICT = 'amb@world_human_hammering@male@';
 const HAMMER_ANIM = 'hammer_a';
@@ -34,7 +37,7 @@ function cancelChannel() {
     if (progressTimer) clearInterval(progressTimer);
     progressTimer = null;
     anim.stopAllTasks();
-    hud.hideMiningProgress();
+    ui.call('hideMiningProgress');
     mp.gui.chat.push('!{#FF3333}[Шахта] Добыча прервана.');
 }
 
@@ -44,7 +47,7 @@ function finishChannel() {
     if (progressTimer) clearInterval(progressTimer);
     progressTimer = null;
     anim.stopAllTasks();
-    hud.hideMiningProgress();
+    ui.call('hideMiningProgress');
     mp.events.callRemote('server:mining:complete', rockIndex);
 }
 
@@ -57,7 +60,7 @@ mp.events.add('client:mining:startChannel', (rockIndex, durationMs) => {
     progressTimer = setInterval(() => {
         if (!channel) return;
         const pct = Math.min(100, ((Date.now() - channel.startedAt) / channel.durationMs) * 100);
-        hud.updateMiningProgress(pct);
+        ui.call('updateMiningProgress', Number(pct.toFixed(1)));
 
         const p = mp.players.local.position;
         const dx = p.x - channel.lastX;
@@ -87,23 +90,21 @@ setInterval(() => {
 
     if (near && !hintShown) {
         hintShown = true;
-        hud.showInteractHint(near === 'bot' ? 'Продать руду' : 'Добывать');
+        ui.call('showInteractHint', near === 'bot' ? 'Продать руду' : 'Добывать');
     } else if (!near && hintShown) {
         hintShown = false;
-        hud.hideInteractHint();
+        ui.call('hideInteractHint');
     }
 }, 500);
 
 mp.events.add('client:mining:sellInfo', (json) => {
-    hud.callUi(`
-        if(window.setMiningSellInfo) window.setMiningSellInfo(${json});
-        if(window.toggleWindow) window.toggleWindow('miningSell');
-    `);
+    ui.call('setMiningSellInfo', JSON.parse(json));
+    ui.toggleWindow('miningSell');
 });
 
 mp.events.add('client:mining:sellResult', (success, message) => {
     mp.gui.chat.push(success ? `!{#4CAF50}[Шахта] ${message}` : `!{#FF3333}[Шахта] ${message}`);
-    if (success) hud.callUi(`if(window.toggleWindow) window.toggleWindow('miningSell');`);
+    ui.toggleWindow('miningSell');
 });
 
 mp.events.add('client:server:miningSell', () => {

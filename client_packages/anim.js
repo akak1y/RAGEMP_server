@@ -30,4 +30,4 @@ function stopAllTasks() {
     try { p.clearTasksImmediately(); } catch (e) {}
 }
 
-module.exports = { playScenario, requestAnimDict, playAnim, stopAllTasks };
+globalThis.anim = { playScenario, requestAnimDict, playAnim, stopAllTasks };
