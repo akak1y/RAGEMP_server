@@ -1,3 +1,5 @@
+require('./natives');
+const natives = globalThis.natives;
 const state = globalThis.UIState;
 
 /**
@@ -10,13 +12,12 @@ mp.events.add('client:custom:startTuning', (boxX, boxY, boxZ, boxH) => {
     const veh = mp.players.local.vehicle;
     veh.position = new mp.Vector3(boxX, boxY, boxZ);
     veh.setHeading(boxH);
-    veh.freezePosition(true);
-    veh.setCollision(false, false);
+    natives.freezeVehicle(veh, true);
 
     state.isAnyUiWindowOpen = true;
     if (state.uiBrowser)
         state.uiBrowser.execute(`if(window.toggleWindow) window.toggleWindow('carCustom');`);
-    mp.gui.cursor.show(true, true); // включаем курсор
+    natives.showCursor(true);
 });
 
 mp.events.add('client:custom:applyUpgrade', (categoryKey, optionJson, price) => {

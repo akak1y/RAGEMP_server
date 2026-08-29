@@ -1,3 +1,5 @@
+require('./natives');
+const natives = globalThis.natives;
 const state = globalThis.UIState;
 
 /**
@@ -21,8 +23,7 @@ mp.events.add('client:ui:windowStateChanged', (winName, isOpen) => {
         state.isCameraRotateActive = false;
         if (mp.players.local.vehicle) {
             // возвращаем коллизию и размораживаем
-            mp.players.local.vehicle.freezePosition(false);
-            mp.players.local.vehicle.setCollision(true, true);
+            natives.freezeVehicle(mp.players.local.vehicle, false);
         }
         mp.events.callRemote('server:custom:exitShop');
     }

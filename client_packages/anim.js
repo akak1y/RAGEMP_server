@@ -25,9 +25,17 @@ function playAnim(dict, name, durationMs) {
 
 function stopAllTasks() {
     const p = mp.players.local;
-    try { p.clearTasks(); return; } catch (e) {}
-    try { mp.game.ped.clearPedTasks(p.handle); return; } catch (e) {}
-    try { p.clearTasksImmediately(); } catch (e) {}
+    try {
+        p.clearTasks();
+        return;
+    } catch (e) {}
+    try {
+        mp.game.ped.clearPedTasks(p.handle);
+        return;
+    } catch (e) {}
+    try {
+        p.clearTasksImmediately();
+    } catch (e) {}
 }
 
 globalThis.anim = { playScenario, requestAnimDict, playAnim, stopAllTasks };

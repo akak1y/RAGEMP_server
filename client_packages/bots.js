@@ -13,8 +13,7 @@ setInterval(() => {
         try {
             const ped = mp.peds.atRemoteId(b.id);
             if (!ped || !ped.handle) return;
-            if (typeof mp.game.ped.setBlockingOfNonTemporaryEvents === 'function')
-                mp.game.ped.setBlockingOfNonTemporaryEvents(ped.handle, true);
+            natives.setBlockingOfNonTemporaryEvents(ped, true);
         } catch (e) {}
     });
 }, 3000);

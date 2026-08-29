@@ -1,3 +1,5 @@
+require('./natives');
+const natives = globalThis.natives;
 const state = globalThis.UIState;
 
 /**
@@ -16,9 +18,9 @@ mp.events.add('client:account:authError', (msg) => {
 
 mp.events.add('client:account:hideAuth', (developer) => {
     // успешная авторизация
-    mp.gui.cursor.show(false, false); // сбрасываем все блокировки при спавне
+    natives.showCursor(false);
+    natives.setRadar(true);
     mp.gui.chat.show(true);
-    mp.game.ui.displayRadar(true);
     state.isAuthorized = true;
     state.globalKeyBlock = false;
     state.isAnyUiWindowOpen = false;

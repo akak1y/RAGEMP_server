@@ -1,3 +1,5 @@
+require('./natives');
+const natives = globalThis.natives;
 const state = globalThis.UIState;
 
 /**
@@ -32,8 +34,8 @@ mp.keys.bind(0x1b, true, () => {
     if (state.openWindowsState.carCustom && state.isCameraRotateActive) {
         // если открыт автосалон
         state.isCameraRotateActive = false;
-        mp.gui.cursor.show(true, true); // активируем мышь для кликов по меню
-        mp.game.controls.disableAllControlActions(0); // деактивируем все контроллеры
+        natives.showCursor(true); // активируем мышь для кликов по меню
+        natives.disableAllControls(); // деактивируем все контроллеры
         return;
     }
     setTimeout(() => {
@@ -63,9 +65,9 @@ mp.keys.bind(0xc0, true, () => {
     if (!state.isAuthorized || !state.openWindowsState.carCustom) return;
     state.isCameraRotateActive = !state.isCameraRotateActive;
     if (state.isCameraRotateActive) {
-        mp.gui.cursor.show(false, false);
+        natives.showCursor(false);
     } else {
-        mp.gui.cursor.show(true, true);
+        natives.showCursor(true);
     }
 });
 
@@ -89,19 +91,10 @@ mp.keys.bind(0x50, true, () => {
 });
 
 mp.events.add('render', () => {
-    // при открытом любом окне отключаем движение персонажа
     if (state.isAuthorized && state.isAnyUiWindowOpen) {
-        mp.game.controls.disableControlAction(0, 30, true); // A/D
-        mp.game.controls.disableControlAction(0, 31, true); // W/S
-        mp.game.controls.disableControlAction(0, 21, true); // shift
-        mp.game.controls.disableControlAction(0, 22, true); // space
-        mp.game.controls.disableControlAction(0, 1, true); // мышь X
-        mp.game.controls.disableControlAction(0, 2, true); // мышь Y
-        mp.game.controls.disableControlAction(0, 24, true); // лкм
+        natives.disableMovementControls();
     }
     if (state.isAuthorized && state.openWindowsState.carCustom && state.isCameraRotateActive) {
-        // если в LSC - разрешаем двигать мышью
-        mp.game.controls.enableControlAction(0, 1, true); // мышь X
-        mp.game.controls.enableControlAction(0, 2, true); // мышь Y
+        natives.enableMouseControls();
     }
 });

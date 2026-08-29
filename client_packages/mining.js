@@ -23,7 +23,9 @@ mp.events.add('client:mining:setData', (json) => {
 });
 
 mp.events.add('client:mining:rocksUpdate', (json) => {
-    try { state.miningRocksActive = JSON.parse(json); } catch (e) {}
+    try {
+        state.miningRocksActive = JSON.parse(json);
+    } catch (e) {}
 });
 
 function playMiningAnim(durationMs) {
@@ -54,7 +56,13 @@ function finishChannel() {
 mp.events.add('client:mining:startChannel', (rockIndex, durationMs) => {
     if (channel) return;
     const startPos = mp.players.local.position;
-    channel = { rockIndex, startedAt: Date.now(), durationMs, lastX: startPos.x, lastY: startPos.y };
+    channel = {
+        rockIndex,
+        startedAt: Date.now(),
+        durationMs,
+        lastX: startPos.x,
+        lastY: startPos.y,
+    };
     playMiningAnim(durationMs);
 
     progressTimer = setInterval(() => {
