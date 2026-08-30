@@ -3,6 +3,7 @@ const { initRedis, getRedis } = require('../../core/redis');
 const shopService = require('../../services/ShopService');
 const inventoryService = require('../../services/InventoryService');
 const accountService = require('../../services/AccountService');
+const moneyService = require('../../services/MoneyService');
 const { getUserModel } = require('../../models/Users');
 const { getItemModel } = require('../../models/Item');
 
@@ -26,18 +27,37 @@ beforeEach(async () => {
     await getRedis().flushDb();
 });
 
+/**
+ * Интеграционный фейк игрока с контрактами moneyApi.
+ */
+function makePlayer(user) {
+    const player = {
+        accountId: user.id,
+        accountName: user.username,
+        money: user.money,
+        inventory: null,
+        call: () => {}, // заглушка RAGE MP API: syncInventory шлёт обновление клиенту
+    };
+    player.takeMoney = async (sum, reason) => {
+        const ok = await moneyService.takeMoney(player.accountId, sum, reason);
+        if (ok) player.money -= sum;
+        return ok;
+    };
+    player.addMoney = async (sum, reason) => {
+        const ok = await moneyService.addMoney(player.accountId, sum, reason);
+        if (ok) player.money += sum;
+        return ok;
+    };
+    return player;
+}
+
 describe('ShopService — интеграционные тесты', () => {
     test('успешная покупка: деньги списаны, предмет в БД', async () => {
         const User = getUserModel();
         const Item = getItemModel();
 
         const user = await User.create({ username: 'shop1', password: 'x', money: 500 });
-        const player = {
-            accountId: user.id,
-            accountName: 'shop1',
-            inventory: null,
-            call: () => {}, // заглушка RAGE MP API: syncInventory шлёт обновление клиенту
-        };
+        const player = makePlayer(user);
 
         // Инициализируем инвентарь (как делает loadPlayerInventory в игре)
         await inventoryService.loadPlayerInventory(player);
@@ -59,12 +79,7 @@ describe('ShopService — интеграционные тесты', () => {
         const Item = getItemModel();
 
         const user = await User.create({ username: 'shop2', password: 'x', money: 50 });
-        const player = {
-            accountId: user.id,
-            accountName: 'shop1',
-            inventory: null,
-            call: () => {}, // заглушка RAGE MP API
-        };
+        const player = makePlayer(user);
 
         await inventoryService.loadPlayerInventory(player);
 

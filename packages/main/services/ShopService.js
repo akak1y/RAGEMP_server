@@ -56,7 +56,7 @@ class ShopService {
             logger.warn(
                 `[ShopService] buyItem: инвентарь игрока ${player.accountName} не вместил ${itemId} x${amount}, возврат денег`
             );
-            await player.takeMoney(totalPrice, 'shop_refund');
+            await player.addMoney(totalPrice, 'shop_refund');
             return false;
         }
 
