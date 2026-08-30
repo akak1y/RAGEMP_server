@@ -1,5 +1,4 @@
 const { ShopConfig, ItemConfig } = require('../config');
-const moneyService = require('./MoneyService');
 const inventoryService = require('./InventoryService');
 const auditService = require('./AuditService');
 const logger = require('../core/logger');
@@ -42,7 +41,7 @@ class ShopService {
         const totalPrice = shopItem.price * amount;
 
         // Списываем деньги
-        const moneyOk = await moneyService.takeMoney(player.accountId, totalPrice, 'shop');
+        const moneyOk = await player.takeMoney(totalPrice, 'shop');
         if (!moneyOk) {
             logger.warn(
                 `[ShopService] buyItem: у игрока ${player.accountName} недостаточно средств для покупки ${itemId} x${amount}`
@@ -57,7 +56,7 @@ class ShopService {
             logger.warn(
                 `[ShopService] buyItem: инвентарь игрока ${player.accountName} не вместил ${itemId} x${amount}, возврат денег`
             );
-            await moneyService.addMoney(player.accountId, totalPrice, 'shop_refund');
+            await player.takeMoney(totalPrice, 'shop_refund');
             return false;
         }
 
