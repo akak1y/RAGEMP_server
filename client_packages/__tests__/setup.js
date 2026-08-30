@@ -2,6 +2,7 @@
  * Глобальный мок RAGE MP клиентского API для Jest.
  */
 
+jest.useFakeTimers();
 class Vector3 {
     constructor(x = 0, y = 0, z = 0) {
         this.x = x;
@@ -64,4 +65,33 @@ global.mp = {
     vehicles: { exists: jest.fn(() => false) },
     markers: { new: jest.fn(() => ({ destroy: jest.fn() })) },
     blips: { new: jest.fn(() => ({ destroy: jest.fn() })) },
+};
+
+globalThis.UIState = {
+    uiBrowser: null,
+    isAuthorized: false,
+    globalKeyBlock: false,
+    windowDebug: false,
+    playerIsDeveloper: false,
+    isCameraRotateActive: false,
+    isAnyUiWindowOpen: false,
+    miningRocksActive: [],
+    openWindowsState: {
+        inventory: false,
+        phone: false,
+        dealership: false,
+        carCustom: false,
+        shop: false,
+    },
+    positions: {
+        dealership: null,
+        garage: null,
+        carCustom: null,
+        fuel: null,
+        courierStart: null,
+        courierTarget: null,
+        shop: null,
+        miningRocks: [],
+        bot: null,
+    },
 };
