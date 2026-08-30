@@ -1,132 +1,73 @@
+require('./ui');
 const state = globalThis.UIState;
+const ui = globalThis.ui;
 
 /**
- * Взаимодействие с маркерами мира (клавиша E).
+ * Движок взаимодействий мира: клавиша E + подсказки.
  */
 
-mp.keys.bind(0x45, true, () => {
-    // E - взаимодействие с маркером
-    if (
-        !state.isAuthorized ||
-        state.globalKeyBlock ||
-        state.isAnyUiWindowOpen ||
-        !state.positions.dealership ||
-        !state.positions.garage ||
-        !state.positions.carCustom ||
-        !state.positions.shop
-    ) {
-        return;
+if (!globalThis.interactions) {
+    const zones = [];
+
+    /**
+     * @param {Object} zone
+     * @param {number}  [zone.radius=2.5]
+     * @param {Function} zone.getPositions — массив позиций
+     * @param {Function} [zone.getHint] — текст подсказки или null
+     * @param {Function} zone.onInteract — (index)
+     */
+    function register(zone) {
+        zones.push(zone);
     }
 
-    const playerPos = mp.players.local.position;
-    const interactionRadius = 2.5;
+    function findNearZone() {
+        const playerPos = mp.players.local.position;
+        for (const zone of zones) {
+            let positions;
+            try {
+                positions = zone.getPositions();
+            } catch (e) {
+                continue;
+            }
+            if (!Array.isArray(positions)) continue;
 
-    const interactionZones = [
-        // конфигурация зон
-        {
-            name: 'dealership',
-            position: state.positions.dealership,
-            onInteract: () => {
-                mp.events.callRemote('server:dealership:requestConfig');
-                if (state.uiBrowser)
-                    state.uiBrowser.execute(
-                        `if(window.toggleWindow) window.toggleWindow('dealership');`
-                    );
-            },
-        },
-        {
-            name: 'garage',
-            position: state.positions.garage,
-            onInteract: () => {
-                mp.events.callRemote('server:phone:requestCars');
-                if (state.uiBrowser) {
-                    state.uiBrowser.execute(`
-                        if(window.setPayDeliveryCar) window.setPayDeliveryCar(false);
-                        if(window.toggleWindow) window.toggleWindow('phone');
-                    `);
-                }
-            },
-        },
-        {
-            name: 'customCar',
-            position: state.positions.carCustom,
-            onInteract: () => {
-                mp.events.callRemote('server:customCar:enterTuning'); // входим в LSC
-            },
-        },
-        {
-            name: 'fuel',
-            position: state.positions.fuel,
-            onInteract: () => {
-                const veh = mp.players.local.vehicle;
-                if (!veh) return mp.gui.chat.push('!{#FF3333}[Заправка] Сначала сядьте в машину.');
-                const dbId = veh.getVariable('dbId');
-                if (!dbId) return mp.gui.chat.push('!{#FF3333}[Заправка] Это не ваша машина.');
-                mp.events.callRemote('server:fuel:refuel', dbId);
-            },
-        },
-        {
-            name: 'courierStart',
-            position: state.positions.courierStart,
-            onInteract: () => {
-                mp.events.callRemote('server:courier:interact');
-            },
-        },
-        {
-            name: 'courierTarget',
-            position: state.positions.courierTarget,
-            onInteract: () => {
-                mp.events.callRemote('server:courier:interact');
-            },
-        },
-        {
-            name: 'shop',
-            position: state.positions.shop,
-            onInteract: () => {
-                mp.events.callRemote('server:shop:requestConfig');
-            },
-        },
-    ];
-    // шахта: камни
-    if (Array.isArray(state.positions.miningRocks)) {
-        state.positions.miningRocks.forEach((rock, i) => {
-            interactionZones.push({
-                name: 'rock_' + i,
-                position: rock,
-                onInteract: () => {
-                    if (state.miningRocksActive[i] === false) {
-                        mp.gui.chat.push('!{#FF3333}[Шахта] Камень исчерпан, жди респавн.');
-                        return;
-                    }
-                    mp.events.callRemote('server:mining:start', i);
-                },
-            });
-        });
-    }
-    // шахта: скупщик руды
-    if (state.positions.bot) {
-        interactionZones.push({
-            name: 'mining_sell',
-            position: state.positions.bot,
-            radius: 4,
-            onInteract: () => mp.events.callRemote('server:mining:requestSellInfo'),
-        });
-    }
-    for (const zone of interactionZones) {
-        // проверяем каждую зону
-        if (!zone.position) continue;
-        const distance = mp.game.gameplay.getDistanceBetweenCoords(
-            playerPos.x,
-            playerPos.y,
-            playerPos.z,
-            zone.position.x,
-            zone.position.y,
-            zone.position.z,
-            true
-        );
-        if (distance <= (zone.radius || interactionRadius)) {
-            zone.onInteract();
-            break;
+            for (let i = 0; i < positions.length; i++) {
+                const pos = positions[i];
+                if (!pos || typeof pos.x !== 'number') continue;
+                const distance = mp.game.gameplay.getDistanceBetweenCoords(
+                    playerPos.x,
+                    playerPos.y,
+                    playerPos.z,
+                    pos.x,
+                    pos.y,
+                    pos.z,
+                    true
+                );
+                if (distance <= (zone.radius || 2.5)) return { zone, index: i };
+            }
         }
+        return null;
     }
-});
+
+    // E — взаимодействие
+    mp.keys.bind(0x45, true, () => {
+        if (!state.isAuthorized || state.globalKeyBlock || state.isAnyUiWindowOpen) return;
+        const hit = findNearZone();
+        if (hit) hit.zone.onInteract(hit.index);
+    });
+
+    // подсказки: показ/смена/скрытие
+    let currentHint = null;
+    setInterval(() => {
+        if (!state.isAuthorized) return;
+        const hit = findNearZone();
+        const text = hit && hit.zone.getHint ? hit.zone.getHint(hit.index) : null;
+        if (text !== currentHint) {
+            currentHint = text;
+            if (text) ui.call('showInteractHint', text);
+            else ui.call('hideInteractHint');
+        }
+    }, 500);
+
+    globalThis.interactions = { register };
+}

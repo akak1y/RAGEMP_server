@@ -1,4 +1,7 @@
+require('./interactions');
+
 const state = globalThis.UIState;
+const interactions = globalThis.interactions;
 
 /**
  * Магазин: позиция зоны, открытие окна, результат покупки.
@@ -32,4 +35,12 @@ mp.events.add('client:shop:buyResult', (success, message) => {
 
 mp.events.add('client:server:shopBuy', (itemId, amount) => {
     mp.events.callRemote('server:shop:buy', itemId, amount);
+});
+
+// --- зоны магазинов ---
+
+// метка покупок
+interactions.register({
+    getPositions: () => [state.positions.shop],
+    onInteract: () => mp.events.callRemote('server:shop:requestConfig'),
 });

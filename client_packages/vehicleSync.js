@@ -1,3 +1,10 @@
+require('./ui');
+require('./interactions');
+
+const state = globalThis.UIState;
+const ui = globalThis.ui;
+const interactions = globalThis.interactions;
+
 /**
  * Синхронизация тюнинга транспорта между клиентами.
  */
@@ -44,4 +51,37 @@ mp.events.add('entityStreamIn', (entity) => {
         if (modValue !== undefined && modValue !== null && modValue !== -1)
             entity.setMod(modType, Number(modValue));
     });
+});
+
+// --- транспортные зоны ---
+
+// автосалон
+interactions.register({
+    getPositions: () => [state.positions.dealership],
+    onInteract: () => {
+        mp.events.callRemote('server:dealership:requestConfig');
+        ui.toggleWindow('dealership');
+    },
+});
+
+// гараж
+interactions.register({
+    getPositions: () => [state.positions.garage],
+    onInteract: () => {
+        mp.events.callRemote('server:phone:requestCars');
+        ui.call('setPayDeliveryCar', false);
+        ui.toggleWindow('phone');
+    },
+});
+
+// заправка
+interactions.register({
+    getPositions: () => [state.positions.fuel],
+    onInteract: () => {
+        const veh = mp.players.local.vehicle;
+        if (!veh) return mp.gui.chat.push('!{#FF3333}[Заправка] Сначала сядьте в машину.');
+        const dbId = veh.getVariable('dbId');
+        if (!dbId) return mp.gui.chat.push('!{#FF3333}[Заправка] Это не ваша машина.');
+        mp.events.callRemote('server:fuel:refuel', dbId);
+    },
 });

@@ -1,4 +1,7 @@
+require('./interactions');
+
 const state = globalThis.UIState;
+const interactions = globalThis.interactions;
 
 /**
  * Курьер: маркер и blip точки назначения по данным сервера.
@@ -31,4 +34,12 @@ mp.events.add('client:courier:target', (x, y, z, stage) => {
             courierBlip.name = 'Доставка';
         } catch (e) {}
     }
+});
+
+// --- зоны курьера ---
+
+// начало работы
+interactions.register({
+    getPositions: () => [state.positions.courierStart, state.positions.courierTarget],
+    onInteract: () => mp.events.callRemote('server:courier:interact'),
 });

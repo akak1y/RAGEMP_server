@@ -1,6 +1,9 @@
 require('./natives');
-const natives = globalThis.natives;
+require('./interactions');
+
 const state = globalThis.UIState;
+const natives = globalThis.natives;
+const interactions = globalThis.interactions;
 
 /**
  * LSC-тюнинг: фиксация авто в зоне и визуальное применение модификаций.
@@ -21,7 +24,14 @@ mp.events.add('client:custom:startTuning', (boxX, boxY, boxZ, boxH) => {
 });
 
 mp.events.add('client:custom:applyUpgrade', (categoryKey, optionJson, price) => {
-    // запрос на сервер
     if (!mp.players.local.vehicle) return;
     mp.events.callRemote('server:custom:buyUpgrade', categoryKey, optionJson, price);
+});
+
+// --- зоны тюнинга ---
+
+// вход в LSC
+interactions.register({
+    getPositions: () => [state.positions.carCustom],
+    onInteract: () => mp.events.callRemote('server:customCar:enterTuning'),
 });

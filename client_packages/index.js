@@ -1,5 +1,9 @@
-require('./state'); // создаём UIstate
-const state = globalThis.UIState;
+require('./state'); // создаём UIState
+require('./ui');
+require('./anim');
+require('./natives');
+require('./debug');
+require('./interactions'); // движок зон
 require('./auth');
 require('./windows');
 require('./speedometer');
@@ -7,16 +11,16 @@ require('./courier');
 require('./bots');
 require('./tuning');
 require('./vehicleSync');
-require('./interactions');
 require('./keys');
 require('./bridges');
 require('./shop');
 require('./mining');
-require('./debug');
 
 /**
  * Входная точка клиента: создание браузера и подключение доменных модулей.
  */
+
+const state = globalThis.UIState;
 
 mp.gui.chat.show(false); // скрываем чат и миникарту
 mp.game.ui.displayRadar(false);

@@ -1,9 +1,15 @@
-const state = globalThis.UIState;
-require('./anim');
 require('./ui');
+require('./anim');
+require('./interactions');
 
+const state = globalThis.UIState;
 const ui = globalThis.ui;
 const anim = globalThis.anim;
+const interactions = globalThis.interactions;
+
+/**
+ * Шахта: ченнелинг добычи и продажа руды боту.
+ */
 
 const HAMMER_DICT = 'amb@world_human_hammering@male@';
 const HAMMER_ANIM = 'hammer_a';
@@ -81,30 +87,6 @@ mp.events.add('client:mining:startChannel', (rockIndex, durationMs) => {
     }, 100);
 });
 
-let hintShown = false;
-const dist2d = (a, b) => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
-
-setInterval(() => {
-    const p = mp.players.local.position;
-    let near = null;
-
-    if (Array.isArray(state.positions.miningRocks)) {
-        state.positions.miningRocks.forEach((rock, i) => {
-            if (state.miningRocksActive[i] === false) return;
-            if (dist2d(p, rock) <= 3.0) near = 'rock';
-        });
-    }
-    if (state.positions.bot && dist2d(p, state.positions.bot) <= 3.0) near = 'bot';
-
-    if (near && !hintShown) {
-        hintShown = true;
-        ui.call('showInteractHint', near === 'bot' ? 'Продать руду' : 'Добывать');
-    } else if (!near && hintShown) {
-        hintShown = false;
-        ui.call('hideInteractHint');
-    }
-}, 500);
-
 mp.events.add('client:mining:sellInfo', (json) => {
     ui.call('setMiningSellInfo', JSON.parse(json));
     ui.toggleWindow('miningSell');
@@ -112,9 +94,33 @@ mp.events.add('client:mining:sellInfo', (json) => {
 
 mp.events.add('client:mining:sellResult', (success, message) => {
     mp.gui.chat.push(success ? `!{#4CAF50}[Шахта] ${message}` : `!{#FF3333}[Шахта] ${message}`);
-    ui.toggleWindow('miningSell');
+    if (success) ui.toggleWindow('miningSell');
 });
 
 mp.events.add('client:server:miningSell', () => {
     mp.events.callRemote('server:mining:sell');
+});
+
+// --- зоны шахты ---
+
+// камни
+interactions.register({
+    radius: 3.0,
+    getPositions: () => state.positions.miningRocks || [],
+    getHint: (i) => (state.miningRocksActive[i] !== false ? 'Добывать' : null),
+    onInteract: (i) => {
+        if (state.miningRocksActive[i] === false) {
+            mp.gui.chat.push('!{#FF3333}[Шахта] Камень исчерпан, жди респавн.');
+            return;
+        }
+        mp.events.callRemote('server:mining:start', i);
+    },
+});
+
+// скупщик руды
+interactions.register({
+    radius: 4.0,
+    getPositions: () => [state.positions.bot],
+    getHint: () => 'Продать руду',
+    onInteract: () => mp.events.callRemote('server:mining:requestSellInfo'),
 });
