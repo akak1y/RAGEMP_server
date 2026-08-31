@@ -103,12 +103,7 @@ class CourierService {
     }
 
     async completeOrder(player, st) {
-        const moneyService = require('./MoneyService');
-        const success = await moneyService.addMoney(
-            player.accountId,
-            st.pay,
-            'курьерская доставка'
-        );
+        const success = await player.addMoney(st.pay, 'курьерская доставка');
 
         if (!success) {
             logger.error(
@@ -116,9 +111,6 @@ class CourierService {
             );
             return;
         }
-
-        player.money += st.pay;
-        player.call('client:updateMoney', [player.money]);
 
         auditService.logPlayer(player, 'courier', {
             category: 'money',

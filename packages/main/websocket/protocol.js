@@ -254,13 +254,7 @@ async function handleMessage(socket, msg, broadcast) {
 
             if (msg.table === 'accounts' && msg.field === 'money') {
                 const player = mp.players.toArray().find((p) => p.accountId === id);
-                if (player) {
-                    player.money = value;
-                    player.call('client:updateMoney', [value]);
-                }
-            }
-
-            if (msg.table === 'accounts' && msg.field === 'money') {
+                if (player) player.applyMoneyDelta(value - player.money);
                 statsService.invalidateEconomyCache().catch(() => {});
             }
 

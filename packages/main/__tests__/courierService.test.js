@@ -1,9 +1,7 @@
 const courierService = require('../services/CourierService');
 const auditService = require('../services/AuditService');
-const moneyService = require('../services/MoneyService');
 
 jest.mock('../services/AuditService', () => ({ logPlayer: jest.fn() }));
-jest.mock('../services/MoneyService', () => ({ addMoney: jest.fn().mockResolvedValue(true) }));
 jest.mock('../core/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
 jest.mock('../config', () => ({
     CourierConfig: {
@@ -26,12 +24,17 @@ const workVeh = { id: 42, setVariable: jest.fn(), destroy: jest.fn() };
 const player = {
     accountId: 1,
     accountName: 'Test',
+    money: 0,
     vehicle: null,
     position: { x: 0, y: 0, z: 0 },
     call: jest.fn(),
     outputChatBox: jest.fn(),
-    applyMoneyDelta: jest.fn(),
 };
+
+player.addMoney = jest.fn(async (sum) => {
+    player.money += sum;
+    return true;
+});
 global.mp = {
     joaat: jest.fn((s) => s),
     vehicles: {
@@ -55,6 +58,7 @@ describe('CourierService', () => {
         courierService.states.clear();
         player.vehicle = null;
         player.position = { x: 0, y: 0, z: 0 };
+        player.money = 0;
     });
 
     test('calcPay: база + метры, округление до 10', () => {
@@ -120,7 +124,8 @@ describe('CourierService', () => {
         const st = { stage: 'return', pointIdx: 0, vehicleId: 42, pay: 200 };
         player.position = { x: 10, y: 10, z: 0 };
         await courierService.completeOrder(player, st);
-        expect(moneyService.addMoney).toHaveBeenCalledWith(1, 200, 'курьерская доставка');
+        expect(player.addMoney).toHaveBeenCalledWith(200, 'курьерская доставка');
+        expect(player.money).toBe(200);
         expect(auditService.logPlayer).toHaveBeenCalledWith(
             player,
             'courier',
