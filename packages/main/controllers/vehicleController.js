@@ -121,7 +121,7 @@ mp.events.add(
             let cost = 0;
             if (fromPhone) {
                 cost = PhoneConfig.deliveryCar;
-                const paid = await moneyService.takeMoney(player.accountId, cost, 'доставка авто');
+                const paid = await player.takeMoney(cost, 'доставка авто');
                 if (!paid)
                     return player.outputChatBox('!{#FF3333}[Ошибка] У вас недостаточно денег!');
             }
@@ -155,7 +155,6 @@ mp.events.add(
             }
 
             if (cost > 0) {
-                player.applyMoneyDelta(-cost);
                 auditService.logPlayer(player, 'spawn_vehicle', {
                     category: 'money',
                     amount: cost,
