@@ -34,14 +34,7 @@ describe('auth', () => {
         expect(state.isAuthorized).toBe(true);
         expect(state.globalKeyBlock).toBe(false);
         expect(state.playerIsDeveloper).toBe(true);
-        expect(mp.events.callRemote).toHaveBeenCalledWith('server:dealership:requestPos');
-        expect(mp.events.callRemote).toHaveBeenCalledWith('server:garage:requestPos');
-        expect(mp.events.callRemote).toHaveBeenCalledWith('server:customCar:requestPos');
-        expect(mp.events.callRemote).toHaveBeenCalledWith('server:fuel:requestPos');
-        expect(mp.events.callRemote).toHaveBeenCalledWith('server:courier:requestPos');
-        expect(mp.events.callRemote).toHaveBeenCalledWith('server:shop:requestPos');
-        expect(mp.events.callRemote).toHaveBeenCalledWith('server:mining:requestPos');
-        expect(mp.events.callRemote).toHaveBeenCalledWith('server:phone:requestPriceDeliveryCar');
+        expect(mp.events.callRemote).toHaveBeenCalledWith('server:locations:requestAll');
 
         expect(state.uiBrowser.execute).toHaveBeenCalledWith(
             expect.stringContaining('changeScreen("game")')

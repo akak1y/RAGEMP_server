@@ -1,4 +1,6 @@
 const locationService = require('../services/LocationService');
+const miningService = require('../services/MiningService');
+const { MiningConfig, BotSpawnPos, PhoneConfig } = require('../config');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
 
@@ -7,63 +9,26 @@ const withGuards = require('../middleware/withGuards');
  */
 
 mp.events.add(
-    'server:dealership:requestPos',
+    'server:locations:requestAll',
     withGuards(
         [isLoggedIn],
         (player) => {
-            player.call('client:dealership:setPos', [locationService.getPosition('dealership')]);
+            const data = {
+                dealership: locationService.getPosition('dealership'),
+                garage: locationService.getPosition('garage'),
+                carCustom: locationService.getPosition('lsc'),
+                fuel: locationService.getPosition('fuel'),
+                courierStart: locationService.getPosition('courier'),
+                shop: locationService.getPosition('shop'),
+                mining: {
+                    rocks: MiningConfig.rocks,
+                    botPos: BotSpawnPos,
+                    active: miningService.getRocksActive(),
+                },
+                phonePrice: PhoneConfig.deliveryCar,
+            };
+            player.call('client:locations:setAll', [JSON.stringify(data)]);
         },
-        'dealership:requestPos'
+        'locations:requestAll'
     )
-);
-
-mp.events.add(
-    'server:garage:requestPos',
-    withGuards(
-        [isLoggedIn],
-        (player) => {
-            player.call('client:garage:setPos', [locationService.getPosition('garage')]);
-        },
-        'garage:requestPos'
-    )
-);
-
-mp.events.add(
-    'server:fuel:requestPos',
-    withGuards(
-        [isLoggedIn],
-        (player) => {
-            player.call('client:fuel:setPos', [locationService.getPosition('fuel')]);
-        },
-        'fuel:requestPos'
-    )
-);
-
-mp.events.add(
-    'server:courier:requestPos',
-    withGuards(
-        [isLoggedIn],
-        (player) => {
-            player.call('client:courier:setPos', [locationService.getPosition('courier')]);
-        },
-        'courier:requestPos'
-    )
-);
-
-mp.events.add(
-    'server:customCar:requestPos',
-    withGuards(
-        [isLoggedIn],
-        (player) => {
-            player.call('client:customCar:setPos', [locationService.getPosition('lsc')]);
-        },
-        'customCar:requestPos'
-    )
-);
-
-mp.events.add(
-    'server:shop:requestPos',
-    withGuards([isLoggedIn], (player) => {
-        player.call('client:shop:setPos', [locationService.getPosition('shop')]);
-    })
 );

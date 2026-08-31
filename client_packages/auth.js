@@ -30,14 +30,8 @@ mp.events.add('client:account:hideAuth', (developer) => {
         dealership: false,
         carCustom: false,
     };
-    mp.events.callRemote('server:dealership:requestPos');
-    mp.events.callRemote('server:garage:requestPos');
-    mp.events.callRemote('server:customCar:requestPos');
-    mp.events.callRemote('server:fuel:requestPos');
-    mp.events.callRemote('server:courier:requestPos');
-    mp.events.callRemote('server:shop:requestPos');
-    mp.events.callRemote('server:mining:requestPos');
-    mp.events.callRemote('server:phone:requestPriceDeliveryCar');
+    mp.events.callRemote('server:locations:requestAll');
+
     ui.call('changeScreen', 'game');
     state.playerIsDeveloper = developer;
 });

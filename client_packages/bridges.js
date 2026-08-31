@@ -1,7 +1,9 @@
 require('./ui');
+require('./natives');
 
 const state = globalThis.UIState;
 const ui = globalThis.ui;
+const natives = globalThis.natives;
 
 /**
  * Мосты между игрой и Vue.
@@ -52,7 +54,7 @@ mp.events.add('client:ui:requestStatsUpdate', () => {
     mp.events.callRemote('server:requestRedisStats');
 });
 mp.events.add('client:toggleCursor', (toggle) => {
-    mp.gui.cursor.show(toggle, toggle);
+    natives.showCursor(toggle);
 });
 mp.events.add('client:server:buyCar', (model) => {
     mp.events.callRemote('server:dealership:buy', model);
@@ -61,19 +63,47 @@ mp.events.add('client:server:spawnCar', (vehDbId, pay) => {
     mp.events.callRemote('server:phone:spawnVehicle', vehDbId, pay);
 });
 
-// КООРДИНАТЫ ЛОКАЦИЙ ==============
-mp.events.add('client:dealership:setPos', (pos) => {
-    state.positions.dealership = new mp.Vector3(pos.x, pos.y, pos.z);
-});
-mp.events.add('client:garage:setPos', (pos) => {
-    state.positions.garage = new mp.Vector3(pos.x, pos.y, pos.z);
-});
-mp.events.add('client:customCar:setPos', (pos) => {
-    state.positions.carCustom = new mp.Vector3(pos.x, pos.y, pos.z);
-});
-mp.events.add('client:fuel:setPos', (pos) => {
-    state.positions.fuel = new mp.Vector3(pos.x, pos.y, pos.z);
-});
-mp.events.add('client:courier:setPos', (pos) => {
-    state.positions.courierStart = new mp.Vector3(pos.x, pos.y, pos.z);
+mp.events.add('client:locations:setAll', (json) => {
+    try {
+        const data = JSON.parse(json);
+        if (data.dealership)
+            state.positions.dealership = new mp.Vector3(
+                data.dealership.x,
+                data.dealership.y,
+                data.dealership.z
+            );
+        if (data.garage)
+            state.positions.garage = new mp.Vector3(data.garage.x, data.garage.y, data.garage.z);
+        if (data.carCustom)
+            state.positions.carCustom = new mp.Vector3(
+                data.carCustom.x,
+                data.carCustom.y,
+                data.carCustom.z
+            );
+        if (data.fuel) state.positions.fuel = new mp.Vector3(data.fuel.x, data.fuel.y, data.fuel.z);
+        if (data.courierStart)
+            state.positions.courierStart = new mp.Vector3(
+                data.courierStart.x,
+                data.courierStart.y,
+                data.courierStart.z
+            );
+        if (data.shop) state.positions.shop = new mp.Vector3(data.shop.x, data.shop.y, data.shop.z);
+
+        if (data.mining) {
+            state.positions.miningRocks = (data.mining.rocks || []).map(
+                (r) => new mp.Vector3(r.x, r.y, r.z)
+            );
+            state.positions.bot = new mp.Vector3(
+                data.mining.botPos.x,
+                data.mining.botPos.y,
+                data.mining.botPos.z
+            );
+            state.miningRocksActive =
+                data.mining.active || (data.mining.rocks || []).map(() => true);
+        }
+
+        if (data.phonePrice !== undefined) {
+            ui.call('setPriceDeliveryCar', data.phonePrice);
+        }
+    } catch (e) {}
 });

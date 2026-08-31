@@ -17,17 +17,6 @@ const HAMMER_ANIM = 'hammer_a';
 let channel = null;
 let progressTimer = null;
 
-mp.events.add('client:mining:setData', (json) => {
-    try {
-        const data = JSON.parse(json);
-        state.positions.miningRocks = (data.rocks || []).map((r) => new mp.Vector3(r.x, r.y, r.z));
-        state.positions.bot = new mp.Vector3(data.botPos.x, data.botPos.y, data.botPos.z);
-        state.miningRocksActive = data.active || (data.rocks || []).map(() => true);
-    } catch (e) {
-        mp.gui.chat.push('!{#FF3333}[Шахта] Ошибка данных локаций');
-    }
-});
-
 mp.events.add('client:mining:rocksUpdate', (json) => {
     try {
         state.miningRocksActive = JSON.parse(json);
