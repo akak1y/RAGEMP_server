@@ -1,6 +1,8 @@
+require('./ui');
 require('./interactions');
 
 const state = globalThis.UIState;
+const ui = globalThis.ui;
 const interactions = globalThis.interactions;
 
 /**
@@ -19,18 +21,12 @@ mp.events.add('client:shop:setPos', (posJson) => {
 });
 
 mp.events.add('client:shop:show', (configJson) => {
-    if (!state.uiBrowser) return;
-    state.uiBrowser.execute(`
-        if(window.setShopConfig) window.setShopConfig(${configJson});
-        if(window.toggleWindow) window.toggleWindow('shop');
-    `);
+    ui.call('setShopConfig', JSON.parse(configJson));
+    ui.toggleWindow('shop');
 });
 
 mp.events.add('client:shop:buyResult', (success, message) => {
-    if (!state.uiBrowser) return;
-    state.uiBrowser.execute(`
-        if(window.showShopResult) window.showShopResult(${success}, "${message}");
-    `);
+    ui.call('showShopResult', success, message);
 });
 
 mp.events.add('client:server:shopBuy', (itemId, amount) => {
@@ -39,7 +35,6 @@ mp.events.add('client:server:shopBuy', (itemId, amount) => {
 
 // --- зоны магазинов ---
 
-// метка покупок
 interactions.register({
     getPositions: () => [state.positions.shop],
     onInteract: () => mp.events.callRemote('server:shop:requestConfig'),

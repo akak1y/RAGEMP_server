@@ -1,4 +1,7 @@
+require('./ui');
+
 const state = globalThis.UIState;
+const ui = globalThis.ui;
 
 /**
  * Мосты между игрой и Vue.
@@ -6,58 +9,39 @@ const state = globalThis.UIState;
 
 // ДАННЫЕ → VUE ==============
 mp.events.add('client:ui:debugLog', (msg, type = 'info') => {
-    if (state.uiBrowser)
-        state.uiBrowser.execute(
-            `if(window.addDebugLog) window.addDebugLog(${JSON.stringify(msg)}, ${JSON.stringify(type)})`
-        );
+    ui.call('addDebugLog', msg, type);
 });
 
 mp.events.add('client:updateMoney', (money) => {
-    if (state.uiBrowser)
-        state.uiBrowser.execute(`if(window.updateMoney) window.updateMoney(${money});`);
+    ui.call('updateMoney', money);
 });
 
 mp.events.add('client:inventory:update', (jsonSlots, jsonConfig) => {
-    if (state.uiBrowser)
-        state.uiBrowser.execute(
-            `if(window.updateInventory) window.updateInventory(${jsonSlots}, ${jsonConfig});`
-        );
+    ui.call('updateInventory', JSON.parse(jsonSlots), JSON.parse(jsonConfig));
 });
 
 mp.events.add('client:phone:setCarList', (carsJson, configJson) => {
-    if (state.uiBrowser)
-        state.uiBrowser.execute(
-            `if(window.setPhoneCars) window.setPhoneCars(${carsJson}, ${configJson});`
-        );
+    ui.call('setPhoneCars', JSON.parse(carsJson), JSON.parse(configJson));
 });
 
 mp.events.add('client:setRedisStats', (count) => {
-    if (state.uiBrowser)
-        state.uiBrowser.execute(`if(window.updateGlobalStats) window.updateGlobalStats(${count});`);
+    ui.call('updateGlobalStats', count);
 });
 
 mp.events.add('client:dealership:setConfig', (carsJson) => {
-    if (state.uiBrowser)
-        state.uiBrowser.execute(
-            `if(window.setDealershipCars) window.setDealershipCars(${carsJson});`
-        );
+    ui.call('setDealershipCars', JSON.parse(carsJson));
 });
 
 mp.events.add('client:phone:requestPriceDeliveryCar', (price) => {
-    if (state.uiBrowser)
-        state.uiBrowser.execute(
-            `if(window.setPriceDeliveryCar) window.setPriceDeliveryCar(${price});`
-        );
+    ui.call('setPriceDeliveryCar', price);
 });
 
 mp.events.add('client:customCar:setTuningConfig', (json) => {
-    if (state.uiBrowser)
-        state.uiBrowser.execute(`if(window.setTuningConfig) window.setTuningConfig(${json});`);
+    ui.call('setTuningConfig', JSON.parse(json));
 });
 
 mp.events.add('client:customCar:setTuningState', (json) => {
-    if (state.uiBrowser)
-        state.uiBrowser.execute(`if(window.setTuningState) window.setTuningState(${json});`);
+    ui.call('setTuningState', JSON.parse(json));
 });
 
 // VUE → СЕРВЕР ==============
@@ -72,7 +56,7 @@ mp.events.add('client:toggleCursor', (toggle) => {
 });
 mp.events.add('client:server:buyCar', (model) => {
     mp.events.callRemote('server:dealership:buy', model);
-}); // информация в бэк о покупке авто
+});
 mp.events.add('client:server:spawnCar', (vehDbId, pay) => {
     mp.events.callRemote('server:phone:spawnVehicle', vehDbId, pay);
 });
@@ -80,7 +64,7 @@ mp.events.add('client:server:spawnCar', (vehDbId, pay) => {
 // КООРДИНАТЫ ЛОКАЦИЙ ==============
 mp.events.add('client:dealership:setPos', (pos) => {
     state.positions.dealership = new mp.Vector3(pos.x, pos.y, pos.z);
-}); // получение xyz из конфига сервера
+});
 mp.events.add('client:garage:setPos', (pos) => {
     state.positions.garage = new mp.Vector3(pos.x, pos.y, pos.z);
 });

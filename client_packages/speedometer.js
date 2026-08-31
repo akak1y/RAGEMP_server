@@ -1,4 +1,7 @@
+require('./ui');
+
 const state = globalThis.UIState;
+const ui = globalThis.ui;
 
 /**
  * Спидометр: скорость из дельты позиции + топливо, отправка в Vue каждые 100 мс.
@@ -13,9 +16,7 @@ setInterval(() => {
     if (!veh) {
         spdLastPos = null;
         spdLastTime = 0;
-        state.uiBrowser.execute(
-            `if(window.updateSpeedometer) window.updateSpeedometer(0, '', false, 0);`
-        );
+        ui.call('updateSpeedometer', 0, '', false, 0);
         return;
     }
 
@@ -40,7 +41,5 @@ setInterval(() => {
         name = mp.game.vehicle.getDisplayNameFromVehicleModel(veh.model).toLowerCase();
     } catch (e) {}
     const fuel = typeof veh.getVariable === 'function' ? Number(veh.getVariable('fuel') || 0) : 0;
-    state.uiBrowser.execute(
-        `if(window.updateSpeedometer) window.updateSpeedometer(${kmh}, '${name}', true, ${fuel});`
-    );
+    ui.call('updateSpeedometer', kmh, name, true, fuel);
 }, 100);

@@ -1,7 +1,9 @@
+require('./ui');
 require('./natives');
 require('./interactions');
 
 const state = globalThis.UIState;
+const ui = globalThis.ui;
 const natives = globalThis.natives;
 const interactions = globalThis.interactions;
 
@@ -18,8 +20,7 @@ mp.events.add('client:custom:startTuning', (boxX, boxY, boxZ, boxH) => {
     natives.freezeVehicle(veh, true);
 
     state.isAnyUiWindowOpen = true;
-    if (state.uiBrowser)
-        state.uiBrowser.execute(`if(window.toggleWindow) window.toggleWindow('carCustom');`);
+    ui.toggleWindow('carCustom');
     natives.showCursor(true);
 });
 
