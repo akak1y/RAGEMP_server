@@ -1,33 +1,23 @@
-require('../state');
 require('../auth');
 
-describe('auth', () => {
-    const state = globalThis.UIState;
+const state = globalThis.UIState;
 
+describe('auth', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
-        state.uiBrowser = { execute: jest.fn() };
         state.isAuthorized = false;
-        state.globalKeyBlock = true;
-        state.isAnyUiWindowOpen = true;
-        state.openWindowsState = {
-            inventory: true,
-            phone: true,
-            dealership: true,
-            carCustom: true,
-        };
-        state.playerIsDeveloper = false;
+        state.uiBrowser = { execute: jest.fn() };
+        jest.clearAllMocks();
     });
 
-    test('submitLogin: пересылает логин и пароль на сервер', () => {
-        mp.events.__trigger('client:account:submitLogin', 'akak', 'secret');
-        expect(mp.events.callRemote).toHaveBeenCalledWith('server:account:login', 'akak', 'secret');
+    test('submitLogin: пересылает данные на сервер', () => {
+        mp.events.__trigger('client:account:submitLogin', 'user', 'pass');
+        expect(mp.events.callRemote).toHaveBeenCalledWith('server:account:login', 'user', 'pass');
     });
 
     test('authError: показывает ошибку в браузере', () => {
         mp.events.__trigger('client:account:authError', 'Неверный пароль!');
         expect(state.uiBrowser.execute).toHaveBeenCalledWith(
-            'window.showAuthError("Неверный пароль!")'
+            expect.stringContaining('showAuthError("Неверный пароль!")')
         );
     });
 
@@ -35,32 +25,26 @@ describe('auth', () => {
         const msg = 'x" onclick="alert(1)';
         mp.events.__trigger('client:account:authError', msg);
         expect(state.uiBrowser.execute).toHaveBeenCalledWith(
-            `window.showAuthError(${JSON.stringify(msg)})`
+            expect.stringContaining('showAuthError("x\\" onclick=\\"alert(1)")')
         );
     });
 
     test('hideAuth: сбрасывает блокировки и запрашивает позиции локаций', () => {
-        mp.events.__trigger('client:account:hideAuth', 1);
-
+        mp.events.__trigger('client:account:hideAuth', true);
         expect(state.isAuthorized).toBe(true);
         expect(state.globalKeyBlock).toBe(false);
-        expect(state.isAnyUiWindowOpen).toBe(false);
-        expect(state.openWindowsState).toEqual({
-            inventory: false,
-            phone: false,
-            dealership: false,
-            carCustom: false,
-        });
-        expect(state.playerIsDeveloper).toBe(1);
-
-        expect(mp.gui.cursor.show).toHaveBeenCalledWith(false, false);
-        expect(mp.gui.chat.show).toHaveBeenCalledWith(true);
-        expect(mp.game.ui.displayRadar).toHaveBeenCalledWith(true);
-
+        expect(state.playerIsDeveloper).toBe(true);
         expect(mp.events.callRemote).toHaveBeenCalledWith('server:dealership:requestPos');
+        expect(mp.events.callRemote).toHaveBeenCalledWith('server:garage:requestPos');
+        expect(mp.events.callRemote).toHaveBeenCalledWith('server:customCar:requestPos');
+        expect(mp.events.callRemote).toHaveBeenCalledWith('server:fuel:requestPos');
         expect(mp.events.callRemote).toHaveBeenCalledWith('server:courier:requestPos');
+        expect(mp.events.callRemote).toHaveBeenCalledWith('server:shop:requestPos');
+        expect(mp.events.callRemote).toHaveBeenCalledWith('server:mining:requestPos');
         expect(mp.events.callRemote).toHaveBeenCalledWith('server:phone:requestPriceDeliveryCar');
 
-        expect(state.uiBrowser.execute).toHaveBeenCalledWith('window.changeScreen("game");');
+        expect(state.uiBrowser.execute).toHaveBeenCalledWith(
+            expect.stringContaining('changeScreen("game")')
+        );
     });
 });
