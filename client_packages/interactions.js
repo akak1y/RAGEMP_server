@@ -1,6 +1,9 @@
 require('./ui');
+require('./natives');
+
 const state = globalThis.UIState;
 const ui = globalThis.ui;
+const natives = globalThis.natives;
 
 /**
  * Движок взаимодействий мира: клавиша E + подсказки.
@@ -34,15 +37,7 @@ if (!globalThis.interactions) {
             for (let i = 0; i < positions.length; i++) {
                 const pos = positions[i];
                 if (!pos || typeof pos.x !== 'number') continue;
-                const distance = mp.game.gameplay.getDistanceBetweenCoords(
-                    playerPos.x,
-                    playerPos.y,
-                    playerPos.z,
-                    pos.x,
-                    pos.y,
-                    pos.z,
-                    true
-                );
+                const distance = natives.getDistanceBetweenCoords(playerPos, pos);
                 if (distance <= (zone.radius || 2.5)) return { zone, index: i };
             }
         }

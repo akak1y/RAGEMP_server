@@ -1,10 +1,9 @@
 require('./ui');
-require('./anim');
 require('./interactions');
 
 const state = globalThis.UIState;
 const ui = globalThis.ui;
-const anim = globalThis.anim;
+const natives = globalThis.natives;
 const interactions = globalThis.interactions;
 
 /**
@@ -24,16 +23,16 @@ mp.events.add('client:mining:rocksUpdate', (json) => {
 });
 
 function playMiningAnim(durationMs) {
-    if (anim.playScenario('WORLD_HUMAN_CONST_DRILL')) return;
-    if (!anim.requestAnimDict(HAMMER_DICT)) return;
-    setTimeout(() => anim.playAnim(HAMMER_DICT, HAMMER_ANIM, durationMs), 500);
+    if (natives.playScenario('WORLD_HUMAN_CONST_DRILL')) return;
+    if (!natives.requestAnimDict(HAMMER_DICT)) return;
+    setTimeout(() => natives.playAnim(HAMMER_DICT, HAMMER_ANIM, durationMs), 500);
 }
 
 function cancelChannel() {
     channel = null;
     if (progressTimer) clearInterval(progressTimer);
     progressTimer = null;
-    anim.stopAllTasks();
+    natives.stopAllTasks();
     ui.call('hideMiningProgress');
     mp.gui.chat.push('!{#FF3333}[Шахта] Добыча прервана.');
 }
@@ -43,7 +42,7 @@ function finishChannel() {
     channel = null;
     if (progressTimer) clearInterval(progressTimer);
     progressTimer = null;
-    anim.stopAllTasks();
+    natives.stopAllTasks();
     ui.call('hideMiningProgress');
     mp.events.callRemote('server:mining:complete', rockIndex);
 }

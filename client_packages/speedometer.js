@@ -1,7 +1,9 @@
 require('./ui');
+require('./natives');
 
 const state = globalThis.UIState;
 const ui = globalThis.ui;
+const natives = globalThis.natives;
 
 /**
  * Спидометр: скорость из дельты позиции + топливо.
@@ -52,10 +54,7 @@ setInterval(() => {
     spdLastPos = pos;
     spdLastTime = now;
 
-    let name = '';
-    try {
-        name = mp.game.vehicle.getDisplayNameFromVehicleModel(veh.model).toLowerCase();
-    } catch (e) {}
+    const name = natives.getVehicleModelName(veh.model);
     const fuel = typeof veh.getVariable === 'function' ? Number(veh.getVariable('fuel') || 0) : 0;
     send(kmh, name, true, fuel);
 }, 100);

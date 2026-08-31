@@ -77,6 +77,62 @@ function disableAllControls() {
     }
 }
 
+function getVehicleModelName(model) {
+    try {
+        return mp.game.vehicle.getDisplayNameFromVehicleModel(model).toLowerCase();
+    } catch (e) {
+        return '';
+    }
+}
+
+function getDistanceBetweenCoords(a, b) {
+    try {
+        return mp.game.gameplay.getDistanceBetweenCoords(a.x, a.y, a.z, b.x, b.y, b.z, true);
+    } catch (e) {
+        return Infinity;
+    }
+}
+
+// --- анимации и сценарии ---
+
+function requestAnimDict(dict) {
+    try {
+        mp.game.streaming.requestAnimDict(dict);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+function playAnim(dict, clip, durationMs) {
+    try {
+        const p = mp.players.local;
+        p.taskPlayAnim(dict, clip, 8.0, -8.0, durationMs, 0, false, false, false);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+function playScenario(name) {
+    try {
+        const p = mp.players.local;
+        p.taskStartScenarioInPlace(name, 0, true);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+function stopAllTasks() {
+    try {
+        mp.game.ped.clearPedTasks(mp.players.local.handle);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
 globalThis.natives = {
     showCursor,
     setRadar,
@@ -85,4 +141,10 @@ globalThis.natives = {
     disableMovementControls,
     enableMouseControls,
     disableAllControls,
+    getVehicleModelName,
+    getDistanceBetweenCoords,
+    requestAnimDict,
+    playAnim,
+    playScenario,
+    stopAllTasks,
 };

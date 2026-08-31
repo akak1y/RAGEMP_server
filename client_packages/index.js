@@ -1,6 +1,5 @@
 require('./state'); // создаём UIState
 require('./ui');
-require('./anim');
 require('./natives');
 require('./debug');
 require('./interactions'); // движок зон
