@@ -121,4 +121,5 @@ module.exports = {
         rockRespawnMinMs: 20000,
         rockRespawnMaxMs: 60000,
     },
+    MafiaBasePos: { x: -433.5, y: -57.0, z: 47.39, h: 0.0 },
 };

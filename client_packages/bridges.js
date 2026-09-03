@@ -105,5 +105,11 @@ mp.events.add('client:locations:setAll', (json) => {
         if (data.phonePrice !== undefined) {
             ui.call('setPriceDeliveryCar', data.phonePrice);
         }
+        if (data.mafiaBase)
+            state.positions.mafiaBase = new mp.Vector3(
+                data.mafiaBase.x,
+                data.mafiaBase.y,
+                data.mafiaBase.z
+            );
     } catch (e) {}
 });

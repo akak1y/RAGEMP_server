@@ -1,6 +1,6 @@
 const locationService = require('../services/LocationService');
 const miningService = require('../services/MiningService');
-const { MiningConfig, BotSpawnPos, PhoneConfig } = require('../config');
+const { MiningConfig, BotSpawnPos, PhoneConfig, MafiaBasePos } = require('../config');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
 
@@ -26,6 +26,7 @@ mp.events.add(
                     active: miningService.getRocksActive(),
                 },
                 phonePrice: PhoneConfig.deliveryCar,
+                mafiaBase: MafiaBasePos,
             };
             player.call('client:locations:setAll', [JSON.stringify(data)]);
         },
