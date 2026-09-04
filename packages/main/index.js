@@ -7,6 +7,20 @@ Module.prototype.require = function (id) {
     return originalRequire.apply(this, [id]);
 };
 
+const fs = require('fs');
+const path = require('path');
+
+const CRASH_LOG = path.join(__dirname, 'crash.log');
+
+/**
+ * Страховка: стек ошибки пишем в файл, даже если консоль закрылась.
+ */
+function writeCrashLog(err) {
+    try {
+        fs.appendFileSync(CRASH_LOG, `\n${new Date().toISOString()}\n${err.stack || err.message}\n`);
+    } catch (e) {}
+}
+
 const { initDB, getSequelize } = require('./core/db');
 const { initRedis, getRedis } = require('./core/redis');
 const logger = require('./core/logger');
@@ -84,6 +98,7 @@ async function refreshStatsCache() {
         logger.info(`[System] Все системы запущены за ${Date.now() - bootStart}ms`);
     } catch (err) {
         logger.error(`[System ERROR] Ошибка запуска сервера: ${err.message}`);
+        writeCrashLog(err);
         process.exit(1);
     }
 })();
@@ -117,6 +132,7 @@ async function shutdown(signal) {
         process.exit(0);
     } catch (err) {
         logger.error(`Ошибка при shutdown: ${err.message}`);
+        writeCrashLog(err);
         process.exit(1);
     }
 }
@@ -126,6 +142,7 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 process.on('uncaughtException', (err) => {
     logger.error(`[uncaughtException] ${err.stack || err.message}`);
+    writeCrashLog(err);
     shutdown('uncaughtException');
 });
 

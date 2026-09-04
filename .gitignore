@@ -8,6 +8,7 @@ conf.json
 .dependency-cruiser.js
 /packages/main/settings.json
 .env.test
+crash.log
 
 *.log
 *.tmp
