@@ -17,7 +17,10 @@ const CRASH_LOG = path.join(__dirname, 'crash.log');
  */
 function writeCrashLog(err) {
     try {
-        fs.appendFileSync(CRASH_LOG, `\n${new Date().toISOString()}\n${err.stack || err.message}\n`);
+        fs.appendFileSync(
+            CRASH_LOG,
+            `\n${new Date().toISOString()}\n${err.stack || err.message}\n`
+        );
     } catch (e) {}
 }
 
@@ -79,6 +82,7 @@ async function refreshStatsCache() {
         require('./controllers/shopController');
         require('./controllers/miningController');
         require('./controllers/factionController');
+        require('./controllers/hospitalController');
         console.log(`[Boot] Контроллеры: ${Date.now() - ctrlStart}ms`);
 
         locationService.initialize();

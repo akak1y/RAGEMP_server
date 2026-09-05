@@ -1,18 +1,16 @@
 <template>
-    <div class="shop-window">
+    <div class="window-panel shop-window">
         <h2>{{ config.name }}</h2>
-        <p class="shop-desc">Выберите товары для покупки:</p>
-
-        <div class="item-list">
-            <div v-for="(item, idx) in config.items" :key="idx" class="item-card">
+        <p class="window-desc">Выберите товары для покупки:</p>
+        <div class="window-list">
+            <div v-for="(item, idx) in config.items" :key="idx" class="window-item block">
                 <div class="item-info">
                     <span class="item-name">{{ getItemName(item.itemId) }}</span>
                     <span class="item-price">${{ item.price }}</span>
                 </div>
-                <button class="buy-btn" @click="buy(item)">Купить</button>
+                <button class="btn-buy full" @click="buy(item)">Купить</button>
             </div>
         </div>
-
         <div
             v-if="resultMessage"
             class="result-message"
@@ -20,8 +18,7 @@
         >
             {{ resultMessage }}
         </div>
-
-        <button class="close-btn" @click="$emit('close')">Закрыть</button>
+        <button class="btn-close" @click="$emit('close')">Закрыть</button>
     </div>
 </template>
 

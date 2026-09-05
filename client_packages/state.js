@@ -25,5 +25,7 @@ globalThis.UIState = {
         courierStart: null,
         courierTarget: null,
         shop: null,
+        mafiaBase: null,
+        hospital: null,
     },
 };

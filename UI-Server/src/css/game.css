@@ -30,6 +30,76 @@
     border-left: 4px solid #0077ff;
 }
 
+.hud-speedometer {
+    position: fixed;
+    bottom: 40px;
+    right: 40px;
+    text-align: center;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    text-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+}
+
+.speed-number {
+    font-size: 60px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -2px;
+}
+
+.speed-unit {
+    font-size: 13px;
+    opacity: 0.65;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.speed-bar {
+    width: 220px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.speed-bar-fill {
+    height: 100%;
+    background: #4ade80;
+    border-radius: 3px;
+    transition: width 0.1s ease-out;
+}
+
+.hud-fuel {
+    margin-top: 12px;
+    text-align: center;
+    color: #fff;
+    text-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+}
+
+.fuel-label {
+    font-size: 13px;
+    opacity: 0.85;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.fuel-bar {
+    width: 220px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.fuel-bar-fill {
+    height: 100%;
+    background: #4abcde;
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+
 .inventory-window {
     position: absolute;
     top: 50%;
@@ -182,7 +252,7 @@
     margin-top: 40px;
 }
 
-.dealership-window {
+.window-panel {
     position: absolute;
     top: 50%;
     left: 10%;
@@ -190,197 +260,105 @@
     background: rgba(20, 20, 20, 0.95);
     padding: 30px;
     border-radius: 12px;
-    width: 350px;
     color: #fff;
     border: 1px solid #0077ff;
 }
-
-.car-list {
-    margin: 20px 0;
+.window-panel h2 {
+    margin: 0 0 10px;
+    text-align: center;
+}
+.window-desc {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #8a8a8a;
 }
 
-.car-item {
+.window-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 20px 0;
+    max-height: 300px;
+    overflow-y: auto;
+}
+.window-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     background: rgba(255, 255, 255, 0.03);
-    padding: 10px;
-    margin-bottom: 8px;
+    padding: 10px 12px;
     border-radius: 6px;
 }
+.window-item.block {
+    display: block;
+}
+.item-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+.item-name {
+    font-weight: bold;
+}
+.item-price {
+    color: #2ecc71;
+}
 
-.car-item button {
+.btn-buy {
     background: #2ecc71;
     border: none;
     padding: 6px 12px;
     color: #fff;
     border-radius: 4px;
     cursor: pointer;
-}
-
-.car-item button:hover {
-    background: #27ae60;
-}
-
-.close-btn {
-    width: 100%;
-    padding: 10px;
-    background: #e74c3c;
-    border: none;
-    color: #fff;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.hud-speedometer {
-    position: fixed;
-    bottom: 40px;
-    right: 40px;
-    text-align: center;
-    color: #fff;
-    font-family: 'Inter', sans-serif;
-    text-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
-}
-
-.speed-number {
-    font-size: 60px;
-    font-weight: 700;
-    line-height: 1;
-    letter-spacing: -2px;
-}
-
-.speed-unit {
-    font-size: 13px;
-    opacity: 0.65;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.speed-bar {
-    width: 220px;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 3px;
-    overflow: hidden;
-}
-
-.speed-bar-fill {
-    height: 100%;
-    background: #4ade80;
-    border-radius: 3px;
-    transition: width 0.1s ease-out;
-}
-
-.hud-fuel {
-    margin-top: 12px;
-    text-align: center;
-    color: #fff;
-    text-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
-}
-.fuel-label {
-    font-size: 13px;
-    opacity: 0.85;
-    margin-bottom: 4px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-.fuel-bar {
-    width: 220px;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 3px;
-    overflow: hidden;
-}
-.fuel-bar-fill {
-    height: 100%;
-    background: #4abcde;
-    border-radius: 3px;
-    transition: width 0.3s;
-}
-
-.shop-window {
-    position: absolute;
-    top: 50%;
-    left: 10%;
-    transform: translateY(-50%);
-    background: rgba(20, 20, 20, 0.95);
-    padding: 30px;
-    border-radius: 12px;
-    width: 400px;
-    color: #fff;
-    border: 1px solid #2ecc71;
-}
-
-.shop-window h2 {
-    margin: 0 0 10px;
-    text-align: center;
-}
-
-.shop-window .shop-desc {
-    text-align: center;
-    margin-bottom: 20px;
-    color: #8a8a8a;
-}
-
-.shop-window .item-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin: 20px 0;
-    max-height: 300px;
-    overflow-y: auto;
-}
-
-.shop-window .item-card {
-    background: rgba(255, 255, 255, 0.03);
-    padding: 12px;
-    border-radius: 6px;
-}
-
-.shop-window .item-info {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 10px;
-}
-
-.shop-window .item-name {
     font-weight: bold;
 }
-
-.shop-window .item-price {
-    color: #2ecc71;
+.btn-buy:hover {
+    background: #27ae60;
 }
-
-.shop-window .buy-btn {
+.btn-buy:disabled {
+    background: #555;
+    cursor: not-allowed;
+}
+.btn-buy.full {
     width: 100%;
-    margin-top: 10px;
     padding: 8px;
-    background: #2ecc71;
+}
+
+.btn-close {
+    width: 100%;
+    padding: 10px;
+    background: #e74c3c;
     border: none;
     color: #fff;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
-    font-weight: bold;
 }
 
-.shop-window .buy-btn:hover {
-    background: #27ae60;
-}
-
-.shop-window .result-message {
+.result-message {
     padding: 10px;
     border-radius: 4px;
     text-align: center;
     margin-bottom: 10px;
 }
-
-.shop-window .result-message.success {
+.result-message.success {
     background: #2ecc71;
 }
-
-.shop-window .result-message.error {
+.result-message.error {
     background: #e74c3c;
+}
+
+.dealership-window {
+    width: 350px;
+    border-color: #0077ff;
+}
+.shop-window {
+    width: 400px;
+    border-color: #2ecc71;
+}
+.hospital-window {
+    width: 350px;
+    border-color: #e74c3c;
 }
 
 .mining-sell-window {
@@ -416,7 +394,21 @@
 .mining-sell-window .mining-sell-total {
     color: #2ecc71;
 }
-
+.mining-sell-window .buy-btn {
+    width: 100%;
+    margin-top: 15px;
+    padding: 12px;
+    background: #2ecc71;
+    border: none;
+    color: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+}
+.mining-sell-window .buy-btn:hover {
+    background: #27ae60;
+}
 .mining-sell-window .buy-btn:disabled {
     background: #555;
     cursor: not-allowed;
@@ -439,28 +431,6 @@
     height: 100%;
     background: #f39c12;
     transition: width 0.1s linear;
-}
-
-.mining-sell-window .buy-btn {
-    width: 100%;
-    margin-top: 15px;
-    padding: 12px;
-    background: #2ecc71;
-    border: none;
-    color: #fff;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 14px;
-}
-
-.mining-sell-window .buy-btn:hover {
-    background: #27ae60;
-}
-
-.mining-sell-window .buy-btn:disabled {
-    background: #555;
-    cursor: not-allowed;
 }
 
 .controls-hint {

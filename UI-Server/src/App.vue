@@ -46,6 +46,12 @@
         </div>
         <!--тюнинг-->
         <CarCustom v-if="windows.carCustom" :config="tuningConfig" :state="tuningState" />
+        <!--лечение в больнице-->
+        <HospitalWindow
+            :open="windows.hospital"
+            @heal="onHealRequest"
+            @close="closeWindow('hospital')"
+        />
         <!--перехватываем нажатие клавиш-->
         <input
             ref="focusTrap"
@@ -87,6 +93,7 @@ import Dealership from './components/Dealership.vue';
 import CarCustom from './components/CarCustom.vue';
 import Shop from './components/Shop.vue';
 import MiningSell from './components/MiningSell.vue';
+import HospitalWindow from './components/HospitalWindow.vue';
 
 const debugLogs = ref([]);
 const windowDebug = ref(false);
@@ -111,6 +118,8 @@ const windows = ref({
     dealership: false,
     carCustom: false,
     shop: false,
+    miningSell: false,
+    hospital: false,
 });
 const focusTrap = ref(null);
 const speed = ref(0);
@@ -211,6 +220,11 @@ const onBuyCar = (model) => {
 const onSpawnCar = (carId, pay) => {
     if (typeof mp !== 'undefined') mp.trigger('client:server:spawnCar', carId, pay);
     closeWindow('phone');
+};
+
+const onHealRequest = () => {
+    if (typeof mp !== 'undefined') mp.trigger('client:hospital:heal');
+    closeWindow('hospital');
 };
 
 onMounted(() => {

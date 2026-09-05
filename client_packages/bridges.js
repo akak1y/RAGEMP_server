@@ -111,5 +111,12 @@ mp.events.add('client:locations:setAll', (json) => {
                 data.mafiaBase.y,
                 data.mafiaBase.z
             );
+        if (data.hospital) {
+            state.positions.hospital = new mp.Vector3(
+                data.hospital.x,
+                data.hospital.y,
+                data.hospital.z
+            );
+        }
     } catch (e) {}
 });
