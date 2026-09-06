@@ -133,6 +133,16 @@ function stopAllTasks() {
     }
 }
 
+function stopScenario() {
+    try {
+        const p = mp.players.local;
+        p.clearTasks();
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
 globalThis.natives = {
     showCursor,
     setRadar,
@@ -147,4 +157,5 @@ globalThis.natives = {
     playAnim,
     playScenario,
     stopAllTasks,
+    stopScenario,
 };

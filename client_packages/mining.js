@@ -32,7 +32,7 @@ function cancelChannel() {
     channel = null;
     if (progressTimer) clearInterval(progressTimer);
     progressTimer = null;
-    natives.stopAllTasks();
+    natives.stopScenario();
     ui.call('hideMiningProgress');
     mp.gui.chat.push('!{#FF3333}[Шахта] Добыча прервана.');
 }
@@ -42,7 +42,7 @@ function finishChannel() {
     channel = null;
     if (progressTimer) clearInterval(progressTimer);
     progressTimer = null;
-    natives.stopAllTasks();
+    natives.stopScenario();
     ui.call('hideMiningProgress');
     mp.events.callRemote('server:mining:complete', rockIndex);
 }
