@@ -63,7 +63,8 @@ describe('MiningService', () => {
             auditService.logPlayer.mockResolvedValue({ id: 1 });
             locationService.hideRock.mockImplementation(() => {});
 
-            expect(await miningService.completeMine(player)).toBe(true);
+            const result = await miningService.completeMine(player);
+            expect(result).toMatchObject({ success: true, data: { newShiftCount: 1 } });
             expect(inventoryService.giveItem).toHaveBeenCalledWith(player, 'ore', 1);
             expect(miningService.shiftStats.get(1)).toBe(1);
             expect(locationService.hideRock).toHaveBeenCalledWith(0);
@@ -74,7 +75,8 @@ describe('MiningService', () => {
             const player = atRock();
             miningService.startWork(player, 0);
 
-            expect(await miningService.completeMine(player)).toBe(false);
+            const result = await miningService.completeMine(player);
+            expect(result).toMatchObject({ success: false, error: 'too_fast' });
             expect(inventoryService.giveItem).not.toHaveBeenCalled();
             expect(miningService.rockState[0].depleted).toBe(false);
         });
@@ -85,7 +87,8 @@ describe('MiningService', () => {
             miningService.activeMiners.get(1).startedAt -= MiningConfig.mineTimeMs + 100;
             player.position = { x: 0, y: 0, z: 0 };
 
-            expect(await miningService.completeMine(player)).toBe(false);
+            const result = await miningService.completeMine(player);
+            expect(result).toMatchObject({ success: false, error: 'too_far' });
             expect(inventoryService.giveItem).not.toHaveBeenCalled();
         });
     });

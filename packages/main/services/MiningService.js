@@ -36,12 +36,14 @@ class MiningService {
      * Завершить добычу.
      */
     async completeMine(player) {
-        if (!player || !player.accountId) return false;
+        if (!player || !player.accountId) {
+            return { success: false, error: 'not_authorized' };
+        }
 
         const record = this.activeMiners.get(player.accountId);
         if (!record) {
             logger.warn(`[MiningService] completeMine: ${player.accountName} не начинал работу`);
-            return false;
+            return { success: false, error: 'work_not_started' };
         }
 
         const elapsed = Date.now() - record.startedAt;
@@ -49,13 +51,13 @@ class MiningService {
             logger.warn(
                 `[MiningService] completeMine: ${player.accountName} слишком быстро (${elapsed}мс)`
             );
-            return false;
+            return { success: false, error: 'too_fast' };
         }
 
         const rock = MiningConfig.rocks[record.rockIndex];
         if (!rock || !isNear(player.position, rock, MiningConfig.interactRadius)) {
             logger.warn(`[MiningService] completeMine: ${player.accountName} отошёл от камня`);
-            return false;
+            return { success: false, error: 'too_far' };
         }
 
         const shiftCount = this.shiftStats.get(player.accountId) || 0;
@@ -63,7 +65,7 @@ class MiningService {
         const given = await inventoryService.giveItem(player, 'ore', 1);
         if (!given) {
             logger.warn(`[MiningService] completeMine: инвентарь ${player.accountName} полон`);
-            return false;
+            return { success: false, error: 'inventory_full' };
         }
 
         this.shiftStats.set(player.accountId, shiftCount + 1);
@@ -77,7 +79,7 @@ class MiningService {
         });
 
         logger.info(`[MiningService] ${player.accountName} добыл руду`);
-        return true;
+        return { success: true, data: { newShiftCount: shiftCount + 1 } };
     }
 
     /**

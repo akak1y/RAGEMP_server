@@ -50,12 +50,12 @@ mp.events.add(
     withGuards(
         [isLoggedIn, rateLimit('mining:complete', 5, 5)],
         async (player) => {
-            const ok = await miningService.completeMine(player);
-            if (ok) {
+            const result = await miningService.completeMine(player);
+            if (result.success) {
                 const count = miningService.getShiftCount(player.accountId);
                 player.outputChatBox(`!{#4CAF50}[Шахта] Руда добыта! Всего за смену: ${count}`);
             } else {
-                player.outputChatBox('!{#FF3333}[Шахта] Добыча не удалась.');
+                player.outputChatBox(`!{#FF3333}[Шахта] Добыча не удалась: ${result.error}`);
             }
         },
         'mining:complete'

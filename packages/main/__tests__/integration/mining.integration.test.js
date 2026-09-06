@@ -64,7 +64,7 @@ describe('Шахта — интеграционные тесты', () => {
             };
             expect(miningService.startWork(player, i)).toBe(true);
             miningService.activeMiners.get(user.id).startedAt -= MiningConfig.mineTimeMs + 100;
-            expect(await miningService.completeMine(player)).toBe(true);
+            expect(await miningService.completeMine(player)).toMatchObject({ success: true });
             expect(miningService.rockState[i].depleted).toBe(true);
         }
 
@@ -108,10 +108,13 @@ describe('Шахта — интеграционные тесты', () => {
 
         miningService.startWork(player, 0);
         miningService.activeMiners.get(user.id).startedAt -= MiningConfig.mineTimeMs + 100;
-        expect(await miningService.completeMine(player)).toBe(true);
+        expect(await miningService.completeMine(player)).toMatchObject({ success: true });
 
         miningService.startWork(player, 0);
-        expect(await miningService.completeMine(player)).toBe(false);
+        expect(await miningService.completeMine(player)).toMatchObject({
+            success: false,
+            error: 'work_not_started',
+        });
     });
 
     test('античит: добыча быстрее mineTimeMs отклоняется', async () => {
@@ -132,6 +135,9 @@ describe('Шахта — интеграционные тесты', () => {
         await inventoryService.loadPlayerInventory(player);
 
         miningService.startWork(player, 0);
-        expect(await miningService.completeMine(player)).toBe(false);
+        expect(await miningService.completeMine(player)).toMatchObject({
+            success: false,
+            error: 'too_fast',
+        });
     });
 });
