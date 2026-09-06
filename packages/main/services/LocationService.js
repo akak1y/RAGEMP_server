@@ -92,10 +92,31 @@ class LocationService {
     }
 
     /**
+     * Создать 3D-объект локации (камни, декорации)
+     * @private
+     */
+    _createLocationObject(loc) {
+        const rot = new mp.Vector3(
+            loc.object.rotX || 0,
+            loc.object.rotY || 0,
+            loc.object.rotZ || 0
+        );
+        const obj = mp.objects.new(
+            mp.joaat(loc.object.model),
+            new mp.Vector3(loc.pos.x, loc.pos.y, loc.pos.z + loc.object.zOffset),
+            rot
+        );
+        try {
+            obj.rotation = rot;
+        } catch (e) {}
+        return obj;
+    }
+
+    /**
      * Создание всех маркеров и blips на карте
      */
     initialize() {
-        for (const [_key, loc] of Object.entries(this.locations)) {
+        for (const [key, loc] of Object.entries(this.locations)) {
             if (loc.blip) {
                 mp.blips.new(loc.blip.sprite, loc.pos, {
                     name: loc.blip.name,
@@ -113,21 +134,9 @@ class LocationService {
                 );
             }
             if (loc.object) {
-                const rot = new mp.Vector3(
-                    loc.object.rotX || 0,
-                    loc.object.rotY || 0,
-                    loc.object.rotZ || 0
-                );
-                const obj = mp.objects.new(
-                    mp.joaat(loc.object.model),
-                    new mp.Vector3(loc.pos.x, loc.pos.y, loc.pos.z + loc.object.zOffset),
-                    rot
-                );
-                try {
-                    obj.rotation = rot;
-                } catch (e) {}
-                if (_key.startsWith('rock_')) {
-                    this.rockObjects[Number(_key.split('_')[1])] = obj;
+                const obj = this._createLocationObject(loc);
+                if (key.startsWith('rock_')) {
+                    this.rockObjects[Number(key.split('_')[1])] = obj;
                 }
             }
         }
@@ -181,21 +190,7 @@ class LocationService {
         const loc = this.locations['rock_' + index];
         if (!loc || !loc.object) return;
 
-        const rot = new mp.Vector3(
-            loc.object.rotX || 0,
-            loc.object.rotY || 0,
-            loc.object.rotZ || 0
-        );
-        const obj = mp.objects.new(
-            mp.joaat(loc.object.model),
-            new mp.Vector3(loc.pos.x, loc.pos.y, loc.pos.z + loc.object.zOffset),
-            rot
-        );
-        try {
-            obj.rotation = rot;
-        } catch (e) {}
-
-        this.rockObjects[index] = obj;
+        this.rockObjects[index] = this._createLocationObject(loc);
     }
 }
 
