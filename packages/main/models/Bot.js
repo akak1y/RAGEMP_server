@@ -21,11 +21,6 @@ function initBotModel() {
     );
 }
 
-function getBotModel() {
-    if (!Bot) initBotModel();
-    return Bot;
-}
-
 /**
  * Гарантирует, что модель определена
  */
@@ -34,4 +29,14 @@ function ensureBotReady() {
     return Promise.resolve();
 }
 
-module.exports = { initBotModel, getBotModel, ensureBotReady };
+function getBotModel() {
+    if (!Bot) initBotModel();
+    return Bot;
+}
+
+module.exports = {
+    initBotModel,
+    getBotModel,
+    getModel: getBotModel,
+    ensureBotReady
+};

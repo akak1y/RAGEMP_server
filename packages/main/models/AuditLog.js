@@ -34,11 +34,6 @@ function initAuditModel() {
     );
 }
 
-function getAuditModel() {
-    if (!AuditLog) initAuditModel();
-    return AuditLog;
-}
-
 /**
  * Гарантирует, что модель определена
  */
@@ -47,4 +42,14 @@ function ensureAuditReady() {
     return Promise.resolve();
 }
 
-module.exports = { initAuditModel, getAuditModel, ensureAuditReady };
+function getAuditModel() {
+    if (!AuditLog) initAuditModel();
+    return AuditLog;
+}
+
+module.exports = {
+    initAuditModel,
+    getAuditModel,
+    getModel: getAuditModel,
+    ensureAuditReady
+};

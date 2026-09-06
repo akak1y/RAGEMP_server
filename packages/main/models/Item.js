@@ -27,12 +27,13 @@ function initItemModel() {
     return Item;
 }
 
+function getItemModel() {
+    if (!Item) initItemModel();
+    return Item;
+}
+
 module.exports = {
     initItemModel,
-    getItemModel: () => {
-        if (!Item) {
-            initItemModel();
-        } // если по какой-то причине не создана модель -> создаёт
-        return Item;
-    },
+    getItemModel,
+    getModel: getItemModel,
 };

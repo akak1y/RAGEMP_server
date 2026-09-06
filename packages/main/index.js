@@ -26,6 +26,7 @@ function writeCrashLog(err) {
 
 const { initDB, getSequelize } = require('./core/db');
 const { initRedis, getRedis } = require('./core/redis');
+const { registerAll } = require('./core/autoRegister');
 const logger = require('./core/logger');
 const MigrationsRunner = require('./core/migrations');
 
@@ -54,12 +55,8 @@ async function refreshStatsCache() {
         console.log(`[Boot] БД и кэш: ${Date.now() - dbsStart}ms`);
 
         const modelsStart = Date.now();
-        require('./models/Users').getUserModel();
-        require('./models/Item').getItemModel();
-        require('./models/Vehicle').getVehicleModel();
-        require('./models/AuditLog').getAuditModel();
-        require('./models/Bot').getBotModel();
-        console.log(`[Boot] Модели: ${Date.now() - modelsStart}ms`);
+        const modelsCount = registerAll(path.join(__dirname, 'models'), { callGetModel: true });
+        console.log(`[Boot] Модели (${modelsCount}): ${Date.now() - modelsStart}ms`);
 
         const migrateStart = Date.now();
         const sequelize = getSequelize();
@@ -68,27 +65,14 @@ async function refreshStatsCache() {
         console.log(`[Boot] Миграции: ${Date.now() - migrateStart}ms`);
 
         accountService.initialize();
-
-        const ctrlStart = Date.now();
-        require('./controllers/moneyApi');
-        require('./controllers/commandSystem');
-        require('./controllers/authController');
-        require('./controllers/adminCommands');
-        require('./controllers/playerCommands');
-        require('./controllers/gameEvents');
-        require('./controllers/vehicleController');
-        require('./controllers/locationController');
-        require('./controllers/tuningController');
-        require('./controllers/shopController');
-        require('./controllers/miningController');
-        require('./controllers/factionController');
-        require('./controllers/hospitalController');
-        console.log(`[Boot] Контроллеры: ${Date.now() - ctrlStart}ms`);
-
         locationService.initialize();
 
         const factionService = require('./services/FactionService');
         await factionService.ensureSeed();
+
+        const ctrlStart = Date.now();
+        const controllersCount = registerAll(path.join(__dirname, 'controllers'));
+        console.log(`[Boot] Контроллеры (${controllersCount}): ${Date.now() - ctrlStart}ms`);
 
         adminServer = require('./websocket/adminServer');
         adminServer.start();

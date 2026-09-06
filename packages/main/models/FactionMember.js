@@ -18,4 +18,7 @@ function getFactionMemberModel() {
     return FactionMember;
 }
 
-module.exports = { getFactionMemberModel };
+module.exports = {
+    getFactionMemberModel,
+    getModel: getFactionMemberModel
+};

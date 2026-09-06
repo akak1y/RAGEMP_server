@@ -36,12 +36,13 @@ function initUserModel() {
     return User;
 }
 
+function getUserModel() {
+    if (!User) initUserModel();
+    return User;
+}
+
 module.exports = {
     initUserModel,
-    getUserModel: () => {
-        if (!User) {
-            initUserModel();
-        } // если по какой то причине не создана модель -> создаёт
-        return User;
-    },
+    getUserModel,
+    getModel: getUserModel,
 };

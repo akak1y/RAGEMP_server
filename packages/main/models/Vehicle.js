@@ -35,12 +35,13 @@ function initVehicleModel() {
     return Vehicle;
 }
 
+function getVehicleModel() {
+    if (!Vehicle) initVehicleModel();
+    return Vehicle;
+}
+
 module.exports = {
     initVehicleModel,
-    getVehicleModel: () => {
-        if (!Vehicle) {
-            initVehicleModel();
-        } // если по какой-то причине не создана модель -> создаёт
-        return Vehicle;
-    },
+    getVehicleModel,
+    getModel: getVehicleModel,
 };
