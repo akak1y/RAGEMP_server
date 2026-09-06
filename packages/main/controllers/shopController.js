@@ -40,13 +40,12 @@ mp.events.add(
     withGuards(
         [isLoggedIn, rateLimit('shop:buy', 10, 5)],
         async (player, itemId, amount) => {
-            const ok = await shopService.buyItem(player, String(itemId), Number(amount));
-
-            const resultMessage = ok
-                ? `Куплено: ${itemId} x${amount}`
-                : 'Покупка не удалась: недостаточно денег или места в инвентаре';
-
-            player.call('client:shop:buyResult', [ok, resultMessage]);
+            const result = await shopService.buyItem(player, itemId, amount);
+            if (result.success) {
+                player.call('client:shop:buyResult', [true, 'Покупка успешна']);
+            } else {
+                player.call('client:shop:buyResult', [false, result.error]);
+            }
         },
         'shop:buy'
     )

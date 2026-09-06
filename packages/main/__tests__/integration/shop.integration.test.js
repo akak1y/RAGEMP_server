@@ -63,7 +63,7 @@ describe('ShopService — интеграционные тесты', () => {
         await inventoryService.loadPlayerInventory(player);
 
         const result = await shopService.buyItem(player, 'burger', 2);
-        expect(result).toBe(true);
+        expect(result).toMatchObject({ success: true });
 
         const updatedUser = await User.findByPk(user.id);
         expect(updatedUser.money).toBe(400); // 500 - 100
@@ -84,7 +84,7 @@ describe('ShopService — интеграционные тесты', () => {
         await inventoryService.loadPlayerInventory(player);
 
         const result = await shopService.buyItem(player, 'burger', 2);
-        expect(result).toBe(false);
+        expect(result).toMatchObject({ success: false, error: 'insufficient_funds' });
 
         const updatedUser = await User.findByPk(user.id);
         expect(updatedUser.money).toBe(50);

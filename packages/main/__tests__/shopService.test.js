@@ -34,7 +34,7 @@ describe('ShopService', () => {
 
         const result = await shopService.buyItem(player, 'burger', 2);
 
-        expect(result).toBe(true);
+        expect(result).toMatchObject({ success: true, data: { totalPrice: 100 } });
         expect(player.takeMoney).toHaveBeenCalledWith(100, 'shop');
         expect(player.money).toBe(900);
         expect(inventoryService.giveItem).toHaveBeenCalledWith(player, 'burger', 2);
@@ -50,7 +50,7 @@ describe('ShopService', () => {
 
         const result = await shopService.buyItem(player, 'burger', 2);
 
-        expect(result).toBe(false);
+        expect(result).toMatchObject({ success: false, error: 'insufficient_funds' });
         expect(player.money).toBe(50);
         expect(inventoryService.giveItem).not.toHaveBeenCalled();
     });
@@ -61,7 +61,7 @@ describe('ShopService', () => {
 
         const result = await shopService.buyItem(player, 'burger', 2);
 
-        expect(result).toBe(false);
+        expect(result).toMatchObject({ success: false, error: 'inventory_full' });
         expect(player.takeMoney).toHaveBeenCalledWith(100, 'shop');
         expect(player.addMoney).toHaveBeenCalledWith(100, 'shop_refund');
         expect(player.money).toBe(1000);
@@ -72,7 +72,7 @@ describe('ShopService', () => {
 
         const result = await shopService.buyItem(player, 'nonexistent', 1);
 
-        expect(result).toBe(false);
+        expect(result).toMatchObject({ success: false, error: 'item_not_in_shop' });
         expect(player.takeMoney).not.toHaveBeenCalled();
     });
 
@@ -81,7 +81,7 @@ describe('ShopService', () => {
 
         const result = await shopService.buyItem(player, 'burger', -5);
 
-        expect(result).toBe(false);
+        expect(result).toMatchObject({ success: false, error: 'invalid_amount' });
         expect(player.takeMoney).not.toHaveBeenCalled();
     });
 
@@ -90,7 +90,7 @@ describe('ShopService', () => {
 
         const result = await shopService.buyItem(player, 'burger', 1);
 
-        expect(result).toBe(false);
+        expect(result).toMatchObject({ success: false, error: 'not_authorized' });
         expect(player.takeMoney).not.toHaveBeenCalled();
     });
 });

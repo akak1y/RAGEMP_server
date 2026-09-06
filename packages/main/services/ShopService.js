@@ -18,24 +18,24 @@ class ShopService {
         // Валидация входных данных
         if (!player || !player.accountId) {
             logger.warn('[ShopService] buyItem: игрок не авторизован');
-            return false;
+            return { success: false, error: 'not_authorized' };
         }
         if (!Number.isInteger(amount) || amount <= 0) {
             logger.warn(`[ShopService] buyItem: некорректное количество ${amount}`);
-            return false;
+            return { success: false, error: 'invalid_amount' };
         }
 
         // Проверяем товар в конфиге магазина
         const shopItem = ShopConfig.items.find((item) => item.itemId === itemId);
         if (!shopItem) {
             logger.warn(`[ShopService] buyItem: товар ${itemId} не найден в магазине`);
-            return false;
+            return { success: false, error: 'item_not_in_shop' };
         }
 
         // Проверяем товар в ItemConfig (существует ли вообще)
         if (!ItemConfig[itemId]) {
             logger.error(`[ShopService] buyItem: товар ${itemId} не найден в ItemConfig`);
-            return false;
+            return { success: false, error: 'item_not_in_config' };
         }
 
         const totalPrice = shopItem.price * amount;
@@ -46,18 +46,15 @@ class ShopService {
             logger.warn(
                 `[ShopService] buyItem: у игрока ${player.accountName} недостаточно средств для покупки ${itemId} x${amount}`
             );
-            return false;
+            return { success: false, error: 'insufficient_funds' };
         }
 
         // Выдаём предмет
         const inventoryOk = await inventoryService.giveItem(player, itemId, amount);
         if (!inventoryOk) {
-            // Если инвентарь не вместил — возвращаем деньги
-            logger.warn(
-                `[ShopService] buyItem: инвентарь игрока ${player.accountName} не вместил ${itemId} x${amount}, возврат денег`
-            );
+            logger.warn(`[ShopService] buyItem: инвентарь полон, возврат денег`);
             await player.addMoney(totalPrice, 'shop_refund');
-            return false;
+            return { success: false, error: 'inventory_full' };
         }
 
         // Логирование
@@ -70,7 +67,7 @@ class ShopService {
         logger.info(
             `[ShopService] Игрок ${player.accountName} купил: ${itemId} x${amount} за $${totalPrice}`
         );
-        return true;
+        return { success: true, data: { totalPrice } };
     }
 }
 
