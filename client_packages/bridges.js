@@ -9,6 +9,17 @@ const natives = globalThis.natives;
  * Мосты между игрой и Vue.
  */
 
+const LOCATION_KEYS = [
+    'dealership',
+    'garage',
+    'carCustom',
+    'fuel',
+    'courierStart',
+    'shop',
+    'hospital',
+    'mafiaBase',
+];
+
 // ДАННЫЕ → VUE ==============
 mp.events.add('client:ui:debugLog', (msg, type = 'info') => {
     ui.call('addDebugLog', msg, type);
@@ -66,29 +77,11 @@ mp.events.add('client:server:spawnCar', (vehDbId, pay) => {
 mp.events.add('client:locations:setAll', (json) => {
     try {
         const data = JSON.parse(json);
-        if (data.dealership)
-            state.positions.dealership = new mp.Vector3(
-                data.dealership.x,
-                data.dealership.y,
-                data.dealership.z
-            );
-        if (data.garage)
-            state.positions.garage = new mp.Vector3(data.garage.x, data.garage.y, data.garage.z);
-        if (data.carCustom)
-            state.positions.carCustom = new mp.Vector3(
-                data.carCustom.x,
-                data.carCustom.y,
-                data.carCustom.z
-            );
-        if (data.fuel) state.positions.fuel = new mp.Vector3(data.fuel.x, data.fuel.y, data.fuel.z);
-        if (data.courierStart)
-            state.positions.courierStart = new mp.Vector3(
-                data.courierStart.x,
-                data.courierStart.y,
-                data.courierStart.z
-            );
-        if (data.shop) state.positions.shop = new mp.Vector3(data.shop.x, data.shop.y, data.shop.z);
-
+        LOCATION_KEYS.forEach((key) => {
+            if (data[key]) {
+                state.positions[key] = new mp.Vector3(data[key].x, data[key].y, data[key].z);
+            }
+        });
         if (data.mining) {
             state.positions.miningRocks = (data.mining.rocks || []).map(
                 (r) => new mp.Vector3(r.x, r.y, r.z)
@@ -101,22 +94,8 @@ mp.events.add('client:locations:setAll', (json) => {
             state.miningRocksActive =
                 data.mining.active || (data.mining.rocks || []).map(() => true);
         }
-
         if (data.phonePrice !== undefined) {
             ui.call('setPriceDeliveryCar', data.phonePrice);
-        }
-        if (data.mafiaBase)
-            state.positions.mafiaBase = new mp.Vector3(
-                data.mafiaBase.x,
-                data.mafiaBase.y,
-                data.mafiaBase.z
-            );
-        if (data.hospital) {
-            state.positions.hospital = new mp.Vector3(
-                data.hospital.x,
-                data.hospital.y,
-                data.hospital.z
-            );
         }
     } catch (e) {}
 });
