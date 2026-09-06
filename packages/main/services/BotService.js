@@ -39,6 +39,18 @@ class BotService {
         });
     }
 
+    /**
+     * Отправить данные бота: одному игроку или всем сразу
+     * @private
+     */
+    #broadcastBotSetup(pedId, heading, targetPlayer = null) {
+        if (targetPlayer) {
+            targetPlayer.call('client:bot:setup', [pedId, heading]);
+        } else {
+            mp.players.forEach((p) => p.call('client:bot:setup', [pedId, heading]));
+        }
+    }
+
     async spawn(botName = 'TestBot') {
         try {
             await ensureBotReady();
@@ -89,7 +101,8 @@ class BotService {
                 shape,
                 greeted: new Set(),
             });
-            mp.players.forEach((p) => p.call('client:bot:setup', [ped.id, BotSpawnPos.h]));
+
+            this.#broadcastBotSetup(ped.id, BotSpawnPos.h);
             logger.info(`[BotService] Бот ${botName} заспавнен`);
         } catch (err) {
             logger.error(`[BotService] Ошибка спавна: ${err.message}`);
@@ -98,7 +111,7 @@ class BotService {
 
     sendBotsTo(player) {
         for (const [, bot] of this.bots) {
-            player.call('client:bot:setup', [bot.ped.id, BotSpawnPos.h]);
+            this.#broadcastBotSetup(bot.ped.id, BotSpawnPos.h, player);
         }
     }
 

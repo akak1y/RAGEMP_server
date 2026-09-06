@@ -51,5 +51,5 @@ module.exports = {
     initAuditModel,
     getAuditModel,
     getModel: getAuditModel,
-    ensureAuditReady
+    ensureAuditReady,
 };

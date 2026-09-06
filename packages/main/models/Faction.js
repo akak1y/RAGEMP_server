@@ -21,5 +21,5 @@ function getFactionModel() {
 
 module.exports = {
     getFactionModel,
-    getModel: getFactionModel
+    getModel: getFactionModel,
 };

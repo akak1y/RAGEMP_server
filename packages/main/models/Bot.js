@@ -38,5 +38,5 @@ module.exports = {
     initBotModel,
     getBotModel,
     getModel: getBotModel,
-    ensureBotReady
+    ensureBotReady,
 };

@@ -20,5 +20,5 @@ function getFactionMemberModel() {
 
 module.exports = {
     getFactionMemberModel,
-    getModel: getFactionMemberModel
+    getModel: getFactionMemberModel,
 };
