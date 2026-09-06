@@ -5,7 +5,7 @@ const inventoryService = require('../../services/InventoryService');
 const accountService = require('../../services/AccountService');
 const { getUserModel } = require('../../models/Users');
 const { getItemModel } = require('../../models/Item');
-const { MiningConfig, BotSpawnPos } = require('../../config');
+const { MiningConfig, BotConfig } = require('../../config');
 
 let sequelize;
 
@@ -73,7 +73,11 @@ describe('Шахта — интеграционные тесты', () => {
         });
         expect(items.reduce((s, it) => s + it.count, 0)).toBe(3);
 
-        player.position = { x: BotSpawnPos.x, y: BotSpawnPos.y, z: BotSpawnPos.z };
+        player.position = {
+            x: BotConfig.position.x,
+            y: BotConfig.position.y,
+            z: BotConfig.position.z,
+        };
         const result = await miningService.sellAllOre(player);
         expect(result.success).toBe(true);
 

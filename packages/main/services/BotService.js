@@ -1,6 +1,6 @@
 const { getBotModel, ensureBotReady } = require('../models/Bot');
 const accountService = require('./AccountService');
-const { BotSpawnPos, BotPedModel } = require('../config');
+const { BotConfig } = require('../config');
 const logger = require('../core/logger');
 
 /**
@@ -70,28 +70,41 @@ class BotService {
             await Bot.upsert({
                 name: botName,
                 account_id: account.id,
-                position: `${BotSpawnPos.x},${BotSpawnPos.y},${BotSpawnPos.z},${BotSpawnPos.h}`,
+                position: `${BotConfig.position.x},${BotConfig.position.y},${BotConfig.position.z},${BotConfig.position.h}`,
             });
 
             const ped = mp.peds.new(
-                mp.joaat(BotPedModel),
-                new mp.Vector3(BotSpawnPos.x, BotSpawnPos.y, BotSpawnPos.z),
-                BotSpawnPos.h,
+                mp.joaat(BotConfig.pedMode),
+                new mp.Vector3(BotConfig.position.x, BotConfig.position.y, BotConfig.position.z),
+                BotConfig.position.h,
                 0
             );
             try {
-                ped.rotation = new mp.Vector3(0, 0, BotSpawnPos.h);
+                ped.rotation = new mp.Vector3(0, 0, BotConfig.position.h);
             } catch (err) {
                 logger.error(`[BotService] Ошибка ped.rotation: ${err.message}`);
             }
 
             const label = mp.labels.new(
                 botName + ' (' + account.id + ')',
-                new mp.Vector3(BotSpawnPos.x, BotSpawnPos.y, BotSpawnPos.z + 1.0),
-                { color: [255, 255, 255, 255], drawDistance: 50, los: true }
+                new mp.Vector3(
+                    BotConfig.position.x,
+                    BotConfig.position.y,
+                    BotConfig.position.z + 1.0
+                ),
+                {
+                    color: [255, 255, 255, 255],
+                    drawDistance: BotConfig.labelDrawDistance,
+                    los: true,
+                }
             );
 
-            const shape = mp.colshapes.newSphere(BotSpawnPos.x, BotSpawnPos.y, BotSpawnPos.z, 5);
+            const shape = mp.colshapes.newSphere(
+                BotConfig.position.x,
+                BotConfig.position.y,
+                BotConfig.position.z,
+                BotConfig.greetingRadius
+            );
             this.shapes.set(shape, botName);
 
             this.bots.set(botName, {
@@ -102,7 +115,7 @@ class BotService {
                 greeted: new Set(),
             });
 
-            this.#broadcastBotSetup(ped.id, BotSpawnPos.h);
+            this.#broadcastBotSetup(ped.id, BotConfig.position.h);
             logger.info(`[BotService] Бот ${botName} заспавнен`);
         } catch (err) {
             logger.error(`[BotService] Ошибка спавна: ${err.message}`);
@@ -111,7 +124,7 @@ class BotService {
 
     sendBotsTo(player) {
         for (const [, bot] of this.bots) {
-            this.#broadcastBotSetup(bot.ped.id, BotSpawnPos.h, player);
+            this.#broadcastBotSetup(bot.ped.id, BotConfig.position.h, player);
         }
     }
 

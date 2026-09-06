@@ -1,4 +1,4 @@
-const { MiningConfig, BotSpawnPos } = require('../config');
+const { MiningConfig, BotConfig } = require('../config');
 const inventoryService = require('./InventoryService');
 const auditService = require('./AuditService');
 const locationService = require('./LocationService');
@@ -45,7 +45,7 @@ class MiningService {
         }
 
         const elapsed = Date.now() - record.startedAt;
-        if (elapsed < MiningConfig.mineTimeMs - 100) {
+        if (elapsed < MiningConfig.mineTimeMs - MiningConfig.antiCheatToleranceMs) {
             logger.warn(
                 `[MiningService] completeMine: ${player.accountName} слишком быстро (${elapsed}мс)`
             );
@@ -86,7 +86,7 @@ class MiningService {
     async sellAllOre(player) {
         if (!player || !player.accountId) return { success: false, message: 'Не авторизован' };
 
-        if (!isNear(player.position, BotSpawnPos, MiningConfig.interactRadius)) {
+        if (!isNear(player.position, BotConfig.position, MiningConfig.interactRadius)) {
             return { success: false, message: 'Подойдите к скупщику' };
         }
 

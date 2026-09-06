@@ -75,8 +75,12 @@ module.exports = {
     CarCustomPos: { x: -403.5, y: -71.6, z: 44.5, h: 52.0 },
     CustomBoxPos: { x: -401.3, y: -84.2, z: 53.9, h: 298.0 },
     HospitalPos: { x: -449.6, y: -133.1, z: 39.1, h: 120.6 },
-    BotSpawnPos: { x: -491.22, y: -133.64, z: 38.91, h: 333.5 },
-    BotPedModel: 'g_m_m_korboss_01',
+    BotConfig: {
+        position: { x: -491.22, y: -133.64, z: 38.91, h: 333.5 },
+        pedMode: 'g_m_m_korboss_01',
+        labelDrawDistance: 50,
+        greetingRadius: 5,
+    },
     FuelStationPos: { x: -374.4, y: -87.4, z: 45.7 },
     FuelPricePerLiter: 3, // цена за литр
     FuelInteractionRadius: 5, // расстояние заправки
@@ -115,6 +119,7 @@ module.exports = {
             { x: -478.0, y: -147.0, z: 37.65 },
         ],
         mineTimeMs: 5000,
+        antiCheatToleranceMs: 100,
         oreSellPrice: 25,
         interactRadius: 3.0,
         cooldownMs: 1000,
@@ -122,4 +127,7 @@ module.exports = {
         rockRespawnMaxMs: 60000,
     },
     MafiaBasePos: { x: -433.5, y: -57.0, z: 47.39, h: 0.0 },
+    LocationConfig: {
+        defaultInteractionRadius: 2.5,
+    },
 };

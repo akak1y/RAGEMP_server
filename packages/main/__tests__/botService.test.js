@@ -25,8 +25,13 @@ jest.mock('../services/AccountService', () => ({
 }));
 jest.mock('../core/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
 jest.mock('../config', () => ({
-    BotSpawnPos: { x: 100, y: 200, z: 30, h: 90 },
-    BotPedModel: 's_m_y_cop_01',
+    ...jest.requireActual('../config'),
+    BotConfig: {
+        position: { x: 100, y: 200, z: 30, h: 90 },
+        pedModel: 's_m_y_cop_01',
+        labelDrawDistance: 50,
+        greetingRadius: 5,
+    },
 }));
 
 const botService = require('../services/BotService');

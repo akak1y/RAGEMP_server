@@ -7,7 +7,8 @@ const {
     CourierConfig,
     ShopConfig,
     MiningConfig,
-    BotSpawnPos,
+    BotConfig,
+    LocationConfig,
 } = require('../config');
 const { isNear } = require('../utils/distance');
 const logger = require('../core/logger');
@@ -78,7 +79,7 @@ class LocationService {
             }, {}),
             // скупщик руды: невидимая зона
             mining_sell: {
-                pos: BotSpawnPos,
+                pos: BotConfig.position,
                 blip: null,
                 marker: null,
             },
@@ -162,7 +163,7 @@ class LocationService {
      * @param {number} [radius=2.5] - Радиус
      * @returns {boolean}
      */
-    isNear(key, position, radius = 2.5) {
+    isNear(key, position, radius = LocationConfig.defaultInteractionRadius) {
         const loc = this.getPosition(key);
         if (!loc || !position) return false;
         return isNear(position, loc, radius);

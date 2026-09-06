@@ -2,7 +2,7 @@ const miningService = require('../services/MiningService');
 const inventoryService = require('../services/InventoryService');
 const auditService = require('../services/AuditService');
 const locationService = require('../services/LocationService');
-const { MiningConfig, BotSpawnPos } = require('../config');
+const { MiningConfig, BotConfig } = require('../config');
 
 jest.mock('../services/InventoryService');
 jest.mock('../services/AuditService');
@@ -21,7 +21,7 @@ const atRock = () => ({
 const atBot = () => ({
     accountId: 1,
     accountName: 'miner1',
-    position: { x: BotSpawnPos.x, y: BotSpawnPos.y, z: BotSpawnPos.z },
+    position: { x: BotConfig.position.x, y: BotConfig.position.y, z: BotConfig.position.z },
 });
 
 describe('MiningService', () => {

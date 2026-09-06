@@ -1,4 +1,4 @@
-const { MiningConfig, BotSpawnPos } = require('../config');
+const { MiningConfig, BotConfig } = require('../config');
 const miningService = require('../services/MiningService');
 const inventoryService = require('../services/InventoryService');
 const isLoggedIn = require('../middleware/isLoggedIn');
@@ -17,7 +17,7 @@ mp.events.add(
             player.call('client:mining:setData', [
                 JSON.stringify({
                     rocks: MiningConfig.rocks,
-                    botPos: BotSpawnPos,
+                    botPos: BotConfig.position,
                     active: miningService.getRocksActive(),
                 }),
             ]);

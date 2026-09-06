@@ -2,6 +2,7 @@ const locationService = require('../services/LocationService');
 
 jest.mock('../core/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
 jest.mock('../config', () => ({
+    ...jest.requireActual('../config'),
     DealershipPos: { x: 0, y: 0, z: 0 },
     GaragePos: { x: 10, y: 0, z: 0 },
     CarCustomPos: { x: 20, y: 0, z: 0, h: 90 },
@@ -13,7 +14,9 @@ jest.mock('../config', () => ({
     ShopConfig: {
         position: { x: 60, y: 0, z: 0 },
     },
-    BotSpawnPos: { x: 70, y: 0, z: 0 },
+    BotConfig: {
+        position: { x: 100, y: 200, z: 30, h: 90 },
+    },
     MiningConfig: {
         rocks: [
             { x: -484.0, y: -134.0, z: 37.84 },
