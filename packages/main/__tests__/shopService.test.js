@@ -29,7 +29,7 @@ describe('ShopService', () => {
 
     test('успешная покупка: деньги списаны, предмет выдан', async () => {
         const player = makePlayer();
-        inventoryService.giveItem.mockResolvedValue(true);
+        inventoryService.giveItem.mockResolvedValue({ success: true });
         auditService.logPlayer.mockResolvedValue({ id: 1 });
 
         const result = await shopService.buyItem(player, 'burger', 2);
@@ -57,7 +57,7 @@ describe('ShopService', () => {
 
     test('инвентарь не вместил: деньги возвращены', async () => {
         const player = makePlayer();
-        inventoryService.giveItem.mockResolvedValue(false);
+        inventoryService.giveItem.mockResolvedValue({ success: false, error: 'inventory_full' });
 
         const result = await shopService.buyItem(player, 'burger', 2);
 

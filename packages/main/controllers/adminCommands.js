@@ -63,8 +63,8 @@ registerCommand('giveitem', {
             return player.outputChatBox(
                 'Использование: /giveitem [phone / burger / water] [количество]'
             );
-        const success = await inventoryService.giveItem(player, itemId, count);
-        if (success) {
+        const result = await inventoryService.giveItem(player, itemId, count);
+        if (!result.success) {
             player.outputChatBox(`!{#33FF33}[Админ] Получен предмет: ${itemId} (${count} шт)`);
         } else {
             player.outputChatBox(

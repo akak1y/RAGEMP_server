@@ -82,7 +82,7 @@ describe('InventoryService', () => {
             mockItemModel.create.mockResolvedValue(createdItem);
 
             const result = await inventoryService.giveItem(mockPlayer, 'burger', 3);
-            expect(result).toBe(true);
+            expect(result).toMatchObject({ success: true });
             expect(mockItemModel.create).toHaveBeenCalledWith(
                 {
                     owner_id: 1,
@@ -103,7 +103,7 @@ describe('InventoryService', () => {
             mockPlayer.inventory[0] = { dbId: 100, itemId: 'water', count: 5 };
 
             const result = await inventoryService.giveItem(mockPlayer, 'water', 3);
-            expect(result).toBe(true);
+            expect(result).toMatchObject({ success: true });
             expect(mockPlayer.inventory[0].count).toBe(8);
             expect(mockItemModel.update).toHaveBeenCalledWith(
                 { count: 8 },
@@ -113,29 +113,36 @@ describe('InventoryService', () => {
 
         test('отклоняет несуществующий itemId', async () => {
             const result = await inventoryService.giveItem(mockPlayer, 'fake_item', 1);
-            expect(result).toBe(false);
+            expect(result).toMatchObject({ success: false, error: 'item_not_in_config' });
             expect(mockItemModel.create).not.toHaveBeenCalled();
         });
 
         test('отклоняет отрицательное количество', async () => {
             const logger = require('../core/logger');
             const result = await inventoryService.giveItem(mockPlayer, 'burger', -5);
-            expect(result).toBe(false);
+            expect(result).toMatchObject({ success: false, error: 'invalid_amount' });
             expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('некорректное'));
         });
 
         test('отклоняет нулевое количество', async () => {
             const result = await inventoryService.giveItem(mockPlayer, 'burger', 0);
-            expect(result).toBe(false);
+            expect(result).toMatchObject({ success: false, error: 'invalid_amount' });
         });
 
-        test('возвращает false, если нет места в инвентаре', async () => {
+        test('отклоняет неавторизованного игрока', async () => {
+            mockPlayer.accountId = null;
+            const result = await inventoryService.giveItem(mockPlayer, 'burger', 1);
+            expect(result).toMatchObject({ success: false, error: 'not_authorized' });
+            expect(mockItemModel.create).not.toHaveBeenCalled();
+        });
+
+        test('возвращает inventory_full, если нет места в инвентаре', async () => {
             for (let i = 0; i < 20; i++) {
                 mockPlayer.inventory[i] = { dbId: i, itemId: 'burger', count: 5 };
             }
 
             const result = await inventoryService.giveItem(mockPlayer, 'burger', 1);
-            expect(result).toBe(false);
+            expect(result).toMatchObject({ success: false, error: 'inventory_full' });
         });
 
         test('синхронизирует инвентарь с клиентом', async () => {
@@ -164,10 +171,10 @@ describe('InventoryService', () => {
             expect(mockTransaction.rollback).not.toHaveBeenCalled();
         });
 
-        test('откатывает транзакцию при ошибке БД и не трогает память', async () => {
+        test('откатывает транзакцию при ошибке БД и возвращает db_error', async () => {
             mockItemModel.create.mockRejectedValue(new Error('db down'));
             const result = await inventoryService.giveItem(mockPlayer, 'burger', 1);
-            expect(result).toBe(false);
+            expect(result).toMatchObject({ success: false, error: 'db_error' });
             expect(mockTransaction.rollback).toHaveBeenCalled();
             expect(mockPlayer.inventory[0]).toBeNull(); // память осталась нетронутой
         });
@@ -178,7 +185,7 @@ describe('InventoryService', () => {
             mockPlayer.inventory[0] = { dbId: 100, itemId: 'burger', count: 5 };
 
             const result = await inventoryService.removeItem(mockPlayer, 'burger', 3);
-            expect(result).toBe(true);
+            expect(result).toMatchObject({ success: true });
             expect(mockPlayer.inventory[0].count).toBe(2);
             expect(mockItemModel.update).toHaveBeenCalledWith(
                 { count: 2 },
@@ -190,7 +197,7 @@ describe('InventoryService', () => {
             mockPlayer.inventory[0] = { dbId: 100, itemId: 'burger', count: 3 };
 
             const result = await inventoryService.removeItem(mockPlayer, 'burger', 3);
-            expect(result).toBe(true);
+            expect(result).toMatchObject({ success: true });
             expect(mockPlayer.inventory[0]).toBeNull();
             expect(mockItemModel.destroy).toHaveBeenCalledWith({
                 where: { id: 100 },
@@ -198,15 +205,27 @@ describe('InventoryService', () => {
             });
         });
 
-        test('возвращает false, если предмета нет', async () => {
+        test('возвращает not_enough_items, если предмета нет', async () => {
             const result = await inventoryService.removeItem(mockPlayer, 'burger', 1);
-            expect(result).toBe(false);
+            expect(result).toMatchObject({ success: false, error: 'not_enough_items' });
         });
 
-        test('возвращает false, если недостаточно количества', async () => {
+        test('возвращает not_enough_items, если недостаточно количества', async () => {
             mockPlayer.inventory[0] = { dbId: 100, itemId: 'burger', count: 2 };
             const result = await inventoryService.removeItem(mockPlayer, 'burger', 5);
-            expect(result).toBe(false);
+            expect(result).toMatchObject({ success: false, error: 'not_enough_items' });
+        });
+
+        test('отклоняет неавторизованного игрока', async () => {
+            mockPlayer.accountId = null;
+            const result = await inventoryService.removeItem(mockPlayer, 'burger', 1);
+            expect(result).toMatchObject({ success: false, error: 'not_authorized' });
+        });
+
+        test('отклоняет некорректное количество', async () => {
+            mockPlayer.inventory[0] = { dbId: 100, itemId: 'burger', count: 5 };
+            const result = await inventoryService.removeItem(mockPlayer, 'burger', -1);
+            expect(result).toMatchObject({ success: false, error: 'invalid_amount' });
         });
 
         test('суммирует предметы из разных слотов при удалении', async () => {
@@ -214,9 +233,18 @@ describe('InventoryService', () => {
             mockPlayer.inventory[1] = { dbId: 101, itemId: 'burger', count: 2 };
 
             const result = await inventoryService.removeItem(mockPlayer, 'burger', 4);
-            expect(result).toBe(true);
+            expect(result).toMatchObject({ success: true });
             expect(mockPlayer.inventory[0]).toBeNull();
             expect(mockPlayer.inventory[1].count).toBe(1);
+        });
+
+        test('откатывает транзакцию при ошибке БД и возвращает db_error', async () => {
+            mockPlayer.inventory[0] = { dbId: 100, itemId: 'burger', count: 5 };
+            mockItemModel.update.mockRejectedValue(new Error('db down'));
+
+            const result = await inventoryService.removeItem(mockPlayer, 'burger', 2);
+            expect(result).toMatchObject({ success: false, error: 'db_error' });
+            expect(mockTransaction.rollback).toHaveBeenCalled();
         });
     });
 

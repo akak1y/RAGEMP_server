@@ -50,11 +50,11 @@ class ShopService {
         }
 
         // Выдаём предмет
-        const inventoryOk = await inventoryService.giveItem(player, itemId, amount);
-        if (!inventoryOk) {
+        const invResult = await inventoryService.giveItem(player, itemId, amount);
+        if (!invResult.success) {
             logger.warn(`[ShopService] buyItem: инвентарь полон, возврат денег`);
             await player.addMoney(totalPrice, 'shop_refund');
-            return { success: false, error: 'inventory_full' };
+            return { success: false, error: invResult.error };
         }
 
         // Логирование

@@ -62,10 +62,10 @@ class MiningService {
 
         const shiftCount = this.shiftStats.get(player.accountId) || 0;
 
-        const given = await inventoryService.giveItem(player, 'ore', 1);
-        if (!given) {
+        const invResult = await inventoryService.giveItem(player, 'ore', 1);
+        if (!invResult.success) {
             logger.warn(`[MiningService] completeMine: инвентарь ${player.accountName} полон`);
-            return { success: false, error: 'inventory_full' };
+            return { success: false, error: invResult.error };
         }
 
         this.shiftStats.set(player.accountId, shiftCount + 1);
@@ -97,8 +97,8 @@ class MiningService {
             return { success: false, message: 'Нет руды для продажи' };
         }
 
-        const removed = await inventoryService.removeItem(player, 'ore', oreCount);
-        if (!removed) {
+        const removeResult = await inventoryService.removeItem(player, 'ore', oreCount);
+        if (!removeResult.success) {
             return { success: false, message: 'Ошибка инвентаря' };
         }
 

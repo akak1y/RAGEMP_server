@@ -71,13 +71,18 @@ class InventoryService {
      * @param {mp.Player} player - Игрок
      * @param {string} itemId - ID предмета из ItemConfig
      * @param {number} [amount=1] - Количество
-     * @returns {Promise<boolean>} Успешность
+     * @returns {Promise<{success: boolean, error?: string}>}
      */
     async giveItem(player, itemId, amount = 1) {
-        if (!ItemConfig[itemId]) return false;
+        if (!player || !player.accountId) {
+            return { success: false, error: 'not_authorized' };
+        }
+        if (!ItemConfig[itemId]) {
+            return { success: false, error: 'item_not_in_config' };
+        }
         if (!Number.isInteger(amount) || amount <= 0) {
             logger.warn(`[InventoryService] giveItem отклонена: некорректное количество ${amount}`);
-            return false;
+            return { success: false, error: 'invalid_amount' };
         }
         const config = ItemConfig[itemId];
 
@@ -86,7 +91,7 @@ class InventoryService {
             if (slot && slot.itemId === itemId) space += Math.max(0, config.maxStack - slot.count);
             if (!slot) space += config.maxStack;
         }
-        if (space < amount) return false; // инвентарь не вместит
+        if (space < amount) return { success: false, error: 'inventory_full' };
 
         const planned = player.inventory.map((s) => (s ? { ...s } : null));
         const writes = [];
@@ -136,12 +141,12 @@ class InventoryService {
         } catch (err) {
             await t.rollback();
             logger.error(`[InventoryService] giveItem транзакция отменена: ${err.message}`);
-            return false;
+            return { success: false, error: 'db_error' };
         }
         player.inventory = planned;
         logger.info(`[InventoryService] Игроку ${player.accountName} выдано: ${itemId} x${amount}`);
         this.syncInventory(player);
-        return true;
+        return { success: true };
     }
 
     /**
@@ -149,10 +154,18 @@ class InventoryService {
      * @param {mp.Player} player - Игрок
      * @param {string} itemId - ID предмета
      * @param {number} [amount=1] - Количество
-     * @returns {Promise<boolean>} Успешность
+     * @returns {Promise<{success: boolean, error?: string}>}
      */
     async removeItem(player, itemId, amount = 1) {
-        if (!this.hasItem(player, itemId, amount)) return false;
+        if (!player || !player.accountId) {
+            return { success: false, error: 'not_authorized' };
+        }
+        if (!Number.isInteger(amount) || amount <= 0) {
+            return { success: false, error: 'invalid_amount' };
+        }
+        if (!this.hasItem(player, itemId, amount)) {
+            return { success: false, error: 'not_enough_items' };
+        }
 
         const planned = player.inventory.map((s) => (s ? { ...s } : null));
         const writes = [];
@@ -190,14 +203,14 @@ class InventoryService {
         } catch (err) {
             await t.rollback();
             logger.error(`[InventoryService] removeItem транзакция отменена: ${err.message}`);
-            return false;
+            return { success: false, error: 'db_error' };
         }
         player.inventory = planned;
         logger.info(
             `[InventoryService] У игрока ${player.accountName} удалено: ${itemId} x${amount}`
         );
         this.syncInventory(player);
-        return true;
+        return { success: true };
     }
 }
 

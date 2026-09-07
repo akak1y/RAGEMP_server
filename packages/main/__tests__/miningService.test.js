@@ -59,7 +59,7 @@ describe('MiningService', () => {
             miningService.startWork(player, 0);
             miningService.activeMiners.get(1).startedAt -= MiningConfig.mineTimeMs + 100;
 
-            inventoryService.giveItem.mockResolvedValue(true);
+            inventoryService.giveItem.mockResolvedValue({ success: true });
             auditService.logPlayer.mockResolvedValue({ id: 1 });
             locationService.hideRock.mockImplementation(() => {});
 
@@ -99,7 +99,7 @@ describe('MiningService', () => {
             player.addMoney = jest.fn().mockResolvedValue(true);
 
             inventoryService.countItem.mockReturnValue(5);
-            inventoryService.removeItem.mockResolvedValue(true);
+            inventoryService.removeItem.mockResolvedValue({ success: true });
             auditService.logPlayer.mockResolvedValue({ id: 1 });
 
             const result = await miningService.sellAllOre(player);
