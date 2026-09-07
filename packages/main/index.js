@@ -10,20 +10,7 @@ Module.prototype.require = function (id) {
 const fs = require('fs');
 const path = require('path');
 
-const CRASH_LOG = path.join(__dirname, 'crash.log');
-
-/**
- * Страховка: стек ошибки пишем в файл, даже если консоль закрылась.
- */
-function writeCrashLog(err) {
-    try {
-        fs.appendFileSync(
-            CRASH_LOG,
-            `\n${new Date().toISOString()}\n${err.stack || err.message}\n`
-        );
-    } catch (e) {}
-}
-
+const { writeCrashLog } = require('./core/crashLogger');
 const { initDB, getSequelize } = require('./core/db');
 const { initRedis, getRedis } = require('./core/redis');
 const { registerAll } = require('./core/autoRegister');
