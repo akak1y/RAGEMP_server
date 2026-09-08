@@ -1,8 +1,10 @@
 const tuningService = require('../services/TuningService');
+const vehicleService = require('../services/VehicleService')
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
 const rateLimit = require('../middleware/rateLimit');
 const { CustomBoxPos, TuningConfig } = require('../config');
+const { getSequelize } = require('../core/db');
 const { sendEvent } = require('../core/eventSender');
 
 /**
@@ -51,7 +53,6 @@ mp.events.add(
             const veh = player.vehicle;
             if (!veh || !veh.vehicleDbId) return;
 
-            const { getSequelize } = require('../core/db');
             const sequelize = getSequelize();
 
             let realPrice = null;
@@ -86,7 +87,7 @@ mp.events.add(
                 return;
             }
             player.applyMoneyDelta(-realPrice);
-            const freshCar = await require('../services/VehicleService').getVehicleForOwner(
+            const freshCar = await vehicleService.getVehicleForOwner(
                 veh.vehicleDbId,
                 player.accountId
             );
