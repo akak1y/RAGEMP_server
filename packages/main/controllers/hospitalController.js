@@ -13,7 +13,7 @@ mp.events.add(
         [isLoggedIn, rateLimit('hospital:heal', 1, 5)],
         async (player) => {
             if (player.health >= 100) {
-                return psendEvent(player, 'client:hospital:result', [
+                return sendEvent(player, 'client:hospital:result', [
                     true,
                     'Вы уже здоровы. Лечение не требуется.',
                 ]);

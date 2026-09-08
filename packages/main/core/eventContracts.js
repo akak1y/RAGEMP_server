@@ -45,6 +45,10 @@ const contracts = {
     'client:dealership:setConfig': ['string'],
     'client:phone:setCarList': ['string', 'string'],
     'client:phone:requestPriceDeliveryCar': ['number'],
+    'client:phone:updateCars': [],
+
+    // ===== InventoryService.js =====
+    'client:inventory:update': ['string', 'string'],
 
     // ===== BotService.js =====
     'client:bot:setup': ['number', 'number'],
@@ -85,4 +89,4 @@ function validateEvent(eventName, args) {
     return false;
 }
 
-module.exports = { validateEvent };
+module.exports = { contracts, validateEvent };
