@@ -49,6 +49,58 @@
                     </div>
                 </div>
 
+                <div v-if="active === 'events'">
+                    <h2>События сервер → клиент</h2>
+                    <div style="margin-bottom: 10px">
+                        <input
+                            v-model="eventFilter"
+                            placeholder="Фильтр по событию или игроку..."
+                            style="width: 300px"
+                        />
+                        <label style="margin-left: 10px">
+                            <input type="checkbox" v-model="eventShowErrorsOnly" />
+                            Только ошибки валидации
+                        </label>
+                        <button @click="clearEvents" style="margin-left: 10px">Очистить</button>
+                        <span style="margin-left: 20px; color: #888">
+                            Всего: {{ eventLog.length }} | Показано: {{ filteredEvents.length }}
+                        </span>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Время</th>
+                                <th>Игрок</th>
+                                <th>Событие</th>
+                                <th>Аргументы</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr
+                                v-for="(e, i) in filteredEvents"
+                                :key="i"
+                                :style="{ background: e.ok ? '' : '#422' }"
+                            >
+                                <td>{{ new Date(e.time).toLocaleTimeString('ru-RU') }}</td>
+                                <td>{{ e.player }}</td>
+                                <td>{{ e.event }}</td>
+                                <td class="args-cell">
+                                    <div class="args-compact">{{ fmtArgs(e.args) }}</div>
+                                    <div class="args-tip">
+                                        <div v-for="(line, li) in fmtArgsLines(e.args)" :key="li">
+                                            {{ line }}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td :style="{ color: e.ok ? '#4f4' : '#f44', fontWeight: 'bold' }">
+                                    {{ e.ok ? '✔ OK' : '✖ FAIL' }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
                 <div v-if="active === 'metrics'">
                     <p style="color: #8b949e; margin: 8px 0">
                         <button @click="refreshMetricsNow()">Обновить</button>
@@ -115,7 +167,7 @@
                     </button>
                 </div>
 
-                <table v-if="!['map','metrics'].includes(active) && rows.length">
+                <table v-if="!['map','metrics','events'].includes(active) && rows.length">
                     <tr>
                         <th v-for="c in columns" :key="c">{{c}}</th>
                         <th v-if="['accounts','vehicles','items'].includes(active)">Действия</th>
@@ -165,7 +217,9 @@
                         </td>
                     </tr>
                 </table>
-                <p v-if="!['map','metrics'].includes(active) && !rows.length">Нет данных</p>
+                <p v-if="!['map','metrics','events'].includes(active) && !rows.length">
+                    Нет данных
+                </p>
             </div>
         </div>
 

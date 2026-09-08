@@ -7,6 +7,7 @@ const authService = require('../services/AuthService');
 const auditService = require('../services/AuditService');
 const logger = require('../core/logger');
 const metrics = require('../core/metrics');
+const eventLog = require('../core/eventLog');
 const {
     handleMessage,
     getCreateSchema,
@@ -150,6 +151,7 @@ function start() {
         );
         socket.send(JSON.stringify({ type: 'markers', markers: MAP_MARKERS }));
         socket.send(JSON.stringify({ type: 'create_schema', schema: getCreateSchema() }));
+        socket.send(JSON.stringify({ type: 'event_log_init', events: eventLog.getRecent(100) }));
 
         socket.on('message', (data) => {
             let msg;
@@ -164,6 +166,10 @@ function start() {
 
     auditService.subscribe((row) => {
         broadcast({ type: 'audit_row', row: row.toJSON ? row.toJSON() : row });
+    });
+
+    eventLog.subscribe((event) => {
+        broadcast({ type: 'event_log', event });
     });
 
     setInterval(() => {

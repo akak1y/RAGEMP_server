@@ -203,3 +203,41 @@ input {
 .pager button:disabled {
     opacity: 0.4;
 }
+.event-status-ok {
+    color: #4f4;
+    font-weight: bold;
+}
+.event-status-fail {
+    color: #f44;
+    font-weight: bold;
+}
+.args-cell {
+    position: relative;
+    max-width: 420px;
+}
+.args-compact {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.args-tip {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: 100%;
+    z-index: 100;
+    background: #0d1117;
+    border: 1px solid #456;
+    border-radius: 4px;
+    padding: 8px 10px;
+    max-width: 560px;
+    white-space: pre;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #c9d1d9;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.7);
+    pointer-events: none;
+}
+tr:hover .args-tip {
+    display: block;
+}

@@ -28,7 +28,7 @@ createApp({
         players: [],
         active: 'accounts',
         tables: {},
-        tabs: ['accounts', 'vehicles', 'items', 'audit', 'metrics', 'map'],
+        tabs: ['accounts', 'vehicles', 'items', 'audit', 'events', 'metrics', 'map'],
         GAME_BOUNDS: { minX: -5693, minY: -4045, maxX: 6729, maxY: 8392 },
         staticMarkers: [],
         editing: null,
@@ -60,6 +60,9 @@ createApp({
         auditTotal: 0,
         metricsCountdown: 15,
         metricsRows: [],
+        eventLog: [],
+        eventFilter: '',
+        eventShowErrorsOnly: false,
     }),
     computed: {
         rows() {
@@ -68,6 +71,21 @@ createApp({
         columns() {
             if (TABLE_COLUMNS[this.active]) return TABLE_COLUMNS[this.active];
             return this.rows.length ? Object.keys(this.rows[0]) : [];
+        },
+        filteredEvents() {
+            let events = this.eventLog;
+            if (this.eventShowErrorsOnly) {
+                events = events.filter((e) => !e.ok);
+            }
+            if (this.eventFilter) {
+                const filter = this.eventFilter.toLowerCase();
+                events = events.filter(
+                    (e) =>
+                        e.event.toLowerCase().includes(filter) ||
+                        e.player.toLowerCase().includes(filter)
+                );
+            }
+            return events;
         },
     },
     methods: {
@@ -251,6 +269,13 @@ createApp({
                     this.createSchema = m.schema;
                 }
                 if (m.type === 'metrics') this.metricsRows = m.rows;
+                if (m.type === 'event_log_init') {
+                    this.eventLog = m.events.slice().reverse();
+                }
+                if (m.type === 'event_log') {
+                    this.eventLog.unshift(m.event);
+                    if (this.eventLog.length > 200) this.eventLog.pop();
+                }
             };
         },
         drawStaticMarkers() {
@@ -361,6 +386,69 @@ createApp({
             if (r.name === 'rage_economy_money_total')
                 return '$' + Number(r.value).toLocaleString('ru-RU');
             return r.value;
+        },
+        clearEvents() {
+            this.eventLog = [];
+        },
+        fmtArgs(args) {
+            return args
+                .map((a) => {
+                    if (typeof a === 'string') {
+                        const t = a.trim();
+                        if (t.startsWith('{') || t.startsWith('[')) {
+                            try {
+                                const parsed = JSON.parse(t);
+                                return Array.isArray(parsed)
+                                    ? `JSON[${parsed.length}]`
+                                    : `JSON{${Object.keys(parsed).length}}`;
+                            } catch {
+                                return a.slice(0, 40) + '…';
+                            }
+                        }
+                        return a.length > 40 ? a.slice(0, 40) + '…' : a;
+                    }
+                    return String(a);
+                })
+                .join(', ');
+        },
+        fmtArgsLines(args) {
+            const lines = [];
+            args.forEach((a, i) => {
+                if (typeof a === 'string') {
+                    const t = a.trim();
+                    if (t.startsWith('{') || t.startsWith('[')) {
+                        try {
+                            const parsed = JSON.parse(t);
+                            lines.push(`arg${i}:`);
+                            if (Array.isArray(parsed)) {
+                                let entries = parsed.map((el, j) => [j, el]);
+                                if (parsed.length > 8)
+                                    entries = entries.filter(([, el]) => el !== null);
+                                const shown = entries.slice(0, 8);
+                                shown.forEach(([j, el]) =>
+                                    lines.push(`  [${j}] ${this.compact(el)}`)
+                                );
+                                if (entries.length > 8) lines.push(`  … ещё ${entries.length - 8}`);
+                            } else {
+                                Object.entries(parsed).forEach(([k, v]) =>
+                                    lines.push(`  ${k}: ${this.compact(v)}`)
+                                );
+                            }
+                            return;
+                        } catch {}
+                    }
+                }
+                lines.push(`arg${i}: ${this.compact(a)}`);
+            });
+            return lines;
+        },
+        compact(v) {
+            if (v === null) return 'null';
+            if (typeof v === 'object') {
+                const s = JSON.stringify(v);
+                return s.length > 60 ? s.slice(0, 60) + '…' : s;
+            }
+            return String(v);
         },
     },
 }).mount('#app');

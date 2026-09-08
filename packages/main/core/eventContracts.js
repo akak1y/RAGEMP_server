@@ -4,7 +4,7 @@
 const contracts = {
     // ===== authController.js =====
     'client:account:authError': ['string'],
-    'client:account:hideAuth': ['boolean'],
+    'client:account:hideAuth': ['number'],
 
     // ===== moneyApi.js + authController.js =====
     'client:updateMoney': ['number'],
