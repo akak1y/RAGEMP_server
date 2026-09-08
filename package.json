@@ -10,7 +10,8 @@
         "lint:fix": "eslint . --fix",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
-        "docs:events": "node packages/main/scripts/gen-event-docs.js"
+        "docs:events": "node packages/main/scripts/gen-event-docs.js",
+        "build:tiles": "npx -y canvasmapper slice -i packages/main/websocket/admin/map.png -o packages/main/websocket/admin/tiles -s 256 -f jpeg -q 85"
     },
     "devDependencies": {
         "@eslint/js": "^9.39.5",

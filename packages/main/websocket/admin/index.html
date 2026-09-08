@@ -3,7 +3,6 @@
     <head>
         <meta charset="utf-8" />
         <title>Админка RAGE MP</title>
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
         <link rel="stylesheet" href="style.css" />
     </head>
     <body>
@@ -42,11 +41,7 @@
                 </div>
 
                 <div v-show="active==='map'" class="map-wrap">
-                    <div id="map" style="height: 520px; margin-top: 10px"></div>
-                    <div class="map-btns">
-                        <button @click="zoomIn">+</button>
-                        <button @click="zoomOut">−</button>
-                    </div>
+                    <div id="map"></div>
                 </div>
 
                 <div v-if="active === 'events'">
@@ -224,7 +219,7 @@
         </div>
 
         <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <script src="https://unpkg.com/canvasmapper/dist/canvasmapper.umd.js"></script>
         <script src="app.js"></script>
     </body>
 </html>

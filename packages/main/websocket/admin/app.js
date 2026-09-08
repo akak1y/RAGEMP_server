@@ -1,3 +1,4 @@
+/* global CanvasMapper */
 const { createApp } = Vue;
 
 const TABLE_COLUMNS = {
@@ -29,7 +30,7 @@ createApp({
         active: 'accounts',
         tables: {},
         tabs: ['accounts', 'vehicles', 'items', 'audit', 'events', 'metrics', 'map'],
-        GAME_BOUNDS: { minX: -5693, minY: -4045, maxX: 6729, maxY: 8392 },
+        GAME_BOUNDS: { minX: -5705.3, minY: -4054.4, maxX: 6739.8, maxY: 8390.7 },
         staticMarkers: [],
         editing: null,
         editValue: '',
@@ -107,7 +108,6 @@ createApp({
             if (t === 'map') {
                 this.$nextTick(() => {
                     this.initMap();
-                    if (this.map) this.map.invalidateSize();
                     this.updateMarkers(this.players);
                 });
                 return;
@@ -134,61 +134,115 @@ createApp({
             }
             this.ws.send(JSON.stringify({ type: 'get_table', table: t }));
         },
-        zoomIn() {
-            if (this.map) this.map.zoomIn();
-        },
-        zoomOut() {
-            if (this.map) this.map.zoomOut();
-        },
         initMap() {
             if (this.map) return;
-            this.map = L.map('map', {
-                crs: L.CRS.Simple,
+            const container = document.getElementById('map');
+            this.map = new CanvasMapper.MapEngine(container, {
                 minZoom: -2,
-                maxZoom: 5,
-                attributionControl: false,
-                zoomControl: false,
+                maxZoom: 6,
+                source: new CanvasMapper.UrlTileSource({
+                    urlTemplate: 'tiles/{z}/{x}_{y}.jpeg',
+                    minNativeZoom: 0,
+                    maxNativeZoom: 5, // maxZoom из tiles/manifest.json
+                }),
+                controls: { position: 'topright' },
             });
-            const bounds = [
-                [0, 0],
-                [1000, 1000],
-            ];
-            this.map.fitBounds(bounds);
-            const img = new Image();
-            img.onload = () => L.imageOverlay('map.jpg', bounds).addTo(this.map);
-            img.src = 'map.jpg';
+            const fit = Math.log2(Math.min(container.clientWidth, container.clientHeight) / 256);
+            this.map.setView({ x: 128, y: 128, zoom: fit });
+            this.playersLayer = this.map.createLayer('players', { zIndex: 2 });
+            this.poisLayer = this.map.createLayer('pois', { zIndex: 1 });
             this.markerObjs = {};
             this.drawStaticMarkers();
+            this.updateMarkers(this.players);
         },
-        toMap(x, y) {
+        toWorld(x, y) {
             const B = this.GAME_BOUNDS;
             const nx = (x - B.minX) / (B.maxX - B.minX);
             const ny = (y - B.minY) / (B.maxY - B.minY);
-            return [ny * 1000, nx * 1000];
+            return { x: nx * 256, y: (1 - ny) * 256 };
+        },
+        emojiIcon(emoji) {
+            if (!this._emojiCache) this._emojiCache = {};
+            if (this._emojiCache[emoji]) return this._emojiCache[emoji];
+            const px = 48;
+            const c = document.createElement('canvas');
+            c.width = c.height = px;
+            const g = c.getContext('2d');
+            g.font = `${px - 6}px serif`;
+            g.textAlign = 'center';
+            g.textBaseline = 'middle';
+            g.fillText(emoji, px / 2, px / 2 + 2);
+            this._emojiCache[emoji] = c.toDataURL();
+            return this._emojiCache[emoji];
         },
         updateMarkers(players) {
-            if (!this.map || this.active !== 'map') return;
+            if (!this.playersLayer) return;
             const seen = new Set();
             for (const p of players) {
                 seen.add(p.id);
-                const pos = this.toMap(p.x, p.y);
-                if (!this.markerObjs[p.id]) {
-                    const icon = L.divIcon({
-                        className: '',
-                        iconSize: [10, 10],
-                        html: `<div class="pm"><span>${p.name}</span></div>`,
-                    });
-                    this.markerObjs[p.id] = L.marker(pos, { icon }).addTo(this.map);
+                const w = this.toWorld(p.x, p.y);
+                const rec = this.markerObjs[p.id];
+                if (!rec) {
+                    this.markerObjs[p.id] = {
+                        marker: this.playersLayer.addMarker({
+                            x: w.x,
+                            y: w.y,
+                            color: '#4f4',
+                            size: 12,
+                            label: p.name,
+                            data: p.id,
+                        }),
+                    };
                 } else {
-                    this.markerObjs[p.id].setLatLng(pos);
+                    rec.fx = rec.marker.x;
+                    rec.fy = rec.marker.y;
+                    rec.tx = w.x;
+                    rec.ty = w.y;
+                    rec.t0 = performance.now();
                 }
             }
             for (const key of Object.keys(this.markerObjs)) {
                 if (!seen.has(Number(key))) {
-                    this.markerObjs[key].remove();
+                    this.markerObjs[key].marker.remove();
                     delete this.markerObjs[key];
                 }
             }
+            this.startLerpLoop();
+        },
+        startLerpLoop() {
+            if (this._lerpRunning) return;
+            this._lerpRunning = true;
+            const step = (now) => {
+                let active = 0;
+                for (const rec of Object.values(this.markerObjs)) {
+                    if (rec.tx === undefined) continue;
+                    const t = Math.min(1, (now - rec.t0) / 2800);
+                    const e = t * (2 - t);
+                    rec.marker.setPosition(
+                        rec.fx + (rec.tx - rec.fx) * e,
+                        rec.fy + (rec.ty - rec.fy) * e
+                    );
+                    if (t >= 1) rec.tx = undefined;
+                    else active++;
+                }
+                if (active > 0) requestAnimationFrame(step);
+                else this._lerpRunning = false;
+            };
+            requestAnimationFrame(step);
+        },
+        drawStaticMarkers() {
+            if (!this.poisLayer || this.staticDrawn || !this.staticMarkers.length) return;
+            for (const mk of this.staticMarkers) {
+                const w = this.toWorld(mk.x, mk.y);
+                this.poisLayer.addMarker({
+                    x: w.x,
+                    y: w.y,
+                    icon: this.emojiIcon(mk.icon),
+                    label: mk.name,
+                    size: 22,
+                });
+            }
+            this.staticDrawn = true;
         },
         async doLogin() {
             const r = await fetch('/login', {
@@ -277,20 +331,6 @@ createApp({
                     if (this.eventLog.length > 200) this.eventLog.pop();
                 }
             };
-        },
-        drawStaticMarkers() {
-            if (!this.map || this.staticDrawn || !this.staticMarkers.length) return;
-            for (const mk of this.staticMarkers) {
-                const icon = L.divIcon({
-                    className: '',
-                    iconSize: [22, 22],
-                    html: `<div class="sm">${mk.icon}</div>`,
-                });
-                L.marker(this.toMap(mk.x, mk.y), { icon })
-                    .addTo(this.map)
-                    .bindTooltip(mk.name, { direction: 'top', offset: [0, -10] });
-            }
-            this.staticDrawn = true;
         },
         isEditable(c) {
             return (this.editable[this.active] || []).includes(c);

@@ -125,7 +125,8 @@ npm run dev   # Vite на http://localhost:5173
 
 1. Скопируй `packages/main/settings.example.json` → `settings.json` и замени плейсхолдеры на свои данные (пароли, хосты). **Важно:** `settings.json` уже в `.gitignore` — он не попадёт в репозиторий.
 2. В `packages/main` выполни `npm run migrate` — создастся БД и все таблицы (миграции).
-3. Запусти сервер.
+3. Выполни `npm run build:tiles` — карта админки генерируется из map.png один раз
+4. Запусти сервер.
 
 ---
 

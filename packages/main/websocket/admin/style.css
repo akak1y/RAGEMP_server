@@ -35,16 +35,18 @@ input {
     padding: 4px;
 }
 #map {
+    width: 100%;
+    height: calc(100vh - 150px);
     background: #0a0f1a;
 }
-.leaflet-container {
-    background: #0a0f1a;
+:root {
+    --cm-btn-size: 34px;
+    --cm-btn-radius: 6px;
+    --cm-btn-bg: #234;
+    --cm-btn-color: #eee;
 }
-.leaflet-layer {
-    filter: saturate(0.85) brightness(0.8) contrast(1.1);
-}
-.leaflet-marker-icon {
-    transition: transform 2.8s linear;
+.cm-btn {
+    border: 1px solid #456;
 }
 .map-wrap {
     position: relative;
@@ -54,52 +56,6 @@ input {
     top: 16px;
     right: 10px;
     z-index: 1000;
-}
-.pm {
-    width: 10px;
-    height: 10px;
-    background: #4f4;
-    border-radius: 50%;
-    box-shadow:
-        0 0 10px #4f4,
-        0 0 20px #4f4;
-    position: relative;
-}
-.pm span {
-    position: absolute;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    font: 11px monospace;
-    color: #cfc;
-    white-space: nowrap;
-    text-shadow: 0 0 4px #000;
-}
-.pm::before {
-    content: '';
-    position: absolute;
-    inset: -6px;
-    border: 1px solid rgba(68, 255, 68, 0.5);
-    border-radius: 50%;
-    animation: pulse 1.6s infinite;
-    pointer-events: none;
-}
-@keyframes pulse {
-    0% {
-        transform: scale(0.6);
-        opacity: 1;
-    }
-    100% {
-        transform: scale(1.6);
-        opacity: 0;
-    }
-}
-.sm {
-    font-size: 18px;
-    text-align: center;
-    line-height: 22px;
-    filter: drop-shadow(0 0 3px #000);
-    cursor: pointer;
 }
 .editable {
     cursor: pointer;

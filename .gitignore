@@ -9,6 +9,7 @@ conf.json
 /packages/main/settings.json
 .env.test
 crash.log
+packages/main/websocket/admin/tiles/
 
 *.log
 *.tmp
