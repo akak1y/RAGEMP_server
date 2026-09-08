@@ -4,6 +4,7 @@ const inventoryService = require('../services/InventoryService');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const rateLimit = require('../middleware/rateLimit');
 const withGuards = require('../middleware/withGuards');
+const { sendEvent } = require('../core/eventSender');
 
 /**
  * Шахта: позиции камней, добыча, продажа руды боту
@@ -14,7 +15,7 @@ mp.events.add(
     withGuards(
         [isLoggedIn],
         (player) => {
-            player.call('client:mining:setData', [
+            sendEvent(player, 'client:mining:setData', [
                 JSON.stringify({
                     rocks: MiningConfig.rocks,
                     botPos: BotConfig.position,
@@ -33,7 +34,7 @@ mp.events.add(
         (player, rockIndex) => {
             const ok = miningService.startWork(player, Number(rockIndex));
             if (ok) {
-                player.call('client:mining:startChannel', [
+                sendEvent(player, 'client:mining:startChannel', [
                     Number(rockIndex),
                     MiningConfig.mineTimeMs,
                 ]);
@@ -74,7 +75,7 @@ mp.events.add(
                 );
                 return;
             }
-            player.call('client:mining:sellInfo', [
+            sendEvent(player, 'client:mining:sellInfo', [
                 JSON.stringify({
                     oreCount,
                     price: MiningConfig.oreSellPrice,
@@ -92,7 +93,7 @@ mp.events.add(
         [isLoggedIn, rateLimit('mining:sell', 5, 5)],
         async (player) => {
             const result = await miningService.sellAllOre(player);
-            player.call('client:mining:sellResult', [result.success, result.message]);
+            sendEvent(player, 'client:mining:sellResult', [result.success, result.message]);
         },
         'mining:sell'
     )

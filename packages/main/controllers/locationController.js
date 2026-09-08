@@ -3,6 +3,7 @@ const miningService = require('../services/MiningService');
 const { MiningConfig, BotConfig, PhoneConfig, MafiaBasePos, HospitalPos } = require('../config');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
+const { sendEvent } = require('../core/eventSender');
 
 /**
  * Раздача координат игровых локаций клиентам (маркеры/blips).
@@ -29,7 +30,7 @@ mp.events.add(
                 mafiaBase: MafiaBasePos,
                 hospital: HospitalPos,
             };
-            player.call('client:locations:setAll', [JSON.stringify(data)]);
+            sendEvent(player, 'client:locations:setAll', [JSON.stringify(data)]);
         },
         'locations:requestAll'
     )

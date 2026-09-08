@@ -5,6 +5,7 @@ const { getRedis } = require('../core/redis');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
 const logger = require('../core/logger');
+const { sendEvent } = require('../core/eventSender');
 
 /**
  * Игровые события игроков.
@@ -26,7 +27,7 @@ mp.events.add(
                 await redis.set('server:stats:total_accounts', countFromDb, { EX: 3600 });
                 cachedTotal = countFromDb;
             }
-            player.call('client:setRedisStats', [parseInt(cachedTotal) || 0]); // отправляем цифру на клиент игрока
+            sendEvent(player, 'client:setRedisStats', [parseInt(cachedTotal) || 0]); // отправляем цифру на клиент игрока
         },
         'requestRedisStats'
     )

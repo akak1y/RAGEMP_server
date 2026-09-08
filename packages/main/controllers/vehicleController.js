@@ -13,6 +13,7 @@ const {
     FuelInteractionRadius,
 } = require('../config');
 const { getSequelize } = require('../core/db');
+const { sendEvent } = require('../core/eventSender');
 
 /**
  * Транспорт: покупка в автосалоне, доставка через телефон, заправка.
@@ -51,7 +52,7 @@ mp.events.add(
             });
             player.applyMoneyDelta(-config.price);
             player.outputChatBox(`!{#33FF33}[Успех] Вы купили ${config.name}!`);
-            player.call('client:phone:updateCars'); // обновляем телефон
+            sendEvent(player, 'client:phone:updateCars'); // обновляем телефон
         },
         'dealership:buy'
     )
@@ -63,7 +64,7 @@ mp.events.add(
         [isLoggedIn],
         (player) => {
             // отправка конфига в vue
-            player.call('client:dealership:setConfig', [JSON.stringify(VehicleConfig)]);
+            sendEvent(player, 'client:dealership:setConfig', [JSON.stringify(VehicleConfig)]);
         },
         'dealership:requestConfig'
     )
@@ -77,7 +78,7 @@ mp.events.add(
         async (player) => {
             // при открытии телефона
             const cars = await vehicleService.getPlayerVehicles(player.accountId);
-            player.call('client:phone:setCarList', [
+            sendEvent(player, 'client:phone:setCarList', [
                 // отправляем данные в телефон
                 JSON.stringify(cars),
                 JSON.stringify(VehicleConfig),
@@ -92,7 +93,7 @@ mp.events.add(
     withGuards(
         [isLoggedIn],
         (player) => {
-            player.call('client:phone:requestPriceDeliveryCar', [PhoneConfig.deliveryCar]);
+            sendEvent(player, 'client:phone:requestPriceDeliveryCar', [PhoneConfig.deliveryCar]);
         },
         'phone:requestPriceDeliveryCar'
     )

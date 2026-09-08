@@ -3,6 +3,7 @@ const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
 const rateLimit = require('../middleware/rateLimit');
 const { CustomBoxPos, TuningConfig } = require('../config');
+const { sendEvent } = require('../core/eventSender');
 
 /**
  * Тюнинг транспорта: вход в LCS, покупка тюнинга, выход.
@@ -19,11 +20,11 @@ mp.events.add(
             const result = await tuningService.enterTuning(player);
             if (!result.success) return;
 
-            player.call('client:customCar:setTuningConfig', [JSON.stringify(TuningConfig)]); // каталог клиенту
-            player.call('client:customCar:setTuningState', [
+            sendEvent(player, 'client:customCar:setTuningConfig', [JSON.stringify(TuningConfig)]); // каталог клиенту
+            sendEvent(player, 'client:customCar:setTuningState', [
                 JSON.stringify(tuningService.getTuningState(result.carData)),
             ]); // состояние клиенту
-            player.call('client:custom:startTuning', [
+            sendEvent(player, 'client:custom:startTuning', [
                 CustomBoxPos.x,
                 CustomBoxPos.y,
                 CustomBoxPos.z,
@@ -90,7 +91,7 @@ mp.events.add(
                 player.accountId
             );
             if (freshCar)
-                player.call('client:customCar:setTuningState', [
+                sendEvent(player, 'client:customCar:setTuningState', [
                     JSON.stringify(tuningService.getTuningState(freshCar)),
                 ]);
         },

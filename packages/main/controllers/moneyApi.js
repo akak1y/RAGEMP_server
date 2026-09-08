@@ -1,4 +1,5 @@
 const logger = require('../core/logger');
+const { sendEvent } = require('../core/eventSender');
 
 /**
  * Денежные методы на прототипе mp.Player
@@ -13,7 +14,7 @@ mp.Player.prototype.addMoney = async function (amount, reason = '') {
         );
         if (success) {
             this.money += amount;
-            this.call('client:updateMoney', [this.money]);
+            sendEvent(this, 'client:updateMoney', [this.money]);
         }
         return success;
     } catch (err) {
@@ -31,7 +32,7 @@ mp.Player.prototype.takeMoney = async function (amount, reason = '') {
         );
         if (success) {
             this.money -= amount;
-            this.call('client:updateMoney', [this.money]);
+            sendEvent(this, 'client:updateMoney', [this.money]);
         }
         return success;
     } catch (err) {
@@ -42,5 +43,5 @@ mp.Player.prototype.takeMoney = async function (amount, reason = '') {
 
 mp.Player.prototype.applyMoneyDelta = function (delta) {
     this.money += delta;
-    this.call('client:updateMoney', [this.money]);
+    sendEvent(this, 'client:updateMoney', [this.money]);
 };

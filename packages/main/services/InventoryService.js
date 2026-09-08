@@ -1,6 +1,7 @@
 const { getItemModel } = require('../models/Item');
 const { ItemConfig } = require('../config');
 const logger = require('../core/logger');
+const { sendEvent } = require('../core/eventSender');
 
 /**
  * Сервис инвентаря игроков
@@ -39,7 +40,7 @@ class InventoryService {
         const clientData = player.inventory.map((slot) =>
             slot ? { itemId: slot.itemId, count: slot.count } : null
         );
-        player.call('client:inventory:update', [
+        sendEvent(player, 'client:inventory:update', [
             JSON.stringify(clientData),
             JSON.stringify(ItemConfig),
         ]);

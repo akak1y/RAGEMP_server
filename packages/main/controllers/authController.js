@@ -7,6 +7,7 @@ const { getRedis } = require('../core/redis');
 const withGuards = require('../middleware/withGuards');
 const logger = require('../core/logger');
 const profile = require('../core/profiler');
+const { sendEvent } = require('../core/eventSender');
 
 /**
  * Сессия игрока: вход/регистрация и выход с сохранением прогресса.
@@ -31,7 +32,7 @@ mp.events.add(
                     userDb = authResult.user;
                 } else if (authResult.error === 'wrong_password') {
                     // если пароли не совпали
-                    player.call('client:account:authError', ['Неверный пароль!']);
+                    sendEvent(player, 'client:account:authError', ['Неверный пароль!']);
                     return;
                 } else {
                     // если не был найден в бд -> регистрация
@@ -44,7 +45,7 @@ mp.events.add(
                     });
 
                     if (!regResult.success) {
-                        player.call('client:account:authError', [
+                        sendEvent(player, 'client:account:authError', [
                             regResult.error === 'username_taken'
                                 ? 'Этот логин уже занят!'
                                 : 'Некорректный логин.',
@@ -76,11 +77,13 @@ mp.events.add(
                 await inventoryService.loadPlayerInventory(player);
 
                 const isDeveloper = player.adminLevel;
-                player.call('client:account:hideAuth', [isDeveloper]);
-                player.call('client:updateMoney', [player.money]);
+                sendEvent(player, 'client:account:hideAuth', [isDeveloper]);
+                sendEvent(player, 'client:updateMoney', [player.money]);
                 player.spawn(player.lastPos);
             } catch (err) {
-                player.call('client:account:authError', ['Внутренняя ошибка сервера базы данных.']);
+                sendEvent(player, 'client:account:authError', [
+                    'Внутренняя ошибка сервера базы данных.',
+                ]);
             }
         },
         'account:login'

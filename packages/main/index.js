@@ -7,7 +7,6 @@ Module.prototype.require = function (id) {
     return originalRequire.apply(this, [id]);
 };
 
-const fs = require('fs');
 const path = require('path');
 
 const { writeCrashLog } = require('./core/crashLogger');

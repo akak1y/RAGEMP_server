@@ -2,6 +2,7 @@ const { CourierConfig } = require('../config');
 const auditService = require('./AuditService');
 const { isNear } = require('../utils/distance');
 const logger = require('../core/logger');
+const { sendEvent } = require('../core/eventSender');
 
 /**
  * Работа «Курьер»
@@ -138,7 +139,7 @@ class CourierService {
 
         const player = mp.players.toArray().find((p) => p.accountId === accountId);
         if (player) {
-            player.call('client:courier:target', [null]);
+            sendEvent(player, 'client:courier:target', [null]);
             if (!silent)
                 player.outputChatBox('!{#FFFF00}[Курьер] Работа завершена. Транспорт возвращён.');
         }
@@ -147,10 +148,10 @@ class CourierService {
     sendTarget(player, st) {
         if (st.stage === 'delivery') {
             const p = CourierConfig.deliveryPoints[st.pointIdx];
-            player.call('client:courier:target', [p.x, p.y, p.z, 'delivery']);
+            sendEvent(player, 'client:courier:target', [p.x, p.y, p.z, 'delivery']);
         } else {
             const w = CourierConfig.warehousePos;
-            player.call('client:courier:target', [w.x, w.y, w.z, st.stage]);
+            sendEvent(player, 'client:courier:target', [w.x, w.y, w.z, st.stage]);
         }
     }
 

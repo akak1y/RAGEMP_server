@@ -2,6 +2,7 @@ const { getBotModel, ensureBotReady } = require('../models/Bot');
 const accountService = require('./AccountService');
 const { BotConfig } = require('../config');
 const logger = require('../core/logger');
+const { sendEvent } = require('../core/eventSender');
 
 /**
  * BotService — тестовый бот для мультиплеер-тестов
@@ -45,9 +46,9 @@ class BotService {
      */
     #broadcastBotSetup(pedId, heading, targetPlayer = null) {
         if (targetPlayer) {
-            targetPlayer.call('client:bot:setup', [pedId, heading]);
+            sendEvent(targetPlayer, 'client:bot:setup', [pedId, heading]);
         } else {
-            mp.players.forEach((p) => p.call('client:bot:setup', [pedId, heading]));
+            mp.players.forEach((p) => sendEvent(p, 'client:bot:setup', [pedId, heading]));
         }
     }
 

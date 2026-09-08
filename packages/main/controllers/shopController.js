@@ -4,6 +4,7 @@ const locationService = require('../services/LocationService');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const rateLimit = require('../middleware/rateLimit');
 const withGuards = require('../middleware/withGuards');
+const { sendEvent } = require('../core/eventSender');
 
 /**
  * Магазин: выдача позиции/конфига, покупка предметов
@@ -14,7 +15,7 @@ mp.events.add(
     withGuards(
         [isLoggedIn],
         (player) => {
-            player.call('client:shop:setPos', [
+            sendEvent(player, 'client:shop:setPos', [
                 JSON.stringify(locationService.getPosition('shop')),
             ]);
         },
@@ -27,7 +28,7 @@ mp.events.add(
     withGuards(
         [isLoggedIn, rateLimit('shop:config', 10, 5)],
         (player) => {
-            player.call('client:shop:show', [
+            sendEvent(player, 'client:shop:show', [
                 JSON.stringify({ name: ShopConfig.name, items: ShopConfig.items }),
             ]);
         },
@@ -42,9 +43,9 @@ mp.events.add(
         async (player, itemId, amount) => {
             const result = await shopService.buyItem(player, itemId, amount);
             if (result.success) {
-                player.call('client:shop:buyResult', [true, 'Покупка успешна']);
+                sendEvent(player, 'client:shop:buyResult', [true, 'Покупка успешна']);
             } else {
-                player.call('client:shop:buyResult', [false, result.error]);
+                sendEvent(player, 'client:shop:buyResult', [false, result.error]);
             }
         },
         'shop:buy'

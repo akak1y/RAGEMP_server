@@ -6,6 +6,7 @@ const inventoryService = require('../services/InventoryService');
 const isAdmin = require('../middleware/isAdmin');
 const { registerCommand } = require('./commandSystem');
 const { getRedis } = require('../core/redis');
+const { sendEvent } = require('../core/eventSender');
 
 const adminOnly = isAdmin(1);
 const moderatorOnly = isAdmin(2);
@@ -130,10 +131,10 @@ registerCommand('stats', {
         ];
         lines.forEach((line) => player.outputChatBox(line));
 
-        player.call('client:ui:debugLog', [
-            `[Stats] economy from ${economy.source} in ${economy.ms}ms`,
-            'cpp-event',
-        ]);
+        sendEvent(player, 'client:ui:debugLog', {
+            success: `[Stats] economy from ${economy.source} in ${economy.ms}ms`,
+            message: 'cpp-event',
+        });
     },
 });
 

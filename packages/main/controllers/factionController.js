@@ -4,6 +4,7 @@ const isAdmin = require('../middleware/isAdmin');
 const rateLimit = require('../middleware/rateLimit');
 const withGuards = require('../middleware/withGuards');
 const { registerCommand } = require('./commandSystem');
+const { sendEvent } = require('../core/eventSender');
 
 /**
  * Фракции: инфо для UI, касса (взнос/вывод).
@@ -24,10 +25,10 @@ mp.events.add(
             const membership = await factionService.getMembership(player.accountId);
             if (!membership) {
                 player.outputChatBox('!{#FF3333}[Фракция] Вы не состоите во фракции.');
-                return player.call('client:faction:setInfo', ['null']);
+                return sendEvent(player, 'client:faction:setInfo', ['null']);
             }
             const members = await factionService.getMembers(membership.faction.id);
-            player.call('client:faction:setInfo', [
+            sendEvent(player, 'client:faction:setInfo', [
                 JSON.stringify({
                     faction: {
                         id: membership.faction.id,
@@ -57,7 +58,10 @@ mp.events.add(
         [isLoggedIn, rateLimit('faction:deposit', 3, 10)],
         async (player, sum) => {
             const result = await factionService.deposit(player, sum);
-            player.call('client:faction:moneyResult', [result.success, result.error || 'deposit']);
+            sendEvent(player, 'client:faction:moneyResult', [
+                result.success,
+                result.error || 'deposit',
+            ]);
         },
         'faction:deposit'
     )
@@ -69,7 +73,10 @@ mp.events.add(
         [isLoggedIn, rateLimit('faction:withdraw', 3, 10)],
         async (player, sum) => {
             const result = await factionService.withdraw(player, sum);
-            player.call('client:faction:moneyResult', [result.success, result.error || 'withdraw']);
+            sendEvent(player, 'client:faction:moneyResult', [
+                result.success,
+                result.error || 'withdraw',
+            ]);
         },
         'faction:withdraw'
     )
