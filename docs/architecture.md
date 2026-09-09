@@ -23,7 +23,7 @@ MySQL ← core/db   •   Redis ← core/redis
 
 ## Сервер
 
-### `controllers/` — тонкие обработчики (9 файлов)
+### `controllers/` — тонкие обработчики (12 файлов)
 
 | Файл                    | Ответственность                                       |
 | ----------------------- | ----------------------------------------------------- |
@@ -36,6 +36,9 @@ MySQL ← core/db   •   Redis ← core/redis
 | `vehicleController.js`  | покупка, спавн, заправка                              |
 | `locationController.js` | семья `*:requestPos` — координаты 5 локаций           |
 | `tuningController.js`   | LSC: вход в зону, покупка, выход                      |
+| `factionController.js`  | фракции: запрос инфо, касса                           |
+| `hospitalController.js` | лечение в больнице                                    |
+| `shopController.js`     | магазин: покупка предметов                            |
 
 ### `middleware/` — проверки прав и error boundary (4)
 
@@ -43,36 +46,52 @@ MySQL ← core/db   •   Redis ← core/redis
 - `isLoggedIn`, `isAdmin` — фабрики guard'ов
 - `rateLimit` — Redis-счётчики, fail open, коалесценция нарушений через AuditService
 
-### `services/` — бизнес-логика (12)
+### `services/` — бизнес-логика (14)
 
-Account, Auth, Money, Vehicle, Tuning, Inventory, Location, Stats, Health, Audit, Bot, Courier.
+Account, Auth, Money, Vehicle, Tuning, Inventory, Location, Stats, Health, Audit, Bot, Courier, Faction, Shop.
 Сервисы не знают про `mp.*`, кроме осознанных game-world сервисов (Vehicle, Tuning, Bot, Courier) — это помечено в их шапках.
 
-### `models/` — Sequelize-модели, ленивые геттеры (5)
+### `models/` — Sequelize-модели, ленивые геттеры (7)
 
-Users, Item, Vehicle, AuditLog, Bot. Ленивые геттеры (`getUserModel()`), схема живёт **только в моделях** (references + `ON DELETE CASCADE`), схема создаётся миграциями (`npm run migrate`), модели описывают её для ORM.
+Users, Item, Vehicle, AuditLog, Bot, Faction, FactionMember. Ленивые геттеры (`getUserModel()`), схема живёт **только в моделях** (references + `ON DELETE CASCADE`), схема создаётся миграциями (`npm run migrate`), модели описывают её для ORM.
 
-### `core/` — инфраструктура: БД, кэш, логи, замеры
+`FactionMember` — таблица членства с `account_id → accounts.id` (CASCADE) и `faction_id → factions.id` (CASCADE), ранг хранится целым числом (0 = Шестёрка, 4 = Босс).
 
-`db.js` (пул + initDB), `redis.js` (singleton), `logger.js` (асинхронный, combined/error), `profiler.js` (`perf_hooks`).
+### `core/` — инфраструктура: БД, кэш, логи, замеры, события
+
+`db.js` (пул + initDB), `redis.js` (singleton), `logger.js` (асинхронный, combined/error), `profiler.js` (`perf_hooks`), `eventContracts.js` (контракты событий сервер→клиент с типами аргументов), `eventSender.js` (валидация + логирование), `eventLog.js` (кольцевой буфер 200 записей для админки).
+
+## Клиентская инфраструктура событий
+
+Все события сервер→клиент проходят через `sendEvent(player, eventName, args)`:
+
+1. **Валидация** — `eventContracts.js` хранит контракты (типы аргументов по позициям); отправка с невалидными аргументами блокируется до `player.call`
+2. **Логирование** — каждое событие пишется в кольцевой буфер `eventLog` с меткой `ok`
+3. **Broadcast в админку** — `eventLog.subscribe` → WebSocket → вкладка «События» в реальном времени
+4. **Авто-документация** — `npm run docs:events` сканирует `sendEvent` по коду и генерирует `docs/events.md`
+5. **Тест-инвентаризация** — `eventContracts.test.js` проверяет, что все `sendEvent` имеют контракты и нет мёртвых контрактов
+
+Это гарантирует типобезопасность: битое событие отсекается до отправки клиенту и видно в админке с флагом `FAIL`.
 
 ## Клиент (`client_packages/`)
 
 - `state.js` — общее состояние в `globalThis.UIState` (в клиенте RAGE MP нет `module.exports`)
-- 10 доменных модулей: `auth`, `keys`, `windows`, `interactions`, `speedometer`, `bridges`, `tuning`, `vehicleSync`, `courier`, `bots`
+- 11 доменных модулей: `auth`, `keys`, `windows`, `interactions`, `speedometer`, `bridges`, `tuning`, `vehicleSync`, `courier`, `bots`, `factions`
 - `index.js` — только создание браузера и порядок `require`
 
 ## Веб-админка (`websocket/`)
 
 - HTTP (статика + `/login`) и WS на одном порту; JWT 8 ч, `admin_level >= 1`; битый токен → 4001/4003
-- `protocol.js` — типы сообщений: `get_table`, `update_cell`, `player_action`, `vehicle_action`, `delete_row`, `create_row`, `get_metrics`
+- `protocol.js` — типы сообщений: `get_table`, `update_cell`, `player_action`, `vehicle_action`, `delete_row`, `create_row`, `get_metrics`, `event_log_init`, `event_log`
 - Schema-driven формы: сервер шлёт `create_schema` — фронт генерирует формы сам
 - Whitelist редактируемых полей + серверная валидация; каждое действие → аудит
-- Карта Leaflet с калибровкой `GAME_BOUNDS`; иконки локаций читаются из `config.js` (единый источник правды)
+- Карта CanvasMapper (**собственная библиотека**): тайловая пирамида 8K (z0..z5), LOD + LRU кэш, маркеры-спрайты, привязка через `GAME_BOUNDS`
+- Вкладка events: real-time лента из `eventLog`, фильтры, тумблер «только ошибки валидации», hover-панель с разбором аргументов ключ-значение
 - Живая лента аудита: pub/sub через `AuditService.subscribe`
 - `get_metrics` (WS) и HTTP `/metrics` — метрики: собственный Prometheus-exporter без внешних зависимостей
 - Вкладка metrics с автообновлением (15 с); аудит — серверная пагинация
 - Автореконнект с экспоненциальным бэкоффом; 4001/4003 — без реконнекта
+- Тайлы карты (`tiles/`) генерируются CLI из `map.png`, **не в репозитории** (`npm run build:tiles`)
 
 ## Ключевые решения
 
@@ -84,15 +103,17 @@ Users, Item, Vehicle, AuditLog, Bot. Ленивые геттеры (`getUserMode
 6. **Позиция игрока** — в памяти каждые 3 с, в MySQL один раз при выходе (защита от Alt+F4).
 7. **Graceful shutdown** — SIGINT/SIGTERM корректно закрывают MySQL и Redis.
 8. **Координаты в одном месте** — `config.js` → `LocationService` → клиент и админка.
-9. **Самописный logger** — winston несовместим с окружением RAGE MP (старый Node, `node:`-импорты).
+9. **Типобезопасность событий** — все `player.call` заменены на `sendEvent` с валидацией контрактов; битое событие не уйдёт клиенту, будет видно в админке.
+10. **Самописный logger** — winston несовместим с окружением RAGE MP (старый Node, `node:`-импорты).
 
 ## Тесты и CI
 
-- Сервер: Jest (MoneyService, InventoryService, AuditService, rateLimit)
+- Сервер: Jest (MoneyService, InventoryService, AuditService, rateLimit, FactionService, eventContracts)
 - Клиент: глобальный мок `mp.*` + тестовый `__trigger` (`__tests__/setup.js`)
 - Корневой `npm test` гоняет оба пакета (`npm --prefix packages/main test && npm --prefix client_packages test`)
 - CI: `syntax-check` (сервер + клиент), `server-tests`, `client-tests`
 - Интеграционные тесты: реальные MySQL (`ragemp_test`) и Redis (DB 1), миграции в globalSetup, последовательный прогон (`--runInBand`), полный дроп БД в teardown; env-приоритет над settings.json
+- `eventContracts.test.js` — тест-инвентаризация: все `sendEvent` имеют контракты, нет мёртвых контрактов
 
 ## Структура
 
@@ -101,19 +122,19 @@ RAGEMP_server/
 ├── packages/main/
 │   ├── index.js             точка входа
 │   ├── config.js            игровые конфиги (координаты, цены)
-│   ├── core/                db, redis, logger, profiler
-│   ├── controllers/         9 файлов по доменам
-│   ├── services/            12 сервисов
+│   ├── core/                db, redis, logger, profiler, eventContracts/Sender/Log
+│   ├── controllers/         12 файлов по доменам
+│   ├── services/            14 сервисов
 │   ├── middleware/          4 файла
-│   ├── models/              5 моделей
+│   ├── models/              7 моделей
 │   ├── utils/               distance.js
 │   ├── websocket/           админка: adminServer, protocol, admin/
 │   └── __tests__/           тесты сервера
 ├── client_packages/
 │   ├── index.js, state.js   вход + общее состояние
-│   ├── 10 доменных модулей
+│   ├── 11 доменных модулей
 │   └── __tests__/           тесты клиента + мок mp.*
 ├── UI-Server/               Vue 3 SPA (Vite)
-├── docs/                    architecture.md, графы
+├── docs/                    architecture.md, графы, events.md (авто-ген)
 └── .github/workflows/       CI
 ```
