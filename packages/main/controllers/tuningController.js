@@ -1,5 +1,5 @@
 const tuningService = require('../services/TuningService');
-const vehicleService = require('../services/VehicleService')
+const vehicleService = require('../services/VehicleService');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
 const rateLimit = require('../middleware/rateLimit');

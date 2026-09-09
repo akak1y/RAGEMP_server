@@ -8,11 +8,7 @@ const { sendEvent } = require('../core/eventSender');
 
 mp.Player.prototype.addMoney = async function (amount, reason = '') {
     try {
-        const success = await moneyService.addMoney(
-            this.accountId,
-            amount,
-            reason
-        );
+        const success = await moneyService.addMoney(this.accountId, amount, reason);
         if (success) {
             this.money += amount;
             sendEvent(this, 'client:updateMoney', [this.money]);
@@ -26,11 +22,7 @@ mp.Player.prototype.addMoney = async function (amount, reason = '') {
 
 mp.Player.prototype.takeMoney = async function (amount, reason = '') {
     try {
-        const success = await moneyService.takeMoney(
-            this.accountId,
-            amount,
-            reason
-        );
+        const success = await moneyService.takeMoney(this.accountId, amount, reason);
         if (success) {
             this.money -= amount;
             sendEvent(this, 'client:updateMoney', [this.money]);

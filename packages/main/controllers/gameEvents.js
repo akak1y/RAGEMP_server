@@ -19,6 +19,11 @@ mp.events.add(
         async (player) => {
             // мост для обновления счётчиков акк-ов
             const redis = getRedis();
+            if (!redis) {
+                return player.outputChatBox(
+                    '!{#FF3333}[Статистика] Redis недоступен, попробуй позже.'
+                );
+            }
             let cachedTotal = await redis.get('server:stats:total_accounts'); // вытаскиваем данные из ОЗУ
             if (cachedTotal === null) {
                 // если в ОЗУ нет данных, вытаскиваем из бд

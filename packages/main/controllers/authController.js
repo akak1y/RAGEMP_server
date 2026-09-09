@@ -54,7 +54,8 @@ mp.events.add(
                     }
                     userDb = regResult.user;
 
-                    await getRedis().incr('server:stats:total_accounts'); // +1 в статистику аккаунтов сразу в ОЗУ
+                    const redis = getRedis();
+                    if (redis) await redis.incr('server:stats:total_accounts'); // +1 в статистику аккаунтов сразу в ОЗУ
                     logger.info(
                         `Зарегистрирован новый аккаунт: ${userDb.username}. Кэш Redis инкрементирован.`
                     );
