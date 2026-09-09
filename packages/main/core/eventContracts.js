@@ -58,6 +58,9 @@ const contracts = {
         ['number', 'number', 'number', 'string'], // активная цель
         ['null'], // сброс цели
     ],
+
+    // ===== factionController.js =====
+    'client:faction:open': [],
 };
 
 function typeOf(value) {

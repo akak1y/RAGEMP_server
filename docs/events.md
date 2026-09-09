@@ -5,7 +5,7 @@
 | Событие                                | Аргументы (по позициям)                   | Отправляется из                                        |
 | -------------------------------------- | ----------------------------------------- | ------------------------------------------------------ |
 | `client:account:authError`             | string                                    | controllers\authController.js                          |
-| `client:account:hideAuth`              | boolean                                   | controllers\authController.js                          |
+| `client:account:hideAuth`              | number                                    | controllers\authController.js                          |
 | `client:updateMoney`                   | number                                    | controllers\authController.js, controllers\moneyApi.js |
 | `client:setRedisStats`                 | number                                    | controllers\gameEvents.js                              |
 | `client:ui:debugLog`                   | string, string                            | controllers\adminCommands.js                           |
@@ -30,3 +30,4 @@
 | `client:inventory:update`              | string, string                            | services\InventoryService.js                           |
 | `client:bot:setup`                     | number, number                            | services\BotService.js                                 |
 | `client:courier:target`                | number, number, number, string _или_ null | services\CourierService.js                             |
+| `client:faction:open`                  |                                           | controllers\factionController.js                       |

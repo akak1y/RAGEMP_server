@@ -138,7 +138,7 @@ createApp({
             if (this.map) return;
             const container = document.getElementById('map');
             this.map = new CanvasMapper.MapEngine(container, {
-                minZoom: -2,
+                minZoom: 1,
                 maxZoom: 6,
                 source: new CanvasMapper.UrlTileSource({
                     urlTemplate: 'tiles/{z}/{x}_{y}.jpeg',

@@ -7,14 +7,46 @@ const { registerCommand } = require('./commandSystem');
 const { sendEvent } = require('../core/eventSender');
 
 /**
- * Фракции: инфо для UI, касса (взнос/вывод).
+ * Фракции: инфо для UI, касса (взнос/вывод), открытие окна.
  */
+
+const adminOnly = isAdmin(1);
 
 function findOnlinePlayer(arg) {
     if (!arg) return null;
     const list = mp.players.toArray().filter((p) => p.isLoggedIn);
     if (/^\d+$/.test(arg)) return list.find((p) => p.accountId === Number(arg));
     return list.find((p) => (p.accountName || '').toLowerCase() === String(arg).toLowerCase());
+}
+
+/**
+ * отправить клиенту текущее состояние фракции
+ */
+async function sendFactionInfo(player) {
+    const membership = await factionService.getMembership(player.accountId);
+    if (!membership) {
+        return sendEvent(player, 'client:faction:setInfo', ['null']);
+    }
+    const members = await factionService.getMembers(membership.faction.id);
+    sendEvent(player, 'client:faction:setInfo', [
+        JSON.stringify({
+            faction: {
+                id: membership.faction.id,
+                name: membership.faction.name,
+                treasury: membership.faction.treasury,
+            },
+            me: {
+                rank: membership.member.rank,
+                rankName: factionService.rankName(membership.member.rank),
+            },
+            members: members.map((m) => ({
+                accountId: m.account_id,
+                rank: m.rank,
+                rankName: factionService.rankName(m.rank),
+            })),
+            ranks: factionService.getRanks(),
+        }),
+    ]);
 }
 
 mp.events.add(
@@ -25,30 +57,27 @@ mp.events.add(
             const membership = await factionService.getMembership(player.accountId);
             if (!membership) {
                 player.outputChatBox('!{#FF3333}[Фракция] Вы не состоите во фракции.');
-                return sendEvent(player, 'client:faction:setInfo', ['null']);
             }
-            const members = await factionService.getMembers(membership.faction.id);
-            sendEvent(player, 'client:faction:setInfo', [
-                JSON.stringify({
-                    faction: {
-                        id: membership.faction.id,
-                        name: membership.faction.name,
-                        treasury: membership.faction.treasury,
-                    },
-                    me: {
-                        rank: membership.member.rank,
-                        rankName: factionService.rankName(membership.member.rank),
-                    },
-                    members: members.map((m) => ({
-                        accountId: m.account_id,
-                        rank: m.rank,
-                        rankName: factionService.rankName(m.rank),
-                    })),
-                    ranks: factionService.getRanks(),
-                }),
-            ]);
+            await sendFactionInfo(player);
         },
         'faction:requestInfo'
+    )
+);
+
+// открытие окна - E на метке базы
+mp.events.add(
+    'server:faction:open',
+    withGuards(
+        [isLoggedIn, rateLimit('faction:open', 3, 10)],
+        async (player) => {
+            const membership = await factionService.getMembership(player.accountId);
+            if (!membership && (player.adminLevel || 0) < 1) {
+                return player.outputChatBox('!{#FF3333}[Семья] Вы не состоите в семье.');
+            }
+            sendEvent(player, 'client:faction:open', []);
+            await sendFactionInfo(player);
+        },
+        'faction:open'
     )
 );
 
@@ -62,6 +91,7 @@ mp.events.add(
                 result.success,
                 result.error || 'deposit',
             ]);
+            if (result.success) await sendFactionInfo(player); // обновить казну в окне
         },
         'faction:deposit'
     )
@@ -77,12 +107,23 @@ mp.events.add(
                 result.success,
                 result.error || 'withdraw',
             ]);
+            if (result.success) await sendFactionInfo(player);
         },
         'faction:withdraw'
     )
 );
 
-// --- админ-команды ---
+// --- админ-команда открытия окна---
+
+registerCommand('fam', {
+    guards: [isLoggedIn, adminOnly],
+    run: async (player) => {
+        sendEvent(player, 'client:faction:open', []);
+        await sendFactionInfo(player);
+    },
+});
+
+// --- админ-команды состава ---
 
 registerCommand('setfaction', {
     guards: [isLoggedIn, isAdmin],

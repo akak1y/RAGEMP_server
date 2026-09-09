@@ -1,6 +1,3 @@
-require('./ui');
-require('./interactions');
-
 const state = globalThis.UIState;
 const ui = globalThis.ui;
 const interactions = globalThis.interactions;
@@ -20,13 +17,10 @@ mp.events.add('client:faction:setInfo', (json) => {
         state.factionInfo = null;
     }
     ui.call('setFactionInfo', state.factionInfo);
-    if (state.factionInfo) {
-        // временно ответ в чат
-        const f = state.factionInfo;
-        mp.gui.chat.push(
-            `!{#4CAF50}[${f.faction.name}] Касса: $${f.faction.treasury} | Твой ранг: ${f.me.rankName} (${f.me.rank}) | В семье: ${f.members.length}`
-        );
-    }
+});
+
+mp.events.add('client:faction:open', () => {
+    ui.call('toggleWindow', 'faction');
 });
 
 mp.events.add('client:faction:moneyResult', (success, errorOrKind) => {
@@ -35,6 +29,14 @@ mp.events.add('client:faction:moneyResult', (success, errorOrKind) => {
             ? '!{#4CAF50}[Фракция] Операция с кассой выполнена.'
             : `!{#FF3333}[Фракция] Ошибка: ${errorOrKind}`
     );
+});
+
+mp.events.add('client:faction:deposit', (sum) => {
+    mp.events.callRemote('server:faction:deposit', Number(sum));
+});
+
+mp.events.add('client:faction:withdraw', (sum) => {
+    mp.events.callRemote('server:faction:withdraw', Number(sum));
 });
 
 mp.events.add('client:locations:setAll', (json) => {
@@ -69,6 +71,6 @@ mp.events.add('client:locations:setAll', (json) => {
 interactions.register({
     radius: 3,
     getPositions: () => [state.positions.mafiaBase],
-    getHint: () => 'Фракция',
-    onInteract: () => mp.events.callRemote('server:faction:requestInfo'),
+    getHint: () => 'Семья',
+    onInteract: () => mp.events.callRemote('server:faction:open'),
 });

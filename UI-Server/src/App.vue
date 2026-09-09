@@ -52,6 +52,14 @@
             @heal="onHealRequest"
             @close="closeWindow('hospital')"
         />
+        <!--окно семьи-->
+        <Faction
+            v-if="windows.faction"
+            :info="factionInfo"
+            @deposit="onDeposit"
+            @withdraw="onWithdraw"
+            @close="closeWindow('faction')"
+        />
         <!--перехватываем нажатие клавиш-->
         <input
             ref="focusTrap"
@@ -94,6 +102,7 @@ import CarCustom from './components/CarCustom.vue';
 import Shop from './components/Shop.vue';
 import MiningSell from './components/MiningSell.vue';
 import HospitalWindow from './components/HospitalWindow.vue';
+import Faction from './components/Faction.vue';
 
 const debugLogs = ref([]);
 const windowDebug = ref(false);
@@ -120,6 +129,7 @@ const windows = ref({
     shop: false,
     miningSell: false,
     hospital: false,
+    faction: false,
 });
 const focusTrap = ref(null);
 const speed = ref(0);
@@ -130,6 +140,7 @@ const shopConfig = ref({ name: 'Магазин', items: [] });
 const miningSellInfo = ref({ oreCount: 0, price: 0, total: 0 });
 const miningProgress = ref(null);
 const interactHint = ref('');
+const factionInfo = ref(null);
 
 const addDebugLog = (text, type = 'info') => {
     const now = new Date();
@@ -225,6 +236,14 @@ const onSpawnCar = (carId, pay) => {
 const onHealRequest = () => {
     if (typeof mp !== 'undefined') mp.trigger('client:hospital:heal');
     closeWindow('hospital');
+};
+
+const onDeposit = (amount) => {
+    if (typeof mp !== 'undefined') mp.trigger('client:faction:deposit', amount);
+};
+
+const onWithdraw = (amount) => {
+    if (typeof mp !== 'undefined') mp.trigger('client:faction:withdraw', amount);
 };
 
 onMounted(() => {
@@ -385,6 +404,13 @@ onMounted(() => {
     };
     window.hideInteractHint = () => {
         interactHint.value = '';
+    };
+    window.setFactionInfo = (json) => {
+        try {
+            factionInfo.value = typeof json === 'string' ? JSON.parse(json) : json;
+        } catch (e) {
+            console.error('[Vue Error] Не удалось распарсить данные фракции:', e);
+        }
     };
 });
 </script>
