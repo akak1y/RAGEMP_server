@@ -1,5 +1,6 @@
-const { CourierConfig } = require('../config');
+const { CourierConfig, FactionConfig } = require('../config');
 const auditService = require('./AuditService');
+const factionService = require('./FactionService');
 const { isNear } = require('../utils/distance');
 const logger = require('../core/logger');
 const { sendEvent } = require('../core/eventSender');
@@ -113,12 +114,41 @@ class CourierService {
             return;
         }
 
+        let bonusPlayer = 0;
+        let bonusTreasury = 0;
+        let factionName = null;
+
+        const membership = await factionService.getMembership(player.accountId);
+        if (membership) {
+            bonusPlayer = Math.round((st.pay * FactionConfig.courierBonusPlayer) / 10) * 10;
+            bonusTreasury = Math.round((st.pay * FactionConfig.courierBonusTreasury) / 10) * 10;
+            factionName = membership.faction.name;
+
+            if (bonusPlayer > 0) {
+                await player.addMoney(bonusPlayer, `бонус семьи ${factionName}`);
+            }
+            if (bonusTreasury > 0) {
+                await factionService.addTreasury(membership.faction.id, bonusTreasury);
+            }
+        }
+
         auditService.logPlayer(player, 'courier', {
             category: 'money',
             amount: st.pay,
-            details: { point: st.pointIdx, dist: Math.round(this.distTo(st.pointIdx)) },
+            details: {
+                point: st.pointIdx,
+                dist: Math.round(this.distTo(st.pointIdx)),
+                bonusPlayer,
+                bonusTreasury,
+                factionName,
+            },
         });
-        player.outputChatBox(`!{#00FF00}[Курьер] Заказ выполнен: +$${st.pay}.`);
+
+        let message = `!{#00FF00}[Курьер] Заказ выполнен: +$${st.pay}.`;
+        if (bonusPlayer > 0 || bonusTreasury > 0) {
+            message += ` Бонус: +$${bonusPlayer} (вам), +$${bonusTreasury} (в казну ${factionName}).`;
+        }
+        player.outputChatBox(message);
 
         st.stage = 'delivery';
         st.pointIdx = this.randomPoint(st.pointIdx);

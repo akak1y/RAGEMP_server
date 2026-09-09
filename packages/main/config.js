@@ -130,4 +130,8 @@ module.exports = {
     LocationConfig: {
         defaultInteractionRadius: 2.5,
     },
+    FactionConfig: {
+        courierBonusPlayer: 0.2, // к зарплате курьера
+        courierBonusTreasury: 0.05, // в казну семьи
+    },
 };

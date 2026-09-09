@@ -148,6 +148,23 @@ class FactionService {
         );
         return { success: true };
     }
+
+    /** Пополнение казны без денег игрока */
+    async addTreasury(factionId, sum) {
+        const amount = Number(sum);
+        if (!Number.isInteger(amount) || amount <= 0) return false;
+
+        const sequelize = getSequelize();
+        const [affected] = await getFactionModel().update(
+            { treasury: sequelize.literal(`treasury + ${amount}`) },
+            { where: { id: factionId } }
+        );
+
+        if (affected) {
+            logger.info(`[FactionService] Казна фракции ${factionId} пополнена на $${amount}`);
+        }
+        return affected > 0;
+    }
 }
 
 module.exports = new FactionService();

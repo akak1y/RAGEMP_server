@@ -2,6 +2,10 @@ const courierService = require('../services/CourierService');
 const auditService = require('../services/AuditService');
 
 jest.mock('../services/AuditService', () => ({ logPlayer: jest.fn() }));
+jest.mock('../services/FactionService', () => ({
+    getMembership: jest.fn(),
+    addTreasury: jest.fn(),
+}));
 jest.mock('../core/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
 jest.mock('../config', () => ({
     CourierConfig: {
@@ -17,6 +21,10 @@ jest.mock('../config', () => ({
             { x: 10, y: 110, z: 0 },
             { x: 310, y: 410, z: 0 },
         ],
+    },
+    FactionConfig: {
+        courierBonusPlayer: 0.2,
+        courierBonusTreasury: 0.05,
     },
 }));
 
@@ -53,12 +61,15 @@ global.mp = {
 };
 
 describe('CourierService', () => {
+    const factionService = require('../services/FactionService');
+
     beforeEach(() => {
         jest.clearAllMocks();
         courierService.states.clear();
         player.vehicle = null;
         player.position = { x: 0, y: 0, z: 0 };
         player.money = 0;
+        factionService.getMembership.mockResolvedValue(null);
     });
 
     test('calcPay: база + метры, округление до 10', () => {
@@ -141,5 +152,62 @@ describe('CourierService', () => {
         expect(workVeh.destroy).toHaveBeenCalled();
         expect(courierService.isWorking(1)).toBe(false);
         expect(player.call).toHaveBeenCalledWith('client:courier:target', [null]);
+    });
+});
+
+describe('Бонусы семьи в работе курьера', () => {
+    const factionService = require('../services/FactionService');
+    let testPlayer;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        testPlayer = {
+            accountId: 1,
+            accountName: 'test',
+            addMoney: jest.fn().mockResolvedValue(true),
+            outputChatBox: jest.fn(),
+            call: jest.fn(),
+        };
+    });
+
+    test('курьер без семьи — только базовая зарплата', async () => {
+        factionService.getMembership.mockResolvedValue(null);
+        const st = { stage: 'return', pointIdx: 0, vehicleId: 1, pay: 100 };
+
+        await courierService.completeOrder(testPlayer, st);
+
+        expect(testPlayer.addMoney).toHaveBeenCalledTimes(1);
+        expect(testPlayer.addMoney).toHaveBeenCalledWith(100, 'курьерская доставка');
+        expect(factionService.addTreasury).not.toHaveBeenCalled();
+    });
+
+    test('курьер в семье — базовая + бонус игроку + казна', async () => {
+        factionService.getMembership.mockResolvedValue({
+            faction: { id: 1, name: 'Семья Корлеоне' },
+            member: { rank: 0 },
+        });
+        factionService.addTreasury.mockResolvedValue(true);
+        const st = { stage: 'return', pointIdx: 0, vehicleId: 1, pay: 100 };
+
+        await courierService.completeOrder(testPlayer, st);
+
+        expect(testPlayer.addMoney).toHaveBeenCalledTimes(2);
+        expect(testPlayer.addMoney).toHaveBeenCalledWith(100, 'курьерская доставка');
+        expect(testPlayer.addMoney).toHaveBeenCalledWith(20, 'бонус семьи Семья Корлеоне');
+        expect(factionService.addTreasury).toHaveBeenCalledWith(1, 10);
+    });
+
+    test('округление бонусов до 10', async () => {
+        factionService.getMembership.mockResolvedValue({
+            faction: { id: 1, name: 'Семья' },
+            member: { rank: 0 },
+        });
+        factionService.addTreasury.mockResolvedValue(true);
+        const st = { stage: 'return', pointIdx: 0, vehicleId: 1, pay: 33 };
+
+        await courierService.completeOrder(testPlayer, st);
+
+        expect(testPlayer.addMoney).toHaveBeenCalledWith(10, expect.stringContaining('бонус'));
+        expect(factionService.addTreasury).not.toHaveBeenCalled();
     });
 });
