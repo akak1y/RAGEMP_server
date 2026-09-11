@@ -65,6 +65,10 @@ function broadcast(obj) {
 
 let wss = null;
 
+const loginFails = new Map();
+const LOGIN_MAX_FAILS = 5;
+const LOGIN_WINDOW_MS = 60000;
+
 function start() {
     const server = http.createServer((req, res) => {
         metrics.inc('rage_http_requests_total', 'Admin panel HTTP requests');
@@ -72,13 +76,25 @@ function start() {
             let body = '';
             req.on('data', (c) => (body += c));
             req.on('end', async () => {
+                const ip = req.socket.remoteAddress || 'unknown';
+                const now = Date.now();
+                const rec = loginFails.get(ip);
+                if (rec && now < rec.resetAt && rec.count >= LOGIN_MAX_FAILS) {
+                    res.writeHead(429, { 'Content-Type': 'application/json' });
+                    return res.end(JSON.stringify({ error: 'too_many_attempts' }));
+                }
                 try {
                     const { username, password } = JSON.parse(body || '{}');
                     const r = await authService.authenticate(username, password);
                     if (!r.success || (r.user.admin_level || 0) < 1) {
+                        const cur = loginFails.get(ip);
+                        if (!cur || now >= cur.resetAt)
+                            loginFails.set(ip, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
+                        else cur.count += 1;
                         res.writeHead(403, { 'Content-Type': 'application/json' });
                         return res.end(JSON.stringify({ error: 'forbidden' }));
                     }
+                    loginFails.delete(ip);
                     const token = jwt.sign(
                         {
                             accountId: r.user.id,

@@ -250,6 +250,10 @@ createApp({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: this.login, password: this.password }),
             });
+            if (r.status === 429) {
+                this.error = 'Слишком много попыток — подождите минуту';
+                return;
+            }
             if (!r.ok) {
                 this.error = 'Отказано';
                 return;
