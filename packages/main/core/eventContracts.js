@@ -62,6 +62,9 @@ const contracts = {
     // ===== factionController.js =====
     'client:faction:open': [],
     'client:faction:memberResult': ['boolean', 'string'],
+
+    // ===== MiningService.js =====
+    'client:mining:rocksUpdate': ['string'],
 };
 
 function typeOf(value) {

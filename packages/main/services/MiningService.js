@@ -4,6 +4,7 @@ const auditService = require('./AuditService');
 const locationService = require('./LocationService');
 const { isNear } = require('../utils/distance');
 const logger = require('../core/logger');
+const { sendEvent } = require('../core/eventSender');
 
 /**
  * Сервис работы шахтёра — добыча руды и продажа боту
@@ -176,7 +177,9 @@ class MiningService {
     broadcastRocks() {
         if (typeof mp === 'undefined' || !mp.players) return;
         const active = this.getRocksActive();
-        mp.players.forEach((p) => p.call('client:mining:rocksUpdate', [JSON.stringify(active)]));
+        mp.players.forEach((p) =>
+            sendEvent(p, 'client:mining:rocksUpdate', [JSON.stringify(active)])
+        );
     }
 
     getRocksActive() {
