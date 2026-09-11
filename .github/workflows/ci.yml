@@ -115,3 +115,16 @@ jobs:
                   cache: 'npm'
             - run: npm ci
             - run: npm run lint
+
+    docs-freshness:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: 'npm'
+            - run: npm ci
+            - run: npm run docs:events
+            - name: events.md актуален
+              run: git diff --exit-code docs/events.md
