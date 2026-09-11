@@ -29,7 +29,7 @@ const int = (v, min, max, name) => {
 
 const EDITORS = {
     accounts: {
-        money: (v) => int(v, 0, 2147483647, 'admin_level'),
+        money: (v) => int(v, 0, 2147483647, 'money'),
         admin_level: (v) => int(v, 0, 10, 'admin_level'),
     },
     vehicles: {
