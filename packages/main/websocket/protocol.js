@@ -293,19 +293,13 @@ async function handlePlayerAction(socket, msg, broadcast) {
         let result = { success: true };
         let auditDetails = { action, targetId };
 
-        if (action === 'heal') {
-            if (player) {
-                await healthService.setHealth(player, 100);
-            } else {
-                await UserModel.update({ hp: 100 }, { where: { id } });
-            }
+        if (!player) {
+            result = { success: false, message: 'Игрок не в сети' };
+        } else if (action === 'heal') {
+            await healthService.setHealth(player, 100);
             result.message = 'Игрок вылечен';
         } else if (action === 'kill') {
-            if (player) {
-                await healthService.setHealth(player, 0);
-            } else {
-                await UserModel.update({ hp: 0 }, { where: { id } });
-            }
+            await healthService.setHealth(player, 0);
             result.message = 'Игрок убит';
         } else {
             return;
