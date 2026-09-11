@@ -61,6 +61,7 @@ const contracts = {
 
     // ===== factionController.js =====
     'client:faction:open': [],
+    'client:faction:memberResult': ['boolean', 'string'],
 };
 
 function typeOf(value) {

@@ -58,6 +58,10 @@
             :info="factionInfo"
             @deposit="onDeposit"
             @withdraw="onWithdraw"
+            @invite="onFactionInvite"
+            @kick="onFactionKick"
+            @promote="onFactionPromote"
+            @demote="onFactionDemote"
             @close="closeWindow('faction')"
         />
         <!--перехватываем нажатие клавиш-->
@@ -244,6 +248,19 @@ const onDeposit = (amount) => {
 
 const onWithdraw = (amount) => {
     if (typeof mp !== 'undefined') mp.trigger('client:faction:withdraw', amount);
+};
+
+const onFactionInvite = (name) => {
+    if (typeof mp !== 'undefined') mp.trigger('client:faction:invite', name);
+};
+const onFactionKick = (id) => {
+    if (typeof mp !== 'undefined') mp.trigger('client:faction:kick', id);
+};
+const onFactionPromote = (id) => {
+    if (typeof mp !== 'undefined') mp.trigger('client:faction:promote', id);
+};
+const onFactionDemote = (id) => {
+    if (typeof mp !== 'undefined') mp.trigger('client:faction:demote', id);
 };
 
 onMounted(() => {

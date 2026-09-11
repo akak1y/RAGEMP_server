@@ -124,4 +124,62 @@ describe('FactionService', () => {
             expect(p.applyMoneyDelta).toHaveBeenCalledWith(500);
         });
     });
+
+    describe('управление составом', () => {
+        const member = (rank) => ({ faction_id: 1, rank });
+
+        test('invite: оружейник приглашает, новичок получает ранг 0', async () => {
+            mockMemberModel.findOne.mockResolvedValueOnce(member(2)).mockResolvedValueOnce(null);
+            const res = await factionService.invite(makePlayer(), 7);
+            expect(res).toEqual({ success: true });
+            expect(mockMemberModel.create).toHaveBeenCalledWith(
+                expect.objectContaining({ faction_id: 1, account_id: 7, rank: 0 })
+            );
+        });
+
+        test('invite: боец без права invite — отказ', async () => {
+            mockMemberModel.findOne.mockResolvedValueOnce(member(1));
+            const res = await factionService.invite(makePlayer(), 7);
+            expect(res).toEqual({ success: false, error: 'no_permission' });
+            expect(mockMemberModel.create).not.toHaveBeenCalled();
+        });
+
+        test('kick: нельзя исключить равного по рангу', async () => {
+            mockMemberModel.findOne
+                .mockResolvedValueOnce(member(3))
+                .mockResolvedValueOnce(member(3));
+            const res = await factionService.kick(makePlayer(), 7);
+            expect(res).toEqual({ success: false, error: 'rank_too_high' });
+            expect(mockMemberModel.destroy).not.toHaveBeenCalled();
+        });
+
+        test('changeRank +1: босс повышает правую руку до ранга 3', async () => {
+            mockMemberModel.findOne
+                .mockResolvedValueOnce(member(4))
+                .mockResolvedValueOnce(member(3));
+            const res = await factionService.changeRank(makePlayer(), 7, 1);
+            expect(res).toEqual({ success: false, error: 'rank_too_high' });
+        });
+
+        test('changeRank +1: босс повышает оружейника до ранга 3', async () => {
+            mockMemberModel.findOne
+                .mockResolvedValueOnce(member(4))
+                .mockResolvedValueOnce(member(2));
+            mockMemberModel.update.mockResolvedValueOnce([1]);
+            const res = await factionService.changeRank(makePlayer(), 7, 1);
+            expect(res).toEqual({ success: true, rank: 3 });
+            expect(mockMemberModel.update).toHaveBeenCalledWith(
+                { rank: 3 },
+                { where: { account_id: 7 } }
+            );
+        });
+
+        test('changeRank -1: демotion до низа ограничен', async () => {
+            mockMemberModel.findOne
+                .mockResolvedValueOnce(member(4))
+                .mockResolvedValueOnce(member(0));
+            const res = await factionService.changeRank(makePlayer(), 7, -1);
+            expect(res).toEqual({ success: false, error: 'rank_limit' });
+        });
+    });
 });

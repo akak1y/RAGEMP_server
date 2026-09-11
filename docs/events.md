@@ -31,3 +31,4 @@
 | `client:bot:setup`                     | number, number                            | services\BotService.js                                 |
 | `client:courier:target`                | number, number, number, string _или_ null | services\CourierService.js                             |
 | `client:faction:open`                  |                                           | controllers\factionController.js                       |
+| `client:faction:memberResult`          | boolean, string                           | controllers\factionController.js                       |

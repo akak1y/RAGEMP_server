@@ -527,3 +527,12 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+.member-actions {
+    display: flex;
+    gap: 6px;
+}
+.member-actions .btn-close {
+    width: auto;
+    padding: 4px 8px;
+}

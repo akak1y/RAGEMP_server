@@ -82,6 +82,45 @@ class FactionService {
             : { success: false, error: 'not_member' };
     }
 
+    /** Приглашение: право invite, новичок всегда ранг 0 */
+    async invite(actor, targetAccountId) {
+        const membership = await this.getMembership(actor.accountId);
+        if (!membership) return { success: false, error: 'no_faction' };
+        if (!this.can(membership.member, 'invite'))
+            return { success: false, error: 'no_permission' };
+        return this.addMember(membership.faction.id, targetAccountId, 0);
+    }
+
+    /** Кик: право kick, нельзя трогать равных и старших */
+    async kick(actor, targetAccountId) {
+        const membership = await this.getMembership(actor.accountId);
+        if (!membership) return { success: false, error: 'no_faction' };
+        if (!this.can(membership.member, 'kick')) return { success: false, error: 'no_permission' };
+        const target = await this.getMembership(targetAccountId);
+        if (!target || target.faction.id !== membership.faction.id)
+            return { success: false, error: 'not_member' };
+        if (target.member.rank >= membership.member.rank)
+            return { success: false, error: 'rank_too_high' };
+        return this.removeMember(targetAccountId);
+    }
+
+    /** Повышение/понижение: право promote, нельзя делать равным себе */
+    async changeRank(actor, targetAccountId, delta) {
+        const membership = await this.getMembership(actor.accountId);
+        if (!membership) return { success: false, error: 'no_faction' };
+        if (!this.can(membership.member, 'promote'))
+            return { success: false, error: 'no_permission' };
+        const target = await this.getMembership(targetAccountId);
+        if (!target || target.faction.id !== membership.faction.id)
+            return { success: false, error: 'not_member' };
+        if (target.member.rank >= membership.member.rank)
+            return { success: false, error: 'rank_too_high' };
+        const newRank = target.member.rank + delta;
+        if (newRank < 0 || newRank >= RANKS.length) return { success: false, error: 'rank_limit' };
+        if (newRank >= membership.member.rank) return { success: false, error: 'rank_too_high' };
+        return this.setRank(targetAccountId, newRank);
+    }
+
     /** Взнос в кассу: деньги игрока → касса, атомарно */
     async deposit(player, sum) {
         const amount = Number(sum);

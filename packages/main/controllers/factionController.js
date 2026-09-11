@@ -1,4 +1,5 @@
 const factionService = require('../services/FactionService');
+const auditService = require('../services/AuditService');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const isAdmin = require('../middleware/isAdmin');
 const rateLimit = require('../middleware/rateLimit');
@@ -7,10 +8,19 @@ const { registerCommand } = require('./commandSystem');
 const { sendEvent } = require('../core/eventSender');
 
 /**
- * Фракции: инфо для UI, касса (взнос/вывод), открытие окна.
+ * Фракции: инфо для UI, касса, управление составом, открытие окна.
  */
 
 const adminOnly = isAdmin(1);
+
+const ERROR_TEXT = {
+    no_faction: 'Вы не состоите в семье',
+    no_permission: 'Недостаточно прав для этого действия',
+    already_in_faction: 'Игрок уже состоит в семье',
+    not_member: 'Игрок не состоит в семье',
+    rank_too_high: 'Цель равна или выше вас по рангу',
+    rank_limit: 'Достигнут предел ранга',
+};
 
 function findOnlinePlayer(arg) {
     if (!arg) return null;
@@ -47,6 +57,17 @@ async function sendFactionInfo(player) {
             ranks: factionService.getRanks(),
         }),
     ]);
+}
+
+/**
+ * обновить окно всем онлайн-участникам фракции
+ */
+async function refreshOnlineMembers(factionId) {
+    const members = await factionService.getMembers(factionId);
+    const ids = new Set(members.map((m) => m.account_id));
+    for (const p of mp.players.toArray()) {
+        if (p.isLoggedIn && ids.has(p.accountId)) await sendFactionInfo(p);
+    }
 }
 
 mp.events.add(
@@ -113,8 +134,103 @@ mp.events.add(
     )
 );
 
-// --- админ-команда открытия окна---
+// --- управление составом ---
 
+mp.events.add(
+    'server:faction:invite',
+    withGuards(
+        [isLoggedIn, rateLimit('faction:invite', 3, 15)],
+        async (player, targetArg) => {
+            const target = findOnlinePlayer(String(targetArg ?? ''));
+            if (!target)
+                return sendEvent(player, 'client:faction:memberResult', [
+                    false,
+                    'Игрок не найден или не в сети',
+                ]);
+            if (target.accountId === player.accountId)
+                return sendEvent(player, 'client:faction:memberResult', [
+                    false,
+                    'Нельзя пригласить себя',
+                ]);
+            const result = await factionService.invite(player, target.accountId);
+            if (!result.success)
+                return sendEvent(player, 'client:faction:memberResult', [
+                    false,
+                    ERROR_TEXT[result.error] || result.error,
+                ]);
+            const membership = await factionService.getMembership(player.accountId);
+            auditService.logPlayer(player, 'faction_invite', {
+                category: 'faction',
+                target: target.accountId,
+                details: { target_name: target.accountName },
+            });
+            target.outputChatBox(
+                `!{#4CAF50}[Семья] Вы приняты в семью ${membership.faction.name}. E на базе — окно семьи.`
+            );
+            sendEvent(player, 'client:faction:memberResult', [
+                true,
+                `${target.accountName} принят в семью`,
+            ]);
+            await refreshOnlineMembers(membership.faction.id);
+        },
+        'faction:invite'
+    )
+);
+
+mp.events.add(
+    'server:faction:kick',
+    withGuards(
+        [isLoggedIn, rateLimit('faction:kick', 3, 15)],
+        async (player, targetId) => {
+            const id = Number(targetId);
+            const result = await factionService.kick(player, id);
+            if (!result.success)
+                return sendEvent(player, 'client:faction:memberResult', [
+                    false,
+                    ERROR_TEXT[result.error] || result.error,
+                ]);
+            auditService.logPlayer(player, 'faction_kick', { category: 'faction', target: id });
+            const target = mp.players.toArray().find((p) => p.accountId === id);
+            if (target) {
+                target.outputChatBox('!{#FF3333}[Семья] Вы исключены из семьи.');
+                await sendFactionInfo(target);
+            }
+            sendEvent(player, 'client:faction:memberResult', [true, 'Игрок исключён из семьи']);
+            const membership = await factionService.getMembership(player.accountId);
+            if (membership) await refreshOnlineMembers(membership.faction.id);
+        },
+        'faction:kick'
+    )
+);
+
+function rankChangeEvent(delta, actionName, okText) {
+    return withGuards(
+        [isLoggedIn, rateLimit(`faction:${actionName}`, 3, 15)],
+        async (player, targetId) => {
+            const id = Number(targetId);
+            const result = await factionService.changeRank(player, id, delta);
+            if (!result.success)
+                return sendEvent(player, 'client:faction:memberResult', [
+                    false,
+                    ERROR_TEXT[result.error] || result.error,
+                ]);
+            auditService.logPlayer(player, `faction_${actionName}`, {
+                category: 'faction',
+                target: id,
+                details: { new_rank: result.rank },
+            });
+            sendEvent(player, 'client:faction:memberResult', [true, okText]);
+            const membership = await factionService.getMembership(player.accountId);
+            if (membership) await refreshOnlineMembers(membership.faction.id);
+        },
+        `faction:${actionName}`
+    );
+}
+
+mp.events.add('server:faction:promote', rankChangeEvent(1, 'promote', 'Ранг повышен'));
+mp.events.add('server:faction:demote', rankChangeEvent(-1, 'demote', 'Ранг понижен'));
+
+// --- админ-команда открытия окна ---
 registerCommand('fam', {
     guards: [isLoggedIn, adminOnly],
     run: async (player) => {

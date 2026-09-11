@@ -21,6 +21,22 @@
                 </div>
             </div>
 
+            <!-- Приглашение -->
+            <div v-if="canInvite" class="treasury-controls">
+                <h3>Приглашение</h3>
+                <div class="amount-input">
+                    <input
+                        v-model="inviteName"
+                        type="text"
+                        placeholder="Ник или ID"
+                        class="input-field"
+                    />
+                    <button class="btn-buy" :disabled="!inviteName.trim()" @click="onInvite">
+                        Пригласить
+                    </button>
+                </div>
+            </div>
+
             <!-- Управление кассой -->
             <div class="treasury-controls">
                 <h3>Управление кассой</h3>
@@ -51,6 +67,29 @@
                                 member.rank
                             }})</span
                         >
+                        <span class="member-actions">
+                            <button
+                                v-if="canDemote(member)"
+                                class="btn-buy"
+                                @click="$emit('demote', member.accountId)"
+                            >
+                                −
+                            </button>
+                            <button
+                                v-if="canPromote(member)"
+                                class="btn-buy"
+                                @click="$emit('promote', member.accountId)"
+                            >
+                                +
+                            </button>
+                            <button
+                                v-if="canKick(member)"
+                                class="btn-close small"
+                                @click="$emit('kick', member.accountId)"
+                            >
+                                Кик
+                            </button>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -61,15 +100,23 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 const props = defineProps({
     info: { type: Object, default: null },
 });
 
-const emit = defineEmits(['deposit', 'withdraw', 'close']);
+const emit = defineEmits(['deposit', 'withdraw', 'close', 'invite', 'kick', 'promote', 'demote']);
 
 const amount = ref(0);
+const inviteName = ref('');
+
+const myRank = computed(() => (props.info ? props.info.me.rank : -1));
+const canInvite = computed(() => myRank.value >= 2);
+
+const canKick = (m) => myRank.value >= 3 && m.rank < myRank.value;
+const canPromote = (m) => myRank.value >= 4 && m.rank < myRank.value - 1;
+const canDemote = (m) => myRank.value >= 4 && m.rank < myRank.value && m.rank > 0;
 
 const formatNumber = (num) => {
     if (!num) return '0';
@@ -87,6 +134,14 @@ const onWithdraw = () => {
     if (amount.value > 0) {
         emit('withdraw', amount.value);
         amount.value = 0;
+    }
+};
+
+const onInvite = () => {
+    const name = inviteName.value.trim();
+    if (name) {
+        emit('invite', name);
+        inviteName.value = '';
     }
 };
 </script>
