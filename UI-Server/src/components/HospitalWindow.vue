@@ -4,7 +4,7 @@
         <p class="window-desc">Восстановить здоровье до 100%?</p>
         <div class="window-item">
             <span>Лечение</span>
-            <span class="item-price">$100</span>
+            <span class="item-price">${{ price }}</span>
         </div>
         <button class="btn-buy full" @click="$emit('heal')">Лечиться</button>
         <button class="btn-close" @click="$emit('close')">Закрыть</button>
@@ -12,6 +12,9 @@
 </template>
 
 <script setup>
-defineProps({ open: Boolean });
+defineProps({
+    open: Boolean,
+    price: { type: Number, default: 0 },
+});
 defineEmits(['heal', 'close']);
 </script>

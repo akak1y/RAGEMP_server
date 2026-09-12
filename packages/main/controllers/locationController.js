@@ -1,6 +1,13 @@
 const locationService = require('../services/LocationService');
 const miningService = require('../services/MiningService');
-const { MiningConfig, BotConfig, PhoneConfig, MafiaBasePos, HospitalPos } = require('../config');
+const {
+    MiningConfig,
+    BotConfig,
+    PhoneConfig,
+    MafiaBasePos,
+    HospitalPos,
+    HospitalConfig,
+} = require('../config');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
 const { sendEvent } = require('../core/eventSender');
@@ -27,6 +34,7 @@ mp.events.add(
                     active: miningService.getRocksActive(),
                 },
                 phonePrice: PhoneConfig.deliveryCar,
+                hospitalPrice: HospitalConfig.healPrice,
                 mafiaBase: MafiaBasePos,
                 hospital: HospitalPos,
             };

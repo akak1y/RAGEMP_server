@@ -76,6 +76,9 @@ module.exports = {
     CarCustomPos: { x: -403.5, y: -71.6, z: 44.5, h: 52.0 },
     CustomBoxPos: { x: -401.3, y: -84.2, z: 53.9, h: 298.0 },
     HospitalPos: { x: -449.6, y: -133.1, z: 39.1, h: 120.6 },
+    HospitalConfig: {
+        healPrice: 150, // цена лечения в больнице
+    },
     BotConfig: {
         position: { x: -491.22, y: -133.64, z: 38.91, h: 333.5 },
         pedMode: 'g_m_m_korboss_01',

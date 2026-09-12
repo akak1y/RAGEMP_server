@@ -49,6 +49,7 @@
         <!--лечение в больнице-->
         <HospitalWindow
             :open="windows.hospital"
+            :price="hospitalPrice"
             @heal="onHealRequest"
             @close="closeWindow('hospital')"
         />
@@ -145,6 +146,7 @@ const miningSellInfo = ref({ oreCount: 0, price: 0, total: 0 });
 const miningProgress = ref(null);
 const interactHint = ref('');
 const factionInfo = ref(null);
+const hospitalPrice = ref(0);
 
 const addDebugLog = (text, type = 'info') => {
     const now = new Date();
@@ -428,6 +430,9 @@ onMounted(() => {
         } catch (e) {
             console.error('[Vue Error] Не удалось распарсить данные фракции:', e);
         }
+    };
+    window.setHospitalPrice = (price) => {
+        hospitalPrice.value = price;
     };
 });
 </script>

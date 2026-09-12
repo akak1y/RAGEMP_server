@@ -97,5 +97,8 @@ mp.events.add('client:locations:setAll', (json) => {
         if (data.phonePrice !== undefined) {
             ui.call('setPriceDeliveryCar', data.phonePrice);
         }
+        if (data.hospitalPrice !== undefined) {
+            ui.call('setHospitalPrice', data.hospitalPrice);
+        }
     } catch (e) {}
 });
