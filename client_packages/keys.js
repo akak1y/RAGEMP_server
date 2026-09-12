@@ -47,12 +47,9 @@ mp.keys.bind(0x1b, true, () => {
         state.globalKeyBlock = false;
     }, 60);
     if (state.isAnyUiWindowOpen) {
-        state.openWindowsState = {
-            inventory: false,
-            phone: false,
-            dealership: false,
-            carCustom: false,
-        };
+        for (const key of Object.keys(state.openWindowsState)) {
+            state.openWindowsState[key] = false;
+        }
         setTimeout(() => {
             state.isAnyUiWindowOpen = false;
         }, 170);

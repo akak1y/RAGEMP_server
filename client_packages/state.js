@@ -16,6 +16,9 @@ globalThis.UIState = {
         dealership: false,
         carCustom: false,
         shop: false,
+        miningSell: false,
+        hospital: false,
+        faction: false,
     },
     positions: {
         dealership: null,
