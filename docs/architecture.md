@@ -23,7 +23,7 @@ MySQL ← core/db   •   Redis ← core/redis
 
 ## Сервер
 
-### `controllers/` — тонкие обработчики (12 файлов)
+### `controllers/` — тонкие обработчики (13 файлов)
 
 | Файл                    | Ответственность                                       |
 | ----------------------- | ----------------------------------------------------- |
@@ -39,6 +39,7 @@ MySQL ← core/db   •   Redis ← core/redis
 | `factionController.js`  | фракции: запрос инфо, касса                           |
 | `hospitalController.js` | лечение в больнице                                    |
 | `shopController.js`     | магазин: покупка предметов                            |
+| `miningController.js`   | шахта: камни, добыча, продажа руды                    |
 
 ### `middleware/` — проверки прав и error boundary (4)
 
@@ -46,9 +47,9 @@ MySQL ← core/db   •   Redis ← core/redis
 - `isLoggedIn`, `isAdmin` — фабрики guard'ов
 - `rateLimit` — Redis-счётчики, fail open, коалесценция нарушений через AuditService
 
-### `services/` — бизнес-логика (14)
+### `services/` — бизнес-логика (15)
 
-Account, Auth, Money, Vehicle, Tuning, Inventory, Location, Stats, Health, Audit, Bot, Courier, Faction, Shop.
+Account, Auth, Money, Vehicle, Tuning, Inventory, Location, Stats, Health, Audit, Bot, Courier, Faction, Mining, Shop.
 Сервисы не знают про `mp.*`, кроме осознанных game-world сервисов (Vehicle, Tuning, Bot, Courier) — это помечено в их шапках.
 
 ### `models/` — Sequelize-модели, ленивые геттеры (7)
