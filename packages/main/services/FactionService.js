@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const { getFactionModel } = require('../models/Faction');
 const { getFactionMemberModel } = require('../models/FactionMember');
 const { getSequelize } = require('../core/db');
@@ -166,21 +167,32 @@ class FactionService {
         if (!this.can(membership.member, 'withdraw'))
             return { success: false, error: 'no_permission' };
         if (membership.faction.treasury < amount) return { success: false, error: 'treasury_poor' };
-
         const sequelize = getSequelize();
-        await sequelize.transaction(async (t) => {
-            await getFactionModel().update(
-                { treasury: sequelize.literal(`treasury - ${amount}`) },
-                { where: { id: membership.faction.id }, transaction: t }
-            );
-            const paid = await moneyService.addMoney(
-                player.accountId,
-                amount,
-                `выплата из кассы ${membership.faction.name}`,
-                t
-            );
-            if (!paid) throw new Error('payout_failed');
-        });
+        try {
+            await sequelize.transaction(async (t) => {
+                const [affected] = await getFactionModel().update(
+                    { treasury: sequelize.literal(`treasury - ${amount}`) },
+                    {
+                        where: {
+                            id: membership.faction.id,
+                            treasury: { [Op.gte]: amount },
+                        },
+                        transaction: t,
+                    }
+                );
+                if (!affected) throw new Error('treasury_poor');
+                const paid = await moneyService.addMoney(
+                    player.accountId,
+                    amount,
+                    `выплата из кассы ${membership.faction.name}`,
+                    t
+                );
+                if (!paid) throw new Error('payout_failed');
+            });
+        } catch (err) {
+            if (err.message === 'treasury_poor') return { success: false, error: 'treasury_poor' };
+            throw err;
+        }
         player.applyMoneyDelta(amount);
         logger.info(
             `[FactionService] ${player.accountName} вывел $${amount} из кассы ${membership.faction.name}`

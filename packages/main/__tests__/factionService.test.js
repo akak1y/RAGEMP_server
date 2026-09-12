@@ -112,6 +112,7 @@ describe('FactionService', () => {
         });
         test('дон выводит: касса -1000, игрок +1000', async () => {
             mockMemberModel.findOne.mockResolvedValueOnce({ faction_id: 1, rank: 4 });
+            mockFactionModel.update.mockResolvedValueOnce([1]);
             const p = makePlayer();
             const res = await factionService.withdraw(p, 500);
             expect(res).toEqual({ success: true });
@@ -122,6 +123,15 @@ describe('FactionService', () => {
                 {}
             );
             expect(p.applyMoneyDelta).toHaveBeenCalledWith(500);
+        });
+        test('гонка: казна исчерпана внутри транзакции — отказ без выплаты', async () => {
+            mockMemberModel.findOne.mockResolvedValueOnce({ faction_id: 1, rank: 4 });
+            mockFactionModel.update.mockResolvedValueOnce([0]);
+            const p = makePlayer();
+            const res = await factionService.withdraw(p, 500);
+            expect(res).toEqual({ success: false, error: 'treasury_poor' });
+            expect(moneyService.addMoney).not.toHaveBeenCalled();
+            expect(p.applyMoneyDelta).not.toHaveBeenCalled();
         });
     });
 
