@@ -9,6 +9,7 @@ const {
     VehicleConfig,
     PhoneConfig,
     GaragePos,
+    GarageInteractionRadius,
     FuelPricePerLiter,
     FuelInteractionRadius,
 } = require('../config');
