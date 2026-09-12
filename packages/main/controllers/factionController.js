@@ -230,6 +230,26 @@ function rankChangeEvent(delta, actionName, okText) {
 mp.events.add('server:faction:promote', rankChangeEvent(1, 'promote', 'Ранг повышен'));
 mp.events.add('server:faction:demote', rankChangeEvent(-1, 'demote', 'Ранг понижен'));
 
+// --- семейный чат ---
+const familyChatLimit = rateLimit('family_chat', 1, 1);
+
+registerCommand('f', {
+    guards: [isLoggedIn],
+    run: async (player, args) => {
+        const text = (args || []).join(' ').trim();
+        if (!text) return player.outputChatBox('!{#FF3333}Использование: /f [сообщение]');
+        if (!(await familyChatLimit(player))) return;
+        const membership = await factionService.getMembership(player.accountId);
+        if (!membership) return player.outputChatBox('!{#FF3333}[Семья] Вы не состоите в семье.');
+        const members = await factionService.getMembers(membership.faction.id);
+        const ids = new Set(members.map((m) => m.account_id));
+        const line = `!{#FF9933}[Семья] ${player.accountName}: ${text}`;
+        for (const p of mp.players.toArray()) {
+            if (p.isLoggedIn && ids.has(p.accountId)) p.outputChatBox(line);
+        }
+    },
+});
+
 // --- админ-команда открытия окна ---
 registerCommand('fam', {
     guards: [isLoggedIn, adminOnly],
@@ -240,7 +260,6 @@ registerCommand('fam', {
 });
 
 // --- админ-команды состава ---
-
 registerCommand('setfaction', {
     guards: [isLoggedIn, isAdmin],
     run: async (player, args) => {
