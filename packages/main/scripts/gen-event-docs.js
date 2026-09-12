@@ -28,7 +28,7 @@ for (const dir of SCAN_DIRS) {
         while ((m = SEND_EVENT_RE.exec(src))) {
             const ev = m[1];
             if (!used.has(ev)) used.set(ev, new Set());
-            used.get(ev).add(path.relative(ROOT, file));
+            used.get(ev).add(path.relative(ROOT, file).split(path.sep).join('/'));
         }
     }
 }
@@ -45,7 +45,7 @@ const lines = [
 for (const [event, sig] of Object.entries(contracts)) {
     const sigs = Array.isArray(sig[0]) ? sig : [sig];
     const types = sigs.map((s) => s.join(', ')).join(' _или_ ');
-    const sources = [...(used.get(event) || [])].join(', ') || '—'; // ← деструктуризация Set
+    const sources = [...(used.get(event) || [])].join(', ') || '—';
     lines.push(`| \`${event}\` | ${types} | ${sources} |`);
 }
 
