@@ -11,7 +11,7 @@
             <b class="mining-sell-total">${{ info.total }}</b>
         </div>
         <button class="buy-btn" :disabled="info.oreCount === 0" @click="sell">Продать всё</button>
-        <button class="close-btn" @click="$emit('close')">Закрыть</button>
+        <button class="btn-close" @click="$emit('close')">Закрыть</button>
     </div>
 </template>
 

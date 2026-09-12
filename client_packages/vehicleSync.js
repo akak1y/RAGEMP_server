@@ -57,8 +57,9 @@ mp.events.add('entityStreamIn', (entity) => {
 
 // автосалон
 interactions.register({
+    mode: 'foot',
     getPositions: () => [state.positions.dealership],
-    getHint: () => state.interactionHints.dealership || null,
+    getHint: () => state.interactionHints.dealership,
     onInteract: () => {
         mp.events.callRemote('server:dealership:requestConfig');
         ui.toggleWindow('dealership');
@@ -67,8 +68,9 @@ interactions.register({
 
 // гараж
 interactions.register({
+    mode: 'foot',
     getPositions: () => [state.positions.garage],
-    getHint: () => state.interactionHints.garage || null,
+    getHint: () => state.interactionHints.garage,
     onInteract: () => {
         mp.events.callRemote('server:phone:requestCars');
         ui.call('setPayDeliveryCar', false);
@@ -78,8 +80,9 @@ interactions.register({
 
 // заправка
 interactions.register({
+    mode: 'vehicle',
     getPositions: () => [state.positions.fuel],
-    getHint: () => state.interactionHints.fuel || null,
+    getHint: () => state.interactionHints.fuel,
     onInteract: () => {
         const veh = mp.players.local.vehicle;
         if (!veh) return mp.gui.chat.push('!{#FF3333}[Заправка] Сначала сядьте в машину.');

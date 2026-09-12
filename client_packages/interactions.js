@@ -17,15 +17,23 @@ if (!globalThis.interactions) {
      * @param {number}  [zone.radius=2.5]
      * @param {Function} zone.getPositions — массив позиций
      * @param {Function} [zone.getHint] — текст подсказки или null
+     * @param {string}  [zone.mode='foot'] — 'foot' | 'vehicle' | 'any'
      * @param {Function} zone.onInteract — (index)
      */
     function register(zone) {
         zones.push(zone);
     }
 
+    function matchesMode(zone) {
+        const mode = zone.mode || 'foot';
+        if (mode === 'any') return true;
+        const inVehicle = !!mp.players.local.vehicle;
+        return mode === 'vehicle' ? inVehicle : !inVehicle;
+    }
     function findNearZone() {
         const playerPos = mp.players.local.position;
         for (const zone of zones) {
+            if (!matchesMode(zone)) continue;
             let positions;
             try {
                 positions = zone.getPositions();

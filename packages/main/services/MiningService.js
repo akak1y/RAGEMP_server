@@ -24,6 +24,7 @@ class MiningService {
      */
     startWork(player, rockIndex) {
         if (!player || !player.accountId) return false;
+        if (player.vehicle) return false;
         const rock = MiningConfig.rocks[rockIndex];
         if (!rock) return false;
         if (this.rockState[rockIndex].depleted) return false;

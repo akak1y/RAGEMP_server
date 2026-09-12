@@ -19,10 +19,13 @@ mp.events.add('client:hospital:result', (success, message) => {
     );
 });
 
+// зона больницы
+
 interactions.register({
+    mode: 'foot',
     radius: 3,
     getPositions: () => [state.positions.hospital],
-    getHint: () => state.interactionHints.hospital || null,
+    getHint: () => state.interactionHints.hospital,
     onInteract: () => {
         ui.call('toggleWindow', 'hospital');
     },

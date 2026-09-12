@@ -90,8 +90,9 @@ mp.events.add('client:locations:setAll', (json) => {
 
 // зона базы мафии
 interactions.register({
+    mode: 'foot',
     radius: 3,
     getPositions: () => [state.positions.mafiaBase],
-    getHint: () => state.interactionHints.mafiaBase || null,
+    getHint: () => state.interactionHints.mafiaBase,
     onInteract: () => mp.events.callRemote('server:faction:open'),
 });
