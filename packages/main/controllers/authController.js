@@ -112,7 +112,7 @@ mp.events.add(
                         `[Sequelize Save] Игрок "${player.accountName}" сохранён (позиция + деньги).`
                     );
             } catch (err) {
-                console.error(`[Sequelize Save Error]: ${err.message}`);
+                logger.error(`[Sequelize Save Error]: ${err.message}`);
             }
 
             vehicleService.despawnPlayerVehicles(player.accountId);
