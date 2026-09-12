@@ -14,6 +14,7 @@ const {
 } = require('../config');
 const { getSequelize } = require('../core/db');
 const { sendEvent } = require('../core/eventSender');
+const { isNear } = require('../utils/distance');
 
 /**
  * Транспорт: покупка в автосалоне, доставка через телефон, заправка.
@@ -103,8 +104,7 @@ mp.events.add(
     'server:phone:spawnVehicle',
     withGuards(
         [isLoggedIn, rateLimit('spawn_vehicle', 1, 3)],
-        async (player, vehicleDbId, fromPhone) => {
-            // доставка авто
+        async (player, vehicleDbId) => {
             if (!vehicleDbId) return;
 
             const hasPhone = inventoryService.hasItem(player, 'phone');
@@ -119,16 +119,16 @@ mp.events.add(
                     `!{#FF1111}[Телефон] Машина ${config.name} уже заспавнена.`
                 );
 
+            const atGarage = isNear(player.position, GaragePos, GarageInteractionRadius);
             let cost = 0;
-            if (fromPhone) {
+            if (!atGarage) {
                 cost = PhoneConfig.deliveryCar;
                 const paid = await player.takeMoney(cost, 'доставка авто');
                 if (!paid)
                     return player.outputChatBox('!{#FF3333}[Ошибка] У вас недостаточно денег!');
             }
-
             const posCar = {};
-            if (!fromPhone) {
+            if (atGarage) {
                 posCar.coords = new mp.Vector3(GaragePos.x, GaragePos.y, GaragePos.z); // спавним на метке гаража
                 posCar.heading = GaragePos.h;
                 posCar.inside = true;
@@ -154,15 +154,16 @@ mp.events.add(
                     } // садим игрока за руль с задержкой
                 }, 150);
             }
-
-            if (cost > 0) {
-                auditService.logPlayer(player, 'spawn_vehicle', {
-                    category: 'money',
-                    amount: cost,
-                    details: { vehicleDbId, model: carData.model },
-                });
-            }
-            player.outputChatBox(`!{#00FFFF}[Телефон] Ваша машина ${config.name} доставлена.`);
+            auditService.logPlayer(player, 'spawn_vehicle', {
+                category: 'money',
+                amount: cost,
+                details: { vehicleDbId, model: carData.model, atGarage },
+            });
+            player.outputChatBox(
+                atGarage
+                    ? `!{#00FFFF}[Гараж] Машина ${config.name} выдана из гаража.`
+                    : `!{#00FFFF}[Телефон] Машина ${config.name} доставлена за $${cost}.`
+            );
         },
         'phone:spawnVehicle'
     )
