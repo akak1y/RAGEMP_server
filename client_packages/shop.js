@@ -26,5 +26,6 @@ mp.events.add('client:server:shopBuy', (itemId, amount) => {
 
 interactions.register({
     getPositions: () => [state.positions.shop],
+    getHint: () => state.interactionHints.shop || null,
     onInteract: () => mp.events.callRemote('server:shop:requestConfig'),
 });

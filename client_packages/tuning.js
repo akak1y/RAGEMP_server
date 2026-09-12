@@ -34,5 +34,6 @@ mp.events.add('client:custom:applyUpgrade', (categoryKey, optionJson, price) => 
 // вход в LSC
 interactions.register({
     getPositions: () => [state.positions.carCustom],
+    getHint: () => state.interactionHints.lsc || null,
     onInteract: () => mp.events.callRemote('server:customCar:enterTuning'),
 });

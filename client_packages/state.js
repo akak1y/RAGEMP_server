@@ -10,6 +10,7 @@ globalThis.UIState = {
     isCameraRotateActive: false,
     isAnyUiWindowOpen: false,
     miningRocksActive: [],
+    interactionHints: {},
     openWindowsState: {
         inventory: false,
         phone: false,

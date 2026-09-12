@@ -41,5 +41,8 @@ mp.events.add('client:courier:target', (x, y, z, stage) => {
 // начало работы
 interactions.register({
     getPositions: () => [state.positions.courierStart, state.positions.courierTarget],
+    getHint: (i) =>
+        (i === 0 ? state.interactionHints.courierStart : state.interactionHints.courierTarget) ||
+        null,
     onInteract: () => mp.events.callRemote('server:courier:interact'),
 });

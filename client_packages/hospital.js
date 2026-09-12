@@ -22,7 +22,7 @@ mp.events.add('client:hospital:result', (success, message) => {
 interactions.register({
     radius: 3,
     getPositions: () => [state.positions.hospital],
-    getHint: () => 'Больница',
+    getHint: () => state.interactionHints.hospital || null,
     onInteract: () => {
         ui.call('toggleWindow', 'hospital');
     },

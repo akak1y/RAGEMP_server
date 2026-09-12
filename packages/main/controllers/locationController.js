@@ -7,6 +7,7 @@ const {
     MafiaBasePos,
     HospitalPos,
     HospitalConfig,
+    InteractionHints,
 } = require('../config');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
@@ -35,6 +36,7 @@ mp.events.add(
                 },
                 phonePrice: PhoneConfig.deliveryCar,
                 hospitalPrice: HospitalConfig.healPrice,
+                hints: InteractionHints,
                 mafiaBase: MafiaBasePos,
                 hospital: HospitalPos,
             };

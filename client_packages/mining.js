@@ -95,7 +95,8 @@ mp.events.add('client:server:miningSell', () => {
 interactions.register({
     radius: 3.0,
     getPositions: () => state.positions.miningRocks || [],
-    getHint: (i) => (state.miningRocksActive[i] !== false ? 'Добывать' : null),
+    getHint: (i) =>
+        state.miningRocksActive[i] !== false ? state.interactionHints.miningRock || null : null,
     onInteract: (i) => {
         if (state.miningRocksActive[i] === false) {
             mp.gui.chat.push('!{#FF3333}[Шахта] Камень исчерпан, жди респавн.');
@@ -109,6 +110,6 @@ interactions.register({
 interactions.register({
     radius: 4.0,
     getPositions: () => [state.positions.bot],
-    getHint: () => 'Продать руду',
+    getHint: () => state.interactionHints.miningSell || null,
     onInteract: () => mp.events.callRemote('server:mining:requestSellInfo'),
 });

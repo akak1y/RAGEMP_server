@@ -100,5 +100,8 @@ mp.events.add('client:locations:setAll', (json) => {
         if (data.hospitalPrice !== undefined) {
             ui.call('setHospitalPrice', data.hospitalPrice);
         }
+        if (data.hints) {
+            state.interactionHints = data.hints;
+        }
     } catch (e) {}
 });

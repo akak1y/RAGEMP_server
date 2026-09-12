@@ -92,6 +92,6 @@ mp.events.add('client:locations:setAll', (json) => {
 interactions.register({
     radius: 3,
     getPositions: () => [state.positions.mafiaBase],
-    getHint: () => 'Семья',
+    getHint: () => state.interactionHints.mafiaBase || null,
     onInteract: () => mp.events.callRemote('server:faction:open'),
 });

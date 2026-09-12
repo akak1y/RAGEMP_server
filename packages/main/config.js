@@ -137,6 +137,19 @@ module.exports = {
     LocationConfig: {
         defaultInteractionRadius: 2.5,
     },
+    InteractionHints: {
+        dealership: 'Автосалон',
+        garage: 'Гараж',
+        lsc: 'LSC',
+        hospital: 'Больница',
+        fuel: 'Заправка',
+        shop: 'Магазин',
+        mafiaBase: 'Семья',
+        courierStart: 'Курьер',
+        courierTarget: 'Точка доставки',
+        miningRock: 'Добывать руду',
+        miningSell: 'Продать руду',
+    },
     FactionConfig: {
         courierBonusPlayer: 0.2, // к зарплате курьера
         courierBonusTreasury: 0.05, // в казну семьи
