@@ -1,5 +1,5 @@
 const { getItemModel } = require('../models/Item');
-const { ItemConfig } = require('../config');
+const { ItemConfig, InventoryConfig = {} } = require('../config');
 const logger = require('../core/logger');
 const { sendEvent } = require('../core/eventSender');
 
@@ -8,7 +8,7 @@ const { sendEvent } = require('../core/eventSender');
  */
 class InventoryService {
     constructor() {
-        this.inventorySize = 20; // размер инвентаря
+        this.inventorySize = InventoryConfig.size || 20; // размер инвентаря
     }
 
     /**

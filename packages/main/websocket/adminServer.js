@@ -26,9 +26,7 @@ const ADMIN_PORT = (settings.admin && settings.admin.port) || 8081;
 const JWT_SECRET = (settings.admin && settings.admin.jwtSecret) || 'dev-secret-key';
 
 if (!settings.admin || !settings.admin.jwtSecret) {
-    logger.warn(
-        '[Admin] JWT-секрет не задан в settings.json — используется dev-значение.'
-    );
+    logger.warn('[Admin] JWT-секрет не задан в settings.json — используется dev-значение.');
 }
 
 const MIME = {

@@ -5,6 +5,9 @@ module.exports = {
         phone: { name: 'Смартфон iFruit', weight: 0.5, maxStack: 1 },
         ore: { name: 'Железная руда', weight: 1.0, maxStack: 10 },
     },
+    InventoryConfig: {
+        size: 20,
+    },
     VehicleConfig: {
         adder: { name: 'Truffade Adder', price: 100000 },
         turismor: { name: 'Grotti Turismo R', price: 50000 },
