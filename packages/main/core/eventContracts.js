@@ -65,6 +65,10 @@ const contracts = {
 
     // ===== MiningService.js =====
     'client:mining:rocksUpdate': ['string'],
+
+    // ===== factionStorageController.js =====
+    'client:factionStorage:setInfo': ['string'],
+    'client:factionStorage:result': ['boolean', 'string'],
 };
 
 function typeOf(value) {

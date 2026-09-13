@@ -21,6 +21,7 @@ mp.events.add('client:faction:setInfo', (json) => {
 
 mp.events.add('client:faction:open', () => {
     ui.call('toggleWindow', 'faction');
+    mp.events.callRemote('server:factionStorage:request'); // склад приезжает вместе с окном
 });
 
 mp.events.add('client:faction:moneyResult', (success, errorOrKind) => {
@@ -33,6 +34,20 @@ mp.events.add('client:faction:moneyResult', (success, errorOrKind) => {
 
 mp.events.add('client:faction:memberResult', (success, message) => {
     mp.gui.chat.push(success ? `!{#4CAF50}[Семья] ${message}` : `!{#FF3333}[Семья] ${message}`);
+});
+
+// --- семейный склад ---
+mp.events.add('client:factionStorage:setInfo', (json) => {
+    try {
+        state.factionStorage = JSON.parse(json);
+    } catch (e) {
+        state.factionStorage = null;
+    }
+    ui.call('setFactionStorage', state.factionStorage);
+});
+
+mp.events.add('client:factionStorage:result', (success, message) => {
+    mp.gui.chat.push(success ? `!{#4CAF50}[Склад] ${message}` : `!{#FF3333}[Склад] ${message}`);
 });
 
 // VUE → СЕРВЕР: управление составом
@@ -58,6 +73,15 @@ mp.events.add('client:faction:deposit', (sum) => {
 
 mp.events.add('client:faction:withdraw', (sum) => {
     mp.events.callRemote('server:faction:withdraw', Number(sum));
+});
+
+// VUE → СЕРВЕР: склад
+mp.events.add('client:factionStorage:deposit', (itemId, amount) => {
+    mp.events.callRemote('server:factionStorage:deposit', String(itemId), Number(amount));
+});
+
+mp.events.add('client:factionStorage:withdraw', (itemId, amount) => {
+    mp.events.callRemote('server:factionStorage:withdraw', String(itemId), Number(amount));
 });
 
 mp.events.add('client:locations:setAll', (json) => {

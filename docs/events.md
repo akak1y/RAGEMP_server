@@ -33,3 +33,5 @@
 | `client:faction:open`                  |                                           | controllers/factionController.js                       |
 | `client:faction:memberResult`          | boolean, string                           | controllers/factionController.js                       |
 | `client:mining:rocksUpdate`            | string                                    | services/MiningService.js                              |
+| `client:factionStorage:setInfo`        | string                                    | controllers/factionStorageController.js                |
+| `client:factionStorage:result`         | boolean, string                           | controllers/factionStorageController.js                |

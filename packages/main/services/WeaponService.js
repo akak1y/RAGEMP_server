@@ -20,7 +20,7 @@ class WeaponService {
 
         if (typeof w === 'string' && this.config(w)) return w;
 
-        for (const [key, cfg] of Object.entries(WeaponConfig)) {
+        for (const [key, _cfg] of Object.entries(WeaponConfig)) {
             if (this.hashOf(key) === w) return key;
         }
         return null;

@@ -57,12 +57,16 @@
         <Faction
             v-if="windows.faction"
             :info="factionInfo"
+            :storage="factionStorage"
+            :inventory="inventory"
             @deposit="onDeposit"
             @withdraw="onWithdraw"
             @invite="onFactionInvite"
             @kick="onFactionKick"
             @promote="onFactionPromote"
             @demote="onFactionDemote"
+            @storage-deposit="onStorageDeposit"
+            @storage-withdraw="onStorageWithdraw"
             @close="closeWindow('faction')"
         />
         <!--перехватываем нажатие клавиш-->
@@ -146,6 +150,7 @@ const miningSellInfo = ref({ oreCount: 0, price: 0, total: 0 });
 const miningProgress = ref(null);
 const interactHint = ref('');
 const factionInfo = ref(null);
+const factionStorage = ref(null);
 const hospitalPrice = ref(0);
 
 const addDebugLog = (text, type = 'info') => {
@@ -263,6 +268,12 @@ const onFactionPromote = (id) => {
 };
 const onFactionDemote = (id) => {
     if (typeof mp !== 'undefined') mp.trigger('client:faction:demote', id);
+};
+const onStorageDeposit = (itemId, amount) => {
+    if (typeof mp !== 'undefined') mp.trigger('client:factionStorage:deposit', itemId, amount);
+};
+const onStorageWithdraw = (itemId, amount) => {
+    if (typeof mp !== 'undefined') mp.trigger('client:factionStorage:withdraw', itemId, amount);
 };
 
 onMounted(() => {
@@ -429,6 +440,13 @@ onMounted(() => {
             factionInfo.value = typeof json === 'string' ? JSON.parse(json) : json;
         } catch (e) {
             console.error('[Vue Error] Не удалось распарсить данные фракции:', e);
+        }
+    };
+    window.setFactionStorage = (json) => {
+        try {
+            factionStorage.value = typeof json === 'string' ? JSON.parse(json) : json;
+        } catch (e) {
+            console.error('[Vue Error] Не удалось распарсить данные склада:', e);
         }
     };
     window.setHospitalPrice = (price) => {

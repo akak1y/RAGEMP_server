@@ -57,6 +57,68 @@
                 </div>
             </div>
 
+            <!-- Семейный склад -->
+            <div class="treasury-controls">
+                <h3>Семейный склад</h3>
+                <p v-if="!storage" class="window-desc">Склад доступен только у базы семьи</p>
+                <div v-else>
+                    <div class="amount-input">
+                        <input
+                            v-model.number="storageAmount"
+                            type="number"
+                            min="1"
+                            placeholder="Кол-во"
+                            class="input-field"
+                        />
+                    </div>
+                    <div class="window-list">
+                        <div
+                            v-for="slot in storage.items"
+                            :key="'s' + slot.slot"
+                            class="window-item"
+                        >
+                            <span>📦 {{ slot.name }} x{{ slot.count }}</span>
+                            <button
+                                v-if="storage.canWithdraw"
+                                class="btn-buy"
+                                :disabled="
+                                    !storageAmount ||
+                                    storageAmount <= 0 ||
+                                    storageAmount > slot.count
+                                "
+                                @click="$emit('storage-withdraw', slot.itemId, storageAmount)"
+                            >
+                                Взять
+                            </button>
+                        </div>
+                        <div v-if="!storage.items.length" class="window-item">
+                            <span>Склад пуст</span>
+                        </div>
+                    </div>
+                    <h3>Ваши предметы</h3>
+                    <div class="window-list">
+                        <div v-for="(slot, idx) in myItems" :key="'i' + idx" class="window-item">
+                            <span>{{ slot.displayName }} x{{ slot.count }}</span>
+                            <button
+                                v-if="storage.canDeposit"
+                                class="btn-buy"
+                                :disabled="
+                                    !storageAmount ||
+                                    storageAmount <= 0 ||
+                                    storageAmount > slot.count
+                                "
+                                @click="$emit('storage-deposit', slot.itemId, storageAmount)"
+                            >
+                                Сдать
+                            </button>
+                        </div>
+                        <div v-if="!myItems.length" class="window-item">
+                            <span>Нет предметов</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Список участников -->
             <div class="members-list">
                 <h3>Участники семьи</h3>
@@ -104,19 +166,33 @@ import { ref, computed } from 'vue';
 
 const props = defineProps({
     info: { type: Object, default: null },
+    storage: { type: Object, default: null },
+    inventory: { type: Array, default: () => [] },
 });
 
-const emit = defineEmits(['deposit', 'withdraw', 'close', 'invite', 'kick', 'promote', 'demote']);
+const emit = defineEmits([
+    'deposit',
+    'withdraw',
+    'close',
+    'invite',
+    'kick',
+    'promote',
+    'demote',
+    'storage-deposit',
+    'storage-withdraw',
+]);
 
 const amount = ref(0);
 const inviteName = ref('');
 
+const storageAmount = ref(1);
 const myRank = computed(() => (props.info ? props.info.me.rank : -1));
 const canInvite = computed(() => myRank.value >= 2);
 
 const canKick = (m) => myRank.value >= 3 && m.rank < myRank.value;
 const canPromote = (m) => myRank.value >= 4 && m.rank < myRank.value - 1;
 const canDemote = (m) => myRank.value >= 4 && m.rank < myRank.value && m.rank > 0;
+const myItems = computed(() => (props.inventory || []).filter((s) => s));
 
 const formatNumber = (num) => {
     if (!num) return '0';
