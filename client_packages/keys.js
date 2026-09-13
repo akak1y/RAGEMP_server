@@ -5,6 +5,9 @@ const state = globalThis.UIState;
 const ui = globalThis.ui;
 const natives = globalThis.natives;
 
+const UNARMED_HASH = 0xa2719263;
+const MELEE_CONTROLS = [140, 141, 142];
+
 /**
  * Бинды клавиш (T/Enter/Esc/F5/Ё/I/P) и заморозка игрока при открытом UI.
  * Клавиша E отдельно в interactions.js.
@@ -88,11 +91,21 @@ mp.keys.bind(0x50, true, () => {
     ui.toggleWindow('phone');
 });
 
+mp.keys.bind(0x52, true, () => {
+    // R - перезарядка (с оружием в руках)
+    if (!state.isAuthorized || state.globalKeyBlock || state.isAnyUiWindowOpen) return;
+    const w = mp.players.local.weapon;
+    if (!w || w === mp.game.joaat('unarmed')) return;
+    mp.events.callRemote('server:weapon:reload');
+});
+
 mp.events.add('render', () => {
     if (state.isAuthorized && state.isAnyUiWindowOpen) {
         natives.disableMovementControls();
     }
-    if (state.isAuthorized && state.openWindowsState.carCustom && state.isCameraRotateActive) {
-        natives.enableMouseControls();
+    if (state.isAuthorized && mp.players.local.weapon !== UNARMED_HASH) {
+        for (const id of MELEE_CONTROLS) {
+            mp.game.controls.disableControlAction(0, id, true);
+        }
     }
 });
