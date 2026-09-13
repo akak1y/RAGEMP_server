@@ -161,4 +161,10 @@ module.exports = {
         courierBonusPlayer: 0.2, // к зарплате курьера
         courierBonusTreasury: 0.05, // в казну семьи
     },
+    FactionStorageConfig: {
+        size: 50, // слотов в семейном складе
+        minRankDeposit: 0, // ранг, с которого можно класть
+        minRankWithdraw: 2, // ранг, с которого можно брать
+        interactRadius: 3, // радиус операций со складом у базы
+    },
 };
