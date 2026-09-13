@@ -33,3 +33,4 @@
 | `client:faction:open`                  |                                           | controllers/factionController.js                       |
 | `client:faction:memberResult`          | boolean, string                           | controllers/factionController.js                       |
 | `client:mining:rocksUpdate`            | string                                    | services/MiningService.js                              |
+| `client:weapon:reloadResult`           | boolean, string                           | controllers/weaponController.js                        |

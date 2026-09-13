@@ -4,6 +4,8 @@ module.exports = {
         water: { name: 'Вода', weight: 0.3, maxStack: 10 },
         phone: { name: 'Смартфон iFruit', weight: 0.5, maxStack: 1 },
         ore: { name: 'Железная руда', weight: 1.0, maxStack: 10 },
+        weapon_pistol: { name: 'Пистолет', weight: 1.0, maxStack: 1 },
+        ammo_9mm: { name: 'Патроны 9x19', weight: 0.01, maxStack: 250 },
     },
     InventoryConfig: {
         size: 20,
@@ -82,6 +84,9 @@ module.exports = {
     HospitalConfig: {
         healPrice: 150, // цена лечения в больнице
     },
+    WeaponConfig: {
+        weapon_pistol: { hash: 'weapon_pistol', name: 'Пистолет', ammoType: 'ammo_9mm' },
+    },
     BotConfig: {
         position: { x: -491.22, y: -133.64, z: 38.91, h: 333.5 },
         pedMode: 'g_m_m_korboss_01',
@@ -117,6 +122,8 @@ module.exports = {
             { itemId: 'burger', price: 50 },
             { itemId: 'water', price: 30 },
             { itemId: 'phone', price: 500 },
+            { itemId: 'weapon_pistol', price: 5000 },
+            { itemId: 'ammo_9mm', price: 10 },
         ],
     },
     MiningConfig: {
