@@ -68,7 +68,6 @@ class WeaponService {
             if (!holstered.success) return holstered;
         }
 
-        player.weapon = key;
         this._setAmmoInHands(player, key, 0);
         player.giveWeapon(this.hashOf(key), 0);
         return { success: true, weapon: key };
