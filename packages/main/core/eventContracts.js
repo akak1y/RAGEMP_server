@@ -65,9 +65,6 @@ const contracts = {
 
     // ===== MiningService.js =====
     'client:mining:rocksUpdate': ['string'],
-
-    // ===== weaponController.js =====
-    'client:weapon:reloadResult': ['boolean', 'string'],
 };
 
 function typeOf(value) {
