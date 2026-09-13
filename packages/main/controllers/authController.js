@@ -3,6 +3,7 @@ const authService = require('../services/AuthService');
 const inventoryService = require('../services/InventoryService');
 const vehicleService = require('../services/VehicleService');
 const courierService = require('../services/CourierService');
+const weaponService = require('../services/WeaponService');
 const { getRedis } = require('../core/redis');
 const withGuards = require('../middleware/withGuards');
 const logger = require('../core/logger');
@@ -100,6 +101,7 @@ mp.events.add(
             if (!player.isLoggedIn) return;
 
             try {
+                await weaponService.holster(player);
                 const updateData = { money: player.money || 0 };
                 if (player.lastPos) {
                     updateData.pos_x = player.lastPos.x;
