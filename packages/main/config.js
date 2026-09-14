@@ -85,7 +85,7 @@ module.exports = {
         healPrice: 150, // цена лечения в больнице
     },
     WeaponConfig: {
-        weapon_pistol: { hash: 'weapon_pistol', name: 'Пистолет', ammoType: 'ammo_9mm' },
+        weapon_pistol: { hash: 'weapon_pistol', name: 'Пистолет', ammoType: 'ammo_9mm', maxClip: 12 },
     },
     BotConfig: {
         position: { x: -491.22, y: -133.64, z: 38.91, h: 333.5 },
@@ -141,6 +141,7 @@ module.exports = {
         rockRespawnMaxMs: 60000,
     },
     MafiaBasePos: { x: -433.5, y: -57.0, z: 47.39, h: 0.0 },
+    SpawnPos: { x: -436.0, y: -162.0, z: 39.0 },
     LocationConfig: {
         defaultInteractionRadius: 2.5,
     },

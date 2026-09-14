@@ -1,4 +1,5 @@
 const logger = require('../core/logger');
+const { SpawnPos } = require('../config');
 
 /**
  * Сервис для работы с данными аккаунтов
@@ -143,9 +144,9 @@ class AccountService {
                 hwid: data.hwid || '',
                 money: Number.isInteger(data.money) ? data.money : 50000,
                 admin_level: Number.isInteger(data.admin_level) ? data.admin_level : 0,
-                pos_x: -436.0,
-                pos_y: -162.0,
-                pos_z: 39.0,
+                pos_x: SpawnPos.x,
+                pos_y: SpawnPos.y,
+                pos_z: SpawnPos.z,
             };
 
             const user = await this._model.create(accountData);
@@ -186,7 +187,6 @@ class AccountService {
             pos_y: (val) => typeof val === 'number',
             pos_z: (val) => typeof val === 'number',
             hwid: (val) => typeof val === 'string',
-            last_login: (val) => val instanceof Date || typeof val === 'number',
         };
 
         const safeData = {};
