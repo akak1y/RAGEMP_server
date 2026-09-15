@@ -20,6 +20,7 @@ mp.events.add(
                     no_weapon: 'Сначала достаньте оружие: /gun [key]',
                     no_ammo: 'Нет патронов в инвентаре.',
                     no_weapon_item: 'У вас нет этого оружия в инвентаре.',
+                    magazine_full: 'Магазин уже полон.',
                 };
                 return player.outputChatBox(`!{#FF3333}[Оружие] ${msgs[res.error] || res.error}`);
             }

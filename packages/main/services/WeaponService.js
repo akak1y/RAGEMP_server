@@ -91,7 +91,6 @@ class WeaponService {
 
         player.removeWeapon(this.hashOf(held));
         this._setAmmoInHands(player, held, 0);
-        player.weapon = null;
         return { success: true, ammoReturned, ammoLost };
     }
 
@@ -110,13 +109,18 @@ class WeaponService {
         const reserve = inventoryService.countItem(player, cfg.ammoType);
         if (reserve <= 0) return { success: false, error: 'no_ammo' };
 
-        const res = await inventoryService.removeItem(player, cfg.ammoType, reserve);
+        const inHands = this._ammoInHands(player, held);
+        const capacity = cfg.maxClip || reserve;
+        const load = Math.min(reserve, Math.max(0, capacity - inHands));
+        if (load <= 0) return { success: false, error: 'magazine_full' };
+        const res = await inventoryService.removeItem(player, cfg.ammoType, load);
         if (!res || !res.success)
             return { success: false, error: (res && res.error) || 'inventory_error' };
 
-        this._setAmmoInHands(player, held, this._ammoInHands(player, held) + reserve);
-        player.giveWeapon(this.hashOf(held), reserve);
-        return { success: true, loaded: reserve };
+        this._setAmmoInHands(player, held, inHands + load);
+        player.giveWeapon(this.hashOf(held), load);
+        return { success: true, loaded: load };
     }
 }
+
 module.exports = new WeaponService();

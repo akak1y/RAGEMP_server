@@ -7,7 +7,12 @@ jest.mock('../services/InventoryService', () => ({
 jest.mock('../core/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
 jest.mock('../config', () => ({
     WeaponConfig: {
-        weapon_pistol: { hash: 'weapon_pistol', name: 'Пистолет', ammoType: 'ammo_9mm' },
+        weapon_pistol: {
+            hash: 'weapon_pistol',
+            name: 'Пистолет',
+            ammoType: 'ammo_9mm',
+            maxClip: 12,
+        },
         weapon_knife: { hash: 'weapon_knife', name: 'Нож', ammoType: null },
     },
 }));
@@ -52,17 +57,35 @@ describe('WeaponService.reload', () => {
         expect(res).toEqual({ success: false, error: 'no_ammo' });
     });
 
-    test('успех: патроны из инвентаря уходят в оружие', async () => {
+    test('успех: из резерва 30 добирается только до maxClip 12', async () => {
         inventoryService.hasItem.mockReturnValue(true);
         inventoryService.countItem.mockReturnValue(30);
         inventoryService.removeItem.mockResolvedValue({ success: true });
         const player = makePlayer('weapon_pistol');
         const res = await weaponService.reload(player);
-        expect(res).toEqual({ success: true, loaded: 30 });
-        expect(inventoryService.removeItem).toHaveBeenCalledWith(player, 'ammo_9mm', 30);
-        expect(player.giveWeapon).toHaveBeenCalledWith('weapon_pistol', 30);
+        expect(res).toEqual({ success: true, loaded: 12 });
+        expect(inventoryService.removeItem).toHaveBeenCalledWith(player, 'ammo_9mm', 12);
+        expect(player.giveWeapon).toHaveBeenCalledWith('weapon_pistol', 12);
     });
-
+    test('дозарядка: в стволе 5 — берётся недостающие 7', async () => {
+        inventoryService.hasItem.mockReturnValue(true);
+        inventoryService.countItem.mockReturnValue(30);
+        inventoryService.removeItem.mockResolvedValue({ success: true });
+        const player = makePlayer('weapon_pistol');
+        player.weaponAmmo = { weapon_pistol: 5 };
+        const res = await weaponService.reload(player);
+        expect(res).toEqual({ success: true, loaded: 7 });
+        expect(inventoryService.removeItem).toHaveBeenCalledWith(player, 'ammo_9mm', 7);
+    });
+    test('магазин полон — magazine_full без снятия патронов', async () => {
+        inventoryService.hasItem.mockReturnValue(true);
+        inventoryService.countItem.mockReturnValue(30);
+        const player = makePlayer('weapon_pistol');
+        player.weaponAmmo = { weapon_pistol: 12 };
+        const res = await weaponService.reload(player);
+        expect(res).toEqual({ success: false, error: 'magazine_full' });
+        expect(inventoryService.removeItem).not.toHaveBeenCalled();
+    });
     test('ошибка снятия из инвентаря — giveWeapon не вызывается', async () => {
         inventoryService.hasItem.mockReturnValue(true);
         inventoryService.countItem.mockReturnValue(30);
