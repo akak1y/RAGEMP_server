@@ -334,7 +334,9 @@ onMounted(() => {
     window.toggleWindow = (name) => {
         toggleWindow(name);
     };
-
+    window.closeWindow = (name) => {
+        if (windows.value[name]) closeWindow(name);
+    };
     window.setPhoneCars = (carsJson, configJson) => {
         try {
             const playerCars = typeof carsJson === 'string' ? JSON.parse(carsJson) : carsJson;

@@ -50,12 +50,10 @@ mp.keys.bind(0x1b, true, () => {
         state.globalKeyBlock = false;
     }, 60);
     if (state.isAnyUiWindowOpen) {
-        for (const key of Object.keys(state.openWindowsState)) {
-            state.openWindowsState[key] = false;
-        }
-        setTimeout(() => {
-            state.isAnyUiWindowOpen = false;
-        }, 170);
+        const firstOpen = Object.keys(state.openWindowsState).find(
+            (key) => state.openWindowsState[key]
+        );
+        if (firstOpen) ui.call('closeWindow', firstOpen);
     }
 });
 mp.keys.bind(0x74, true, () => {
