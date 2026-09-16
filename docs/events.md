@@ -35,3 +35,5 @@
 | `client:mining:rocksUpdate`            | string                                    | services/MiningService.js                              |
 | `client:factionStorage:setInfo`        | string                                    | controllers/factionStorageController.js                |
 | `client:factionStorage:result`         | boolean, string                           | controllers/factionStorageController.js                |
+| `client:armory:setInfo`                | string                                    | controllers/armoryController.js                        |
+| `client:armory:result`                 | boolean, string                           | controllers/armoryController.js                        |

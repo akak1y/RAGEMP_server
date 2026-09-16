@@ -69,6 +69,10 @@ const contracts = {
     // ===== factionStorageController.js =====
     'client:factionStorage:setInfo': ['string'],
     'client:factionStorage:result': ['boolean', 'string'],
+
+    // ===== armoryController.js =====
+    'client:armory:setInfo': ['string'],
+    'client:armory:result': ['boolean', 'string'],
 };
 
 function typeOf(value) {

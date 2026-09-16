@@ -1,6 +1,7 @@
 const accountService = require('../services/AccountService');
 const courierService = require('../services/CourierService');
 const healthService = require('../services/HealthService');
+const armoryService = require('../services/ArmoryService');
 const { getRedis } = require('../core/redis');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
@@ -40,6 +41,9 @@ mp.events.add(
 
 mp.events.add('playerDeath', (player, _reason, _killer) => {
     if (!player.isLoggedIn) return;
+    armoryService
+        .settleOnDeath(player)
+        .catch((err) => logger.error(`[Armory] ошибка расчёта займов на смерти: ${err.message}`)); // займы возвращаются на склад до респауна
     healthService.onPlayerDeath(player);
 });
 
