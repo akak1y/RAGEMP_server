@@ -47,6 +47,8 @@ const MAP_MARKER_DEFS = [
     { path: 'CourierConfig.startPos', name: 'Курьер', icon: '📦' },
     { path: 'GaragePos', name: 'Гараж', icon: '🅿️' },
     { path: 'ShopConfig.position', name: 'Магазин', icon: '🛒' },
+    { path: 'MafiaBasePos', name: 'Семья', icon: '🏰' },
+    { path: 'BotConfig.position', name: 'Скупщик руды', icon: '⛏️' },
 ];
 
 const MAP_MARKERS = MAP_MARKER_DEFS.map((def) => {
