@@ -65,7 +65,7 @@ registerCommand('giveitem', {
                 'Использование: /giveitem [phone / burger / water] [количество]'
             );
         const result = await inventoryService.giveItem(player, itemId, count);
-        if (!result.success) {
+        if (result.success) {
             player.outputChatBox(`!{#33FF33}[Админ] Получен предмет: ${itemId} (${count} шт)`);
         } else {
             player.outputChatBox(
@@ -130,11 +130,10 @@ registerCommand('stats', {
             `!{#00FFFF}[Stats] Топ: ` + top.map((t) => `${t.username} ($${t.money})`).join(', '),
         ];
         lines.forEach((line) => player.outputChatBox(line));
-
-        sendEvent(player, 'client:ui:debugLog', {
-            success: `[Stats] economy from ${economy.source} in ${economy.ms}ms`,
-            message: 'cpp-event',
-        });
+        sendEvent(player, 'client:ui:debugLog', [
+            `[Stats] economy from ${economy.source} in ${economy.ms}ms`,
+            'cpp-event',
+        ]);
     },
 });
 
