@@ -173,4 +173,8 @@ module.exports = {
         minRankWithdraw: 2, // ранг, с которого можно брать
         interactRadius: 3, // радиус операций со складом у базы
     },
+    ArmoryConfig: {
+        minRankTake: 1, // ранг, с которого можно брать из арсенала
+        maxActiveLoans: 5, // активных займов на одного члена семьи
+    },
 };
