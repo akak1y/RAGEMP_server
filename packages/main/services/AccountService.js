@@ -226,21 +226,6 @@ class AccountService {
     }
 
     /**
-     * Обновление позиции игрока
-     * @param {number} userId - ID пользователя
-     * @param {Object} position - Позиция {x, y, z}
-     * @returns {Promise<boolean>}
-     */
-    async updatePosition(userId, position) {
-        if (!position || typeof position !== 'object') return false;
-        return await this.updateAccount(userId, {
-            pos_x: position.x,
-            pos_y: position.y,
-            pos_z: position.z,
-        });
-    }
-
-    /**
      * Удаление аккаунта
      * @param {number} userId - ID пользователя
      * @returns {Promise<boolean>}
@@ -297,20 +282,6 @@ class AccountService {
         } catch (err) {
             logger.error(`[AccountService] getAllAccounts error: ${err.message}`);
             throw err;
-        }
-    }
-
-    /**
-     * Проверка существования аккаунта
-     * @param {string} username - Логин
-     * @returns {Promise<boolean>}
-     */
-    async exists(username) {
-        try {
-            const user = await this.findByUsername(username);
-            return user !== null;
-        } catch (err) {
-            return false;
         }
     }
 

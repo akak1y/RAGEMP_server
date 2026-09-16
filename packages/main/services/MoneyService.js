@@ -131,16 +131,6 @@ class MoneyService {
             throw err;
         }
     }
-
-    /**
-     * Получить текущий баланс из БД
-     * @param {number} userId - ID аккаунта
-     * @returns {Promise<number|null>} Баланс или null, если аккаунт не найден
-     */
-    async getBalance(userId) {
-        const user = await accountService.findById(userId);
-        return user ? user.money : null;
-    }
 }
 
 module.exports = new MoneyService();

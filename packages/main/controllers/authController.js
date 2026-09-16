@@ -4,6 +4,7 @@ const inventoryService = require('../services/InventoryService');
 const vehicleService = require('../services/VehicleService');
 const courierService = require('../services/CourierService');
 const weaponService = require('../services/WeaponService');
+const healthService = require('../services/HealthService');
 const { getRedis } = require('../core/redis');
 const withGuards = require('../middleware/withGuards');
 const logger = require('../core/logger');
@@ -99,7 +100,7 @@ mp.events.add(
         async (player) => {
             if (player.posTracker) clearInterval(player.posTracker); // уничтожаем таймер обновления позиции
             if (!player.isLoggedIn) return;
-
+            healthService.onDisconnect(player.accountId);
             try {
                 await weaponService.holster(player);
                 const updateData = { money: player.money || 0 };

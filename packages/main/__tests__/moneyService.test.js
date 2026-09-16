@@ -4,13 +4,10 @@ const accountService = require('../services/AccountService');
 
 jest.mock('../services/AccountService', () => ({
     getModel: jest.fn(),
-    findById: jest.fn(),
 }));
-
 jest.mock('../services/StatsService', () => ({
     invalidateEconomyCache: jest.fn().mockResolvedValue(),
 }));
-
 jest.mock('../core/logger', () => ({
     info: jest.fn(),
     warn: jest.fn(),
@@ -108,26 +105,10 @@ describe('MoneyService', () => {
         });
     });
 
-    describe('getBalance', () => {
-        test('возвращает баланс существующего аккаунта', async () => {
-            accountService.findById.mockResolvedValue({ money: 5000 });
-            const balance = await moneyService.getBalance(1);
-            expect(balance).toBe(5000);
-        });
-
-        test('возвращает null для несуществующего аккаунта', async () => {
-            accountService.findById.mockResolvedValue(null);
-            const balance = await moneyService.getBalance(999);
-            expect(balance).toBeNull();
-        });
-    });
-
     describe('transfer', () => {
         test('успех: commit, оба update внутри транзакции', async () => {
             mockUserModel.update.mockResolvedValueOnce([1]).mockResolvedValueOnce([1]);
-
             const result = await moneyService.transfer(1, 2, 500, 'pay');
-
             expect(result).toBe(true);
             expect(mockUserModel.update).toHaveBeenCalledTimes(2);
             expect(mockUserModel.update).toHaveBeenNthCalledWith(
@@ -146,9 +127,7 @@ describe('MoneyService', () => {
 
         test('недостаточно средств: rollback, второй update не тронут', async () => {
             mockUserModel.update.mockResolvedValueOnce([0]);
-
             const result = await moneyService.transfer(1, 2, 500);
-
             expect(result).toBe(false);
             expect(mockUserModel.update).toHaveBeenCalledTimes(1);
             expect(mockTx.rollback).toHaveBeenCalled();
@@ -157,9 +136,7 @@ describe('MoneyService', () => {
 
         test('получатель исчез: rollback после первого update', async () => {
             mockUserModel.update.mockResolvedValueOnce([1]).mockResolvedValueOnce([0]);
-
             const result = await moneyService.transfer(1, 2, 500);
-
             expect(result).toBe(false);
             expect(mockTx.rollback).toHaveBeenCalled();
             expect(mockTx.commit).not.toHaveBeenCalled();
@@ -179,7 +156,6 @@ describe('MoneyService', () => {
 
         test('ошибка БД: rollback и проброс ошибки', async () => {
             mockUserModel.update.mockRejectedValueOnce(new Error('deadlock'));
-
             await expect(moneyService.transfer(1, 2, 500)).rejects.toThrow('deadlock');
             expect(mockTx.rollback).toHaveBeenCalled();
             expect(mockTx.commit).not.toHaveBeenCalled();
