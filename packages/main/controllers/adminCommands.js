@@ -41,8 +41,9 @@ registerCommand('checkban', {
 registerCommand('givemoney', {
     guards: [adminOnly],
     run: async (player, args) => {
-        const amount = parseInt(args);
-        if (isNaN(amount)) return player.outputChatBox('Использование: /givemoney [количество]');
+        const amount = Number(args[0]);
+        if (!Number.isInteger(amount) || amount <= 0)
+            return player.outputChatBox('Использование: /givemoney [количество]');
         const success = await player.addMoney(amount);
         if (success) {
             player.outputChatBox(`[Админ] Вы выдали себе $${amount}`);
