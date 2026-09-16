@@ -26,6 +26,11 @@ const int = (v, min, max, name) => {
     if (!Number.isInteger(n) || n < min || n > max) throw new Error(`${name} ${min}..${max}`);
     return n;
 };
+const num = (v, min, max, name) => {
+    const n = Number(v);
+    if (!Number.isFinite(n) || n < min || n > max) throw new Error(`${name} ${min}..${max}`);
+    return Math.round(n * 100) / 100;
+};
 
 const EDITORS = {
     accounts: {
@@ -43,7 +48,7 @@ const EDITORS = {
         brakes_mod: (v) => int(v, 0, 2, 'brakes_mod'),
         transmission_mod: (v) => int(v, 0, 2, 'transmission_mod'),
         turbo_mod: (v) => int(v, 0, 1, 'turbo_mod'),
-        fuel: (v) => int(v, 0, 100, 'fuel'),
+        fuel: (v) => num(v, 0, 100, 'fuel'),
     },
     items: {
         count: (v) => int(v, 1, 9999, 'amount'),
@@ -97,7 +102,7 @@ const CREATORS = {
                 if (!VehicleConfig[v]) throw new Error('unknown model');
                 return v;
             },
-            fuel: (v) => int(v, 0, 100, 'fuel'),
+            fuel: (v) => num(v, 0, 100, 'fuel'),
             color_r: (v) => int(v, 0, 255, 'color_r'),
             color_g: (v) => int(v, 0, 255, 'color_g'),
             color_b: (v) => int(v, 0, 255, 'color_b'),
@@ -161,7 +166,7 @@ const DELETE_HOOKS = {
         if (player) player.kick('Аккаунт удалён администратором');
     },
     vehicles: async (socket, id) => {
-        await vehicleService.despawnVehicle(id, false);
+        await vehicleService.despawnVehicle(id);
     },
 };
 
