@@ -24,12 +24,9 @@ mp.events.add('client:account:hideAuth', (developer) => {
     state.isAuthorized = true;
     state.globalKeyBlock = false;
     state.isAnyUiWindowOpen = false;
-    state.openWindowsState = {
-        inventory: false,
-        phone: false,
-        dealership: false,
-        carCustom: false,
-    };
+    for (const key of Object.keys(state.openWindowsState)) {
+        state.openWindowsState[key] = false;
+    }
     mp.events.callRemote('server:locations:requestAll');
 
     ui.call('changeScreen', 'game');
