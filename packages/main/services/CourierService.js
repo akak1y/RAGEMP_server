@@ -153,6 +153,7 @@ class CourierService {
         st.stage = 'delivery';
         st.pointIdx = this.randomPoint(st.pointIdx);
         st.pay = this.calcPay(st.pointIdx);
+        st.deliveryStart = Date.now();
         this.sendTarget(player, st);
         player.outputChatBox(
             `!{#00FFFF}[Курьер] Новая посылка взята. Точка доставки: ~${Math.round(this.distTo(st.pointIdx))} м, награда $${st.pay}.`

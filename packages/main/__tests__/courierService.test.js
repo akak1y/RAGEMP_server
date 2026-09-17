@@ -146,6 +146,28 @@ describe('CourierService', () => {
         expect(st.pointIdx).toBe(1);
     });
 
+    test('античит второго заказа: completeOrder сбрасывает deliveryStart', async () => {
+        const st = {
+            stage: 'return',
+            pointIdx: 0,
+            vehicleId: 42,
+            pay: 200,
+            deliveryStart: Date.now() - 600000,
+        };
+        courierService.states.set(1, st);
+        player.position = { x: 10, y: 10, z: 0 };
+        await courierService.completeOrder(player, st);
+        expect(st.stage).toBe('delivery');
+        player.position = { x: 310, y: 410, z: 0 };
+        courierService.interact(player);
+        expect(auditService.logPlayer).toHaveBeenCalledWith(
+            player,
+            'courier_cheat',
+            expect.objectContaining({ category: 'security', success: false })
+        );
+        expect(st.stage).toBe('delivery');
+    });
+
     test('endWork: транспорт уничтожен, состояние сброшено', () => {
         courierService.states.set(1, { stage: 'delivery', pointIdx: 0, vehicleId: 42, pay: 200 });
         courierService.endWork(1);
