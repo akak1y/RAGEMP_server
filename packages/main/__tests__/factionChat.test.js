@@ -1,14 +1,4 @@
-jest.mock('../services/FactionService', () => ({
-    getMembership: jest.fn(),
-    getMembers: jest.fn(),
-    getRanks: jest.fn(() => [
-        { id: 0, name: 'Шестёрка' },
-        { id: 4, name: 'Босс' },
-    ]),
-    rankName: jest.fn((r) => `rank${r}`),
-    addMember: jest.fn(),
-    removeMember: jest.fn(),
-}));
+jest.mock('../services/ChatService', () => ({ send: jest.fn(), pushSystem: jest.fn() }));
 jest.mock('../middleware/rateLimit', () => jest.fn(() => async () => true));
 jest.mock('../core/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
 
@@ -22,7 +12,7 @@ global.mp = {
     players: { toArray: jest.fn(() => []) },
 };
 
-const factionService = require('../services/FactionService');
+const chatService = require('../services/ChatService');
 require('../controllers/factionController');
 
 const makePlayer = (id, name) => ({
@@ -39,36 +29,27 @@ describe('Семейный чат /f', () => {
         run = mockCommandStore.get('f').run;
     });
 
-    test('пустой текст — подсказка использования', async () => {
+    test('guards: только isLoggedIn', () => {
+        expect(mockCommandStore.get('f').guards).toHaveLength(1);
+    });
+
+    test('пустой текст — подсказка использования, без отправки', async () => {
         const p = makePlayer(1, 'A');
         await run(p, []);
         expect(p.outputChatBox).toHaveBeenCalledWith(expect.stringContaining('Использование'));
-        expect(factionService.getMembership).not.toHaveBeenCalled();
+        expect(chatService.send).not.toHaveBeenCalled();
     });
 
-    test('не член семьи — отказ без рассылки', async () => {
-        factionService.getMembership.mockResolvedValue(null);
+    test('сообщение делегируется в ChatService (канал family)', async () => {
+        const p = makePlayer(1, 'A');
+        await run(p, ['сбор', 'у', 'базы']);
+        expect(chatService.send).toHaveBeenCalledWith(p, 'family', 'сбор у базы');
+    });
+
+    test('отказ не-члену семьи обеспечивает ChatService', async () => {
+        chatService.send.mockResolvedValue({ success: false, error: 'not_member' });
         const p = makePlayer(1, 'A');
         await run(p, ['привет']);
-        expect(p.outputChatBox).toHaveBeenCalledWith(expect.stringContaining('не состоите'));
-    });
-
-    test('сообщение получают только онлайн-члены семьи', async () => {
-        factionService.getMembership.mockResolvedValue({
-            faction: { id: 1, name: 'Семья Корлеоне' },
-            member: { rank: 1 },
-        });
-        factionService.getMembers.mockResolvedValue([{ account_id: 1 }, { account_id: 2 }]);
-        const member1 = makePlayer(1, 'A');
-        const member2 = makePlayer(2, 'B');
-        const outsider = makePlayer(3, 'C');
-        global.mp.players.toArray.mockReturnValue([member1, member2, outsider]);
-
-        await run(member1, ['сбор', 'у', 'базы']);
-
-        const line = expect.stringContaining('[Семья] A: сбор у базы');
-        expect(member1.outputChatBox).toHaveBeenCalledWith(line);
-        expect(member2.outputChatBox).toHaveBeenCalledWith(line);
-        expect(outsider.outputChatBox).not.toHaveBeenCalled();
+        expect(chatService.send).toHaveBeenCalledWith(p, 'family', 'привет');
     });
 });

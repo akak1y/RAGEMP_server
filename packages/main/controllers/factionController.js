@@ -1,4 +1,5 @@
 const factionService = require('../services/FactionService');
+const chatService = require('../services/ChatService');
 const auditService = require('../services/AuditService');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const isAdmin = require('../middleware/isAdmin');
@@ -231,22 +232,12 @@ mp.events.add('server:faction:promote', rankChangeEvent(1, 'promote', 'Ранг 
 mp.events.add('server:faction:demote', rankChangeEvent(-1, 'demote', 'Ранг понижен'));
 
 // --- семейный чат ---
-const familyChatLimit = rateLimit('family_chat', 1, 1);
-
 registerCommand('f', {
     guards: [isLoggedIn],
     run: async (player, args) => {
         const text = (args || []).join(' ').trim();
         if (!text) return player.outputChatBox('!{#FF3333}Использование: /f [сообщение]');
-        if (!(await familyChatLimit(player))) return;
-        const membership = await factionService.getMembership(player.accountId);
-        if (!membership) return player.outputChatBox('!{#FF3333}[Семья] Вы не состоите в семье.');
-        const members = await factionService.getMembers(membership.faction.id);
-        const ids = new Set(members.map((m) => m.account_id));
-        const line = `!{#FF9933}[Семья] ${player.accountName}: ${text}`;
-        for (const p of mp.players.toArray()) {
-            if (p.isLoggedIn && ids.has(p.accountId)) p.outputChatBox(line);
-        }
+        await chatService.send(player, 'family', text);
     },
 });
 

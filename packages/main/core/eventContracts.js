@@ -73,6 +73,10 @@ const contracts = {
     // ===== armoryController.js =====
     'client:armory:setInfo': ['string'],
     'client:armory:result': ['boolean', 'string'],
+
+    // ===== ChatService.js / chatController.js =====
+    'client:chat:message': ['string'],
+    'client:chat:state': ['string'],
 };
 
 function typeOf(value) {
