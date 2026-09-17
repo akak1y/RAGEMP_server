@@ -11,19 +11,19 @@
 
 ```text
 client_packages (мосты, клавиши, маркеры)
-        ↕  mp.events / callRemote
+↕  mp.events / callRemote
 controllers (тонкие обработчики)   ←   middleware (guards, rate-limit)
-        ↓
+↓
 services (бизнес-логика)           ←   websocket/adminServer (админка)
-        ↓
+↓
 models (Sequelize, ленивая инициализация)
-        ↓
+↓
 MySQL ← core/db   •   Redis ← core/redis
 ```
 
 ## Сервер
 
-### `controllers/` — тонкие обработчики (15 файлов)
+### `controllers/` — тонкие обработчики (16 файлов)
 
 | Файл                          | Ответственность                                                |
 | ----------------------------- | -------------------------------------------------------------- |
@@ -34,14 +34,15 @@ MySQL ← core/db   •   Redis ← core/redis
 | `playerCommands.js`           | `/pay`, `/kill`, `/endwork`                                    |
 | `adminCommands.js`            | 10 админ-команд (`/checkban` … `/bench`)                       |
 | `vehicleController.js`        | покупка, спавн, заправка                                       |
-| `locationController.js`       | координаты всех локаций для клиентских маркеров                |
+| `locationController.js`       | семья `*:requestPos` — координаты 5 локаций                    |
 | `tuningController.js`         | LSC: вход в зону, покупка, выход                               |
-| `factionController.js`        | фракции: инфо, касса, состав, семейный чат `/f`                |
+| `factionController.js`        | фракции: запрос инфо, касса                                    |
 | `factionStorageController.js` | семейный склад: deposit/withdraw с проверкой ранга и дистанции |
-| `hospitalController.js`       | лечение в больнице за деньги                                   |
+| `armoryController.js`         | семейный арсенал: займы стволов из склада семьи                |
+| `weaponController.js`         | оружие: `/gun`, `/holster`, `/guns`, перезарядка по R          |
+| `hospitalController.js`       | лечение в больнице                                             |
 | `shopController.js`           | магазин: конфиг и покупка                                      |
 | `miningController.js`         | шахта: камни, добыча, продажа руды                             |
-| `weaponController.js`         | оружие: `/gun`, `/holster`, `/guns`, перезарядка по R          |
 
 ### `middleware/` — проверки прав и error boundary (4)
 
@@ -49,23 +50,25 @@ MySQL ← core/db   •   Redis ← core/redis
 - `isLoggedIn`, `isAdmin` — фабрики guard'ов
 - `rateLimit` — Redis-счётчики, fail open, коалесценция нарушений через AuditService
 
-### `services/` — бизнес-логика (17)
+### `services/` — бизнес-логика (18)
 
-Account, Auth, Money, Vehicle, Tuning, Inventory, Location, Stats, Health, Audit, Bot, Courier, Faction, FactionStorage, Mining, Shop, Weapon.
+Account, Auth, Money, Vehicle, Tuning, Inventory, Location, Stats, Health, Audit, Bot, Courier, Faction, FactionStorage, Armory, Mining, Shop, Weapon.
 Сервисы не знают про `mp.*`, кроме осознанных game-world сервисов (Vehicle, Tuning, Bot, Courier) — это помечено в их шапках.
 
-### `models/` — Sequelize-модели, ленивые геттеры (8)
+### `models/` — Sequelize-модели, ленивые геттеры (9)
 
-Users, Item, Vehicle, AuditLog, Bot, Faction, FactionMember, FactionStorageItem. Ленивые геттеры (`getUserModel()`), схема живёт **только в моделях** (references + `ON DELETE CASCADE`), схема создаётся миграциями (`npm run migrate`), модели описывают её для ORM.
+Users, Item, Vehicle, AuditLog, Bot, Faction, FactionMember, FactionStorageItem, FactionArmoryLoan. Ленивые геттеры (`getUserModel()`), схема живёт **только в моделях** (references + `ON DELETE CASCADE`), схема создаётся миграциями (`npm run migrate`), модели описывают её для ORM.
 `FactionMember` — таблица членства с `account_id → accounts.id` (CASCADE) и `faction_id → factions.id` (CASCADE), ранг хранится целым числом (0 = Шестёрка, 4 = Босс).
-`FactionStorageItem` — слоты семейного склада: `faction_id → factions.id` (CASCADE), `item_id` + `count` + `slot`.
+`FactionStorageItem` — слоты семейного склада: `faction_id → factions.id` (CASCADE), предмет + количество + слот; удаление семьи очищает склад автоматически.
+`FactionArmoryLoan` — займы арсенала: `faction_id + account_id + item_id` (уникальный), количество + дата выдачи; CASCADE по семье и аккаунту.
 
-### Миграции (4)
+### Миграции (5)
 
 `001-initial-schema` (accounts, items, vehicles, audit_logs, bots),  
 `002-factions` (factions, faction_members),  
 `003-ensure-legacy-indexes`,  
-`004-faction-storage` (faction_storage_items).
+`004-faction-storage` (faction_storage_items),  
+`005-faction-armory` (faction_armory_loans).
 
 ### `core/` — инфраструктура: БД, кэш, логи, замеры, события
 
@@ -115,12 +118,13 @@ Users, Item, Vehicle, AuditLog, Bot, Faction, FactionMember, FactionStorageItem.
 8. **Координаты в одном месте** — `config.js` → `LocationService` → клиент и админка.
 9. **Типобезопасность событий** — все `player.call` заменены на `sendEvent` с валидацией контрактов; битое событие не уйдёт клиенту, будет видно в админке.
 10. **Самописный logger** — winston несовместим с окружением RAGE MP (старый Node, `node:`-импорты).
-11. **Семейный склад** — общие слоты фракции: повторная проверка места и остатка под блокировкой строк (`SELECT … FOR UPDATE`), компенсация при сбое транзакции (предмет возвращается игроку).
+11. **Склад семьи** — общие слоты фракции: повторная проверка места и остатка под блокировкой строк (`SELECT … FOR UPDATE`), компенсация при сбое транзакции (предмет возвращается игроку).
 12. **Оружие через инвентарь** — ствол как предмет инвентаря; перезарядка добирает резерв до `maxClip`; при holster патроны возвращаются в резерв.
+13. **Арсенал семьи** — займы стволов из склада под учётную запись: лимит займов и права по рангам из конфига, добор в существующий займ не тратит слот, авторасчёт на смерти (`ArmoryService.returnAll` в `playerDeath`).
 
 ## Тесты и CI
 
-- Сервер: Jest (MoneyService, InventoryService, AuditService, rateLimit, FactionService, FactionStorageService, WeaponService, eventContracts)
+- Сервер: Jest (MoneyService, InventoryService, AuditService, rateLimit, FactionService, FactionStorageService, ArmoryService, WeaponService, eventContracts)
 - Клиент: глобальный мок `mp.*` + тестовый `__trigger` (`__tests__/setup.js`)
 - Корневой `npm test` гоняет оба пакета (`npm --prefix packages/main test && npm --prefix client_packages test`)
 - CI: `syntax-check` (сервер + клиент), `server-tests`, `client-tests`
@@ -135,10 +139,10 @@ RAGEMP_server/
 │   ├── index.js             точка входа
 │   ├── config.js            игровые конфиги (координаты, цены)
 │   ├── core/                db, redis, logger, profiler, eventContracts/Sender/Log
-│   ├── controllers/         15 файлов по доменам
-│   ├── services/            17 сервисов
+│   ├── controllers/         16 файлов по доменам
+│   ├── services/            18 сервисов
 │   ├── middleware/          4 файла
-│   ├── models/              8 моделей
+│   ├── models/              9 моделей
 │   ├── utils/               distance.js
 │   ├── websocket/           админка: adminServer, protocol, admin/
 │   └── __tests__/           тесты сервера
@@ -148,5 +152,5 @@ RAGEMP_server/
 │   └── __tests__/           тесты клиента + мок mp.*
 ├── UI-Server/               Vue 3 SPA (Vite)
 ├── docs/                    architecture.md, графы, events.md (авто-ген)
-└── .github/workflows/       CI
+── .github/workflows/       CI
 ```
