@@ -39,12 +39,12 @@ async function sendArmoryInfo(player) {
     }
     const [storage, loans] = await Promise.all([
         factionStorageService.getView(membership.faction.id, membership.member.rank),
-        armoryService.listLoans(player.accountId),
+        armoryService.getMyLoans(player.accountId),
     ]);
     sendEvent(player, 'client:armory:setInfo', [
         JSON.stringify({
             canTake: membership.member.rank >= ArmoryConfig.minRankTake,
-            maxLoans: ArmoryConfig.maxLoansPerMember,
+            maxLoans: ArmoryConfig.maxActiveLoans,
             weapons: storage.items.filter((i) => armoryService.isArmoryItem(i.itemId)),
             loans,
         }),
@@ -74,7 +74,7 @@ mp.events.add(
                 return sendEvent(player, 'client:armory:result', [false, ERROR_TEXT.no_rank]);
             if (!isNear(player.position, MafiaBasePos, FactionStorageConfig.interactRadius))
                 return sendEvent(player, 'client:armory:result', [false, ERROR_TEXT.too_far]);
-            const result = await armoryService.take(
+            const result = await armoryService.issue(
                 player,
                 membership.faction.id,
                 String(itemId),
