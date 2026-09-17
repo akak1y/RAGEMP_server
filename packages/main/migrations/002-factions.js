@@ -1,8 +1,10 @@
 'use strict';
+const { ensureIndex } = require('../core/migrationHelpers');
+
 module.exports = {
     async up(queryInterface, Sequelize) {
         const { INTEGER, STRING } = Sequelize;
-
+        const seq = queryInterface.sequelize;
         await queryInterface.createTable('factions', {
             id: { type: INTEGER, autoIncrement: true, primaryKey: true },
             name: { type: STRING(255), allowNull: false },
@@ -14,7 +16,6 @@ module.exports = {
                 defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
             },
         });
-
         await queryInterface.createTable('faction_members', {
             id: { type: INTEGER, autoIncrement: true, primaryKey: true },
             faction_id: {
@@ -30,11 +31,9 @@ module.exports = {
                 defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
             },
         });
-
-        await queryInterface.addIndex('faction_members', ['faction_id']);
-        await queryInterface.addIndex('faction_members', ['account_id']);
+        await ensureIndex(seq, 'faction_members', ['faction_id']);
+        await ensureIndex(seq, 'faction_members', ['account_id']);
     },
-
     async down(queryInterface) {
         await queryInterface.dropTable('faction_members');
         await queryInterface.dropTable('factions');

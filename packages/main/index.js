@@ -46,7 +46,6 @@ async function refreshStatsCache() {
 
         const migrateStart = Date.now();
         const sequelize = getSequelize();
-        await sequelize.sync({ alter: false });
         await new MigrationsRunner(sequelize).run();
         console.log(`[Boot] Миграции: ${Date.now() - migrateStart}ms`);
 

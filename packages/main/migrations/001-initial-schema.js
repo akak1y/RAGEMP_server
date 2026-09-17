@@ -1,8 +1,10 @@
 'use strict';
+const { ensureIndex } = require('../core/migrationHelpers');
+
 module.exports = {
     async up(queryInterface, Sequelize) {
         const { INTEGER, STRING, FLOAT, TEXT, DATE, BOOLEAN } = Sequelize;
-
+        const seq = queryInterface.sequelize;
         await queryInterface.createTable('accounts', {
             id: { type: INTEGER, autoIncrement: true, primaryKey: true },
             username: { type: STRING(32), allowNull: false, unique: true },
@@ -14,7 +16,6 @@ module.exports = {
             pos_y: { type: FLOAT, defaultValue: 4268.0 },
             pos_z: { type: FLOAT, defaultValue: 48.0 },
         });
-
         await queryInterface.createTable('items', {
             id: { type: INTEGER, autoIncrement: true, primaryKey: true },
             owner_id: {
@@ -27,7 +28,6 @@ module.exports = {
             count: { type: INTEGER, allowNull: false, defaultValue: 1 },
             slot: { type: INTEGER, allowNull: false },
         });
-
         await queryInterface.createTable('vehicles', {
             id: { type: INTEGER, autoIncrement: true, primaryKey: true },
             owner_id: {
@@ -48,7 +48,6 @@ module.exports = {
             turbo_mod: { type: INTEGER, allowNull: true, defaultValue: -1 },
             fuel: { type: Sequelize.DECIMAL(5, 2), allowNull: false, defaultValue: 100.0 },
         });
-
         await queryInterface.createTable('audit_logs', {
             id: { type: INTEGER, autoIncrement: true, primaryKey: true },
             category: { type: STRING(255), defaultValue: 'system' },
@@ -64,10 +63,9 @@ module.exports = {
             details: { type: TEXT, allowNull: true },
             created_at: { type: DATE, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') },
         });
-        await queryInterface.addIndex('audit_logs', ['category']);
-        await queryInterface.addIndex('audit_logs', ['actor_id']);
-        await queryInterface.addIndex('audit_logs', ['created_at']);
-
+        await ensureIndex(seq, 'audit_logs', ['category']);
+        await ensureIndex(seq, 'audit_logs', ['actor_id']);
+        await ensureIndex(seq, 'audit_logs', ['created_at']);
         await queryInterface.createTable('bots', {
             id: { type: INTEGER, autoIncrement: true, primaryKey: true },
             name: { type: STRING(255), allowNull: false, unique: true },
@@ -76,7 +74,6 @@ module.exports = {
             active: { type: BOOLEAN, defaultValue: true },
         });
     },
-
     async down(queryInterface) {
         await queryInterface.dropTable('bots');
         await queryInterface.dropTable('audit_logs');
