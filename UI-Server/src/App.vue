@@ -15,6 +15,8 @@
             :inVehicle="inVehicle"
             :fuel="fuel"
         />
+        <!--кастомный чат-->
+        <Chat />
         <!--инвентарь-->
         <Inventory v-if="windows.inventory" :items="inventory" @close="closeWindow('inventory')" />
         <!--телефон-->
@@ -101,6 +103,7 @@
 import { ref, onMounted, watch, nextTick } from 'vue';
 
 import './css/global.css';
+import './css/chat.css';
 import './css/auth.css';
 import './css/game.css';
 import './css/carCustom.css';
@@ -115,6 +118,7 @@ import Shop from './components/Shop.vue';
 import MiningSell from './components/MiningSell.vue';
 import HospitalWindow from './components/HospitalWindow.vue';
 import Faction from './components/Faction.vue';
+import Chat from './components/Chat.vue';
 
 const debugLogs = ref([]);
 const windowDebug = ref(false);
@@ -165,7 +169,6 @@ const addDebugLog = (text, type = 'info') => {
         debugLogs.value.shift();
     } // удаляем 20+
 };
-
 watch(
     windows,
     (newVal) => {
@@ -181,7 +184,6 @@ watch(
     },
     { deep: true }
 );
-
 const handleEscapeClose = (event) => {
     event.preventDefault(); // закрываем фокус
     event.stopPropagation();
@@ -204,17 +206,14 @@ const handleEscapeClose = (event) => {
         }
     }
 };
-
 const toggleWindow = (winName) => {
     windows.value[winName] = !windows.value[winName];
     syncCursorAndChat(winName);
 };
-
 const closeWindow = (winName) => {
     windows.value[winName] = false;
     syncCursorAndChat(winName);
 };
-
 const syncCursorAndChat = (winName) => {
     const anyOpen = Object.values(windows.value).some((v) => v === true);
     if (typeof mp !== 'undefined') {
@@ -223,7 +222,6 @@ const syncCursorAndChat = (winName) => {
         mp.trigger('client:ui:windowStateChanged', winName, windows.value[winName]);
     }
 };
-
 const onLoginSubmit = (data) => {
     errorMessage.value = '';
     if (typeof mp !== 'undefined') {
@@ -236,62 +234,48 @@ const onLoginSubmit = (data) => {
         currentScreen.value = 'game';
     }
 };
-
 const onBuyCar = (model) => {
     if (typeof mp !== 'undefined') mp.trigger('client:server:buyCar', model);
     closeWindow('dealership');
 };
-
 const onSpawnCar = (carId, pay) => {
     if (typeof mp !== 'undefined') mp.trigger('client:server:spawnCar', carId, pay);
     closeWindow('phone');
 };
-
 const onHealRequest = () => {
     if (typeof mp !== 'undefined') mp.trigger('client:hospital:heal');
     closeWindow('hospital');
 };
-
 const onDeposit = (amount) => {
     if (typeof mp !== 'undefined') mp.trigger('client:faction:deposit', amount);
 };
-
 const onWithdraw = (amount) => {
     if (typeof mp !== 'undefined') mp.trigger('client:faction:withdraw', amount);
 };
-
 const onFactionInvite = (name) => {
     if (typeof mp !== 'undefined') mp.trigger('client:faction:invite', name);
 };
-
 const onFactionKick = (id) => {
     if (typeof mp !== 'undefined') mp.trigger('client:faction:kick', id);
 };
-
 const onFactionPromote = (id) => {
     if (typeof mp !== 'undefined') mp.trigger('client:faction:promote', id);
 };
-
 const onFactionDemote = (id) => {
     if (typeof mp !== 'undefined') mp.trigger('client:faction:demote', id);
 };
-
 const onStorageDeposit = (itemId, amount) => {
     if (typeof mp !== 'undefined') mp.trigger('client:factionStorage:deposit', itemId, amount);
 };
-
 const onStorageWithdraw = (itemId, amount) => {
     if (typeof mp !== 'undefined') mp.trigger('client:factionStorage:withdraw', itemId, amount);
 };
-
 const onArmoryTake = (itemId, amount) => {
     if (typeof mp !== 'undefined') mp.trigger('client:armory:take', itemId, amount);
 };
-
 const onArmoryReturn = (itemId, amount) => {
     if (typeof mp !== 'undefined') mp.trigger('client:armory:return', itemId, amount);
 };
-
 onMounted(() => {
     // CEF мост
     window.addEventListener('keydown', (event) => {
@@ -306,7 +290,6 @@ onMounted(() => {
     window.addDebugLog = (msg) => {
         addDebugLog(msg);
     };
-
     window.updateDebugCoords = (x, y, z, heading) => {
         currentX.value = Number(x).toFixed(2);
         currentY.value = Number(y).toFixed(2);
@@ -344,11 +327,9 @@ onMounted(() => {
             console.error('[Vue Error] Ошибка обработки инвентаря:', e);
         }
     };
-
     window.toggleWindow = (name) => {
         toggleWindow(name);
     };
-
     window.setPhoneCars = (carsJson, configJson) => {
         try {
             const playerCars = typeof carsJson === 'string' ? JSON.parse(carsJson) : carsJson;
@@ -370,11 +351,9 @@ onMounted(() => {
             console.error('[Vue Error] Ошибка обработки гаража в телефоне:', e);
         }
     };
-
     window.updateGlobalStats = (count) => {
         totalAccounts.value = count;
     };
-
     window.setDealershipCars = (serverConfigJson) => {
         try {
             dealershipCars.value =
@@ -385,21 +364,18 @@ onMounted(() => {
             console.error('[Vue Error] Не удалось распарсить конфиг автосалона:', e);
         }
     };
-
     window.changeScreen = (screenName) => {
         currentScreen.value = screenName;
         if (screenName === 'game' && typeof mp !== 'undefined') {
             mp.trigger('client:ui:requestStatsUpdate');
         }
     };
-
     window.setPayDeliveryCar = (pay) => {
         payDeliveryCar.value = pay;
     };
     window.setPriceDeliveryCar = (price) => {
         priceDeliveryCar.value = price;
     };
-
     window.setTuningConfig = (json) => {
         try {
             tuningConfig.value = typeof json === 'string' ? JSON.parse(json) : json;
@@ -407,7 +383,6 @@ onMounted(() => {
             console.error('[Vue Error] Не удалось распарсить каталог тюнинга:', e);
         }
     };
-
     window.setTuningState = (json) => {
         try {
             tuningState.value = typeof json === 'string' ? JSON.parse(json) : json;
@@ -415,14 +390,12 @@ onMounted(() => {
             console.error('[Vue Error] Не удалось распарсить состояние тюнинга:', e);
         }
     };
-
     window.updateSpeedometer = (kmh, model, inVeh, fuelVal) => {
         speed.value = Number(kmh) || 0;
         vehicleModel.value = model || '';
         inVehicle.value = !!inVeh;
         fuel.value = Number(fuelVal) || 0;
     };
-
     window.setShopConfig = (json) => {
         try {
             shopConfig.value = typeof json === 'string' ? JSON.parse(json) : json;

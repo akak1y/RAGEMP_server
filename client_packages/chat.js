@@ -1,6 +1,9 @@
 require('./ui');
+require('./natives');
+
 const state = globalThis.UIState;
 const ui = globalThis.ui;
+const natives = globalThis.natives;
 
 /**
  * Чат: мосты CEF - игра. Встроенный чат не используется вообще.
@@ -17,11 +20,11 @@ mp.events.add('client:chat:state', (json) => {
     } catch (e) {}
 });
 
-// Vue сообщает об open/close enter: браузер забирает клавиатуру
+// Vue сообщает об open/close enter: блокируем клавиши/движение и показываем курсор
 mp.events.add('client:chat:openState', (open) => {
     state.isChatOpen = !!open;
     state.globalKeyBlock = !!open;
-    if (state.uiBrowser) state.uiBrowser.active = !!open;
+    natives.showCursor(!!open || state.isAnyUiWindowOpen);
 });
 
 mp.events.add('client:chat:send', (channel, text) => {

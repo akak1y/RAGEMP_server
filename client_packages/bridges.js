@@ -65,7 +65,7 @@ mp.events.add('client:ui:requestStatsUpdate', () => {
     mp.events.callRemote('server:requestRedisStats');
 });
 mp.events.add('client:toggleCursor', (toggle) => {
-    natives.showCursor(toggle);
+    natives.showCursor(!!toggle || state.isChatOpen);
 });
 mp.events.add('client:server:buyCar', (model) => {
     mp.events.callRemote('server:dealership:buy', model);
