@@ -58,6 +58,7 @@
             v-if="windows.faction"
             :info="factionInfo"
             :storage="factionStorage"
+            :armory="armoryInfo"
             :inventory="inventory"
             @deposit="onDeposit"
             @withdraw="onWithdraw"
@@ -67,6 +68,8 @@
             @demote="onFactionDemote"
             @storage-deposit="onStorageDeposit"
             @storage-withdraw="onStorageWithdraw"
+            @armory-take="onArmoryTake"
+            @armory-return="onArmoryReturn"
             @close="closeWindow('faction')"
         />
         <!--перехватываем нажатие клавиш-->
@@ -151,6 +154,7 @@ const miningProgress = ref(null);
 const interactHint = ref('');
 const factionInfo = ref(null);
 const factionStorage = ref(null);
+const armoryInfo = ref(null);
 const hospitalPrice = ref(0);
 
 const addDebugLog = (text, type = 'info') => {
@@ -222,7 +226,6 @@ const syncCursorAndChat = (winName) => {
 
 const onLoginSubmit = (data) => {
     errorMessage.value = '';
-
     if (typeof mp !== 'undefined') {
         mp.trigger('client:account:submitLogin', data.username, data.password);
     } // проверяем данные входа
@@ -260,20 +263,33 @@ const onWithdraw = (amount) => {
 const onFactionInvite = (name) => {
     if (typeof mp !== 'undefined') mp.trigger('client:faction:invite', name);
 };
+
 const onFactionKick = (id) => {
     if (typeof mp !== 'undefined') mp.trigger('client:faction:kick', id);
 };
+
 const onFactionPromote = (id) => {
     if (typeof mp !== 'undefined') mp.trigger('client:faction:promote', id);
 };
+
 const onFactionDemote = (id) => {
     if (typeof mp !== 'undefined') mp.trigger('client:faction:demote', id);
 };
+
 const onStorageDeposit = (itemId, amount) => {
     if (typeof mp !== 'undefined') mp.trigger('client:factionStorage:deposit', itemId, amount);
 };
+
 const onStorageWithdraw = (itemId, amount) => {
     if (typeof mp !== 'undefined') mp.trigger('client:factionStorage:withdraw', itemId, amount);
+};
+
+const onArmoryTake = (itemId, amount) => {
+    if (typeof mp !== 'undefined') mp.trigger('client:armory:take', itemId, amount);
+};
+
+const onArmoryReturn = (itemId, amount) => {
+    if (typeof mp !== 'undefined') mp.trigger('client:armory:return', itemId, amount);
 };
 
 onMounted(() => {
@@ -282,7 +298,6 @@ onMounted(() => {
         // перехватывает нажатия клавиш
         if (event.key === 'Escape' || event.keyCode === 27) {
             const isAnyWindowOpen = Object.values(windows.value).some((v) => v === true);
-
             if (isAnyWindowOpen) {
                 handleEscapeClose(event);
             }
@@ -316,7 +331,6 @@ onMounted(() => {
                 inventory.value = parsedSlots.map((slot) => {
                     if (!slot) return null;
                     const configItem = itemConfig[slot.itemId.toLowerCase()]; // ищем предмет в справочнике
-
                     return {
                         itemId: slot.itemId,
                         count: slot.count,
@@ -334,9 +348,7 @@ onMounted(() => {
     window.toggleWindow = (name) => {
         toggleWindow(name);
     };
-    window.closeWindow = (name) => {
-        if (windows.value[name]) closeWindow(name);
-    };
+
     window.setPhoneCars = (carsJson, configJson) => {
         try {
             const playerCars = typeof carsJson === 'string' ? JSON.parse(carsJson) : carsJson;
@@ -449,6 +461,13 @@ onMounted(() => {
             factionStorage.value = typeof json === 'string' ? JSON.parse(json) : json;
         } catch (e) {
             console.error('[Vue Error] Не удалось распарсить данные склада:', e);
+        }
+    };
+    window.setArmoryInfo = (json) => {
+        try {
+            armoryInfo.value = typeof json === 'string' ? JSON.parse(json) : json;
+        } catch (e) {
+            console.error('[Vue Error] Не удалось распарсить данные арсенала:', e);
         }
     };
     window.setHospitalPrice = (price) => {

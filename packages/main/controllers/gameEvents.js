@@ -42,7 +42,7 @@ mp.events.add(
 mp.events.add('playerDeath', (player, _reason, _killer) => {
     if (!player.isLoggedIn) return;
     armoryService
-        .settleOnDeath(player)
+        .returnAll(player)
         .catch((err) => logger.error(`[Armory] ошибка расчёта займов на смерти: ${err.message}`)); // займы возвращаются на склад до респауна
     healthService.onPlayerDeath(player);
 });

@@ -1,9 +1,7 @@
 <template>
     <div class="window-panel faction-window">
         <h2>Семья {{ info?.faction.name || '' }}</h2>
-
         <div v-if="!info" class="window-desc">Загрузка данных...</div>
-
         <div v-else>
             <!-- Информация о фракции -->
             <div class="faction-stats">
@@ -20,7 +18,6 @@
                     <span class="stat-value">{{ info.members.length }}</span>
                 </div>
             </div>
-
             <!-- Приглашение -->
             <div v-if="canInvite" class="treasury-controls">
                 <h3>Приглашение</h3>
@@ -36,7 +33,6 @@
                     </button>
                 </div>
             </div>
-
             <!-- Управление кассой -->
             <div class="treasury-controls">
                 <h3>Управление кассой</h3>
@@ -56,7 +52,6 @@
                     </button>
                 </div>
             </div>
-
             <!-- Семейный склад -->
             <div class="treasury-controls">
                 <h3>Семейный склад</h3>
@@ -118,7 +113,61 @@
                     </div>
                 </div>
             </div>
-
+            <!-- Семейный арсенал -->
+            <div class="treasury-controls">
+                <h3>Семейный арсенал</h3>
+                <p v-if="!armory" class="window-desc">Арсенал доступен только у базы семьи</p>
+                <div v-else>
+                    <div class="stat-row">
+                        <span class="stat-label">Займы:</span>
+                        <span class="stat-value"
+                            >{{ armory.loans.length }} / {{ armory.maxLoans }}</span
+                        >
+                    </div>
+                    <div class="amount-input">
+                        <input
+                            v-model.number="armoryAmount"
+                            type="number"
+                            min="1"
+                            placeholder="Кол-во"
+                            class="input-field"
+                        />
+                    </div>
+                    <h3>Стволы на складе</h3>
+                    <div class="window-list">
+                        <div v-for="w in armory.weapons" :key="'w' + w.slot" class="window-item">
+                            <span>🔫 {{ w.name }} x{{ w.count }}</span>
+                            <button
+                                v-if="armory.canTake"
+                                class="btn-buy"
+                                :disabled="takeDisabled(w)"
+                                @click="$emit('armory-take', w.itemId, armoryAmount)"
+                            >
+                                Взять
+                            </button>
+                        </div>
+                        <div v-if="!armory.weapons.length" class="window-item">
+                            <span>На складе нет стволов</span>
+                        </div>
+                    </div>
+                    <h3>Ваши займы</h3>
+                    <div class="window-list">
+                        <div v-for="loan in armory.loans" :key="'l' + loan.id" class="window-item">
+                            <span>{{ loan.itemId }} x{{ loan.count }}</span>
+                            <button
+                                class="btn-buy"
+                                :disabled="returnDisabled(loan)"
+                                @click="$emit('armory-return', loan.itemId, armoryAmount)"
+                            >
+                                Вернуть
+                            </button>
+                        </div>
+                        <div v-if="!armory.loans.length" class="window-item">
+                            <span>Долгов нет</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <!-- Список участников -->
             <div class="members-list">
                 <h3>Участники семьи</h3>
@@ -156,7 +205,6 @@
                 </div>
             </div>
         </div>
-
         <button class="btn-close" @click="$emit('close')">Закрыть</button>
     </div>
 </template>
@@ -167,6 +215,7 @@ import { ref, computed } from 'vue';
 const props = defineProps({
     info: { type: Object, default: null },
     storage: { type: Object, default: null },
+    armory: { type: Object, default: null },
     inventory: { type: Array, default: () => [] },
 });
 
@@ -180,12 +229,15 @@ const emit = defineEmits([
     'demote',
     'storage-deposit',
     'storage-withdraw',
+    'armory-take',
+    'armory-return',
 ]);
 
 const amount = ref(0);
 const inviteName = ref('');
-
 const storageAmount = ref(1);
+const armoryAmount = ref(1);
+
 const myRank = computed(() => (props.info ? props.info.me.rank : -1));
 const canInvite = computed(() => myRank.value >= 2);
 
@@ -193,6 +245,15 @@ const canKick = (m) => myRank.value >= 3 && m.rank < myRank.value;
 const canPromote = (m) => myRank.value >= 4 && m.rank < myRank.value - 1;
 const canDemote = (m) => myRank.value >= 4 && m.rank < myRank.value && m.rank > 0;
 const myItems = computed(() => (props.inventory || []).filter((s) => s));
+
+const takeDisabled = (w) => {
+    if (!armoryAmount.value || armoryAmount.value <= 0 || armoryAmount.value > w.count) return true;
+    const hasLoan = props.armory.loans.some((l) => l.itemId === w.itemId);
+    return !hasLoan && props.armory.loans.length >= props.armory.maxLoans;
+};
+
+const returnDisabled = (loan) =>
+    !armoryAmount.value || armoryAmount.value <= 0 || armoryAmount.value > loan.count;
 
 const formatNumber = (num) => {
     if (!num) return '0';
