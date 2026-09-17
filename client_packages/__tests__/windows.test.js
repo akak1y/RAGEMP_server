@@ -13,26 +13,31 @@ describe('windows: windowStateChanged', () => {
             carCustom: false,
         };
         state.isAnyUiWindowOpen = false;
+        state.isCameraRotateActive = false;
+        mp.players.local.vehicle = null;
     });
-
-    test('открытие окна → чат отключён', () => {
+    test('открытие окна ставит флаг', () => {
         mp.events.__trigger('client:ui:windowStateChanged', 'inventory', true);
         expect(state.isAnyUiWindowOpen).toBe(true);
-        expect(mp.gui.chat.activate).toHaveBeenCalledWith(false);
     });
-
-    test('закрытие последнего окна → чат включён', () => {
+    test('закрытие последнего окна снимает флаг', () => {
         mp.events.__trigger('client:ui:windowStateChanged', 'inventory', true);
         mp.events.__trigger('client:ui:windowStateChanged', 'inventory', false);
         expect(state.isAnyUiWindowOpen).toBe(false);
-        expect(mp.gui.chat.activate).toHaveBeenLastCalledWith(true);
     });
-
-    test('чат не включается, пока открыто второе окно', () => {
+    test('флаг жив, пока открыто второе окно', () => {
         mp.events.__trigger('client:ui:windowStateChanged', 'inventory', true);
         mp.events.__trigger('client:ui:windowStateChanged', 'phone', true);
         mp.events.__trigger('client:ui:windowStateChanged', 'inventory', false);
         expect(state.isAnyUiWindowOpen).toBe(true);
-        expect(mp.gui.chat.activate).toHaveBeenLastCalledWith(false);
+    });
+    test('выход из LSC: сброс камеры и выход на сервере', () => {
+        const veh = { freezePosition: jest.fn(), setCollision: jest.fn() };
+        mp.players.local.vehicle = veh;
+        state.openWindowsState.carCustom = true;
+        state.isCameraRotateActive = true;
+        mp.events.__trigger('client:ui:windowStateChanged', 'carCustom', false);
+        expect(state.isCameraRotateActive).toBe(false);
+        expect(mp.events.callRemote).toHaveBeenCalledWith('server:custom:exitShop');
     });
 });

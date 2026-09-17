@@ -20,15 +20,15 @@ mp.events.add('client:account:authError', (msg) => {
 mp.events.add('client:account:hideAuth', (developer) => {
     natives.showCursor(false);
     natives.setRadar(true);
-    mp.gui.chat.show(true);
     state.isAuthorized = true;
     state.globalKeyBlock = false;
     state.isAnyUiWindowOpen = false;
+    state.isChatOpen = false;
     for (const key of Object.keys(state.openWindowsState)) {
         state.openWindowsState[key] = false;
     }
     mp.events.callRemote('server:locations:requestAll');
-
+    mp.events.callRemote('server:chat:requestState');
     ui.call('changeScreen', 'game');
     state.playerIsDeveloper = developer;
 });

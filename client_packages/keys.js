@@ -9,7 +9,7 @@ const UNARMED_HASH = 0xa2719263;
 const MELEE_CONTROLS = [140, 141, 142];
 
 /**
- * Бинды клавиш (T/Enter/Esc/F5/Ё/I/P) и заморозка игрока при открытом UI.
+ * Бинды клавиш (T/Enter/Esc/F5/Ё/I/P/R) и заморозка игрока при открытом UI/чате.
  * Клавиша E отдельно в interactions.js.
  */
 
@@ -26,13 +26,13 @@ setInterval(() => {
 }, 300);
 
 mp.keys.bind(0x54, false, () => {
-    // срабатывает на отпускание T
-    if (!state.isAuthorized || state.isAnyUiWindowOpen) return;
-    state.globalKeyBlock = true;
+    // срабатывает на отпускание T — открываем ввод custom chat
+    if (!state.isAuthorized || state.isAnyUiWindowOpen || state.isChatOpen) return;
+    ui.call('chatFocus');
 });
 mp.keys.bind(0x0d, true, () => {
-    // enter
-    if (!state.isAuthorized) return;
+    // enter: при открытом чате ввод обрабатывает Vue
+    if (!state.isAuthorized || state.isChatOpen) return;
     setTimeout(() => {
         state.globalKeyBlock = false;
     }, 60);
@@ -49,6 +49,7 @@ mp.keys.bind(0x1b, true, () => {
     setTimeout(() => {
         state.globalKeyBlock = false;
     }, 60);
+    if (state.isChatOpen) ui.call('chatClose');
     if (state.isAnyUiWindowOpen) {
         const firstOpen = Object.keys(state.openWindowsState).find(
             (key) => state.openWindowsState[key]
@@ -72,14 +73,12 @@ mp.keys.bind(0xc0, true, () => {
         natives.showCursor(true);
     }
 });
-
 mp.keys.bind(0x49, true, () => {
     // I - инвентарь
     if (!state.isAuthorized || state.globalKeyBlock) return;
     if (!state.openWindowsState.inventory && state.isAnyUiWindowOpen) return;
     ui.toggleWindow('inventory');
 });
-
 mp.keys.bind(0x50, true, () => {
     // P - телефон
     if (!state.isAuthorized || state.globalKeyBlock) return;
@@ -88,7 +87,6 @@ mp.keys.bind(0x50, true, () => {
     ui.call('setPayDeliveryCar', true);
     ui.toggleWindow('phone');
 });
-
 mp.keys.bind(0x52, true, () => {
     // R - перезарядка (с оружием в руках)
     if (!state.isAuthorized || state.globalKeyBlock || state.isAnyUiWindowOpen) return;
@@ -98,7 +96,7 @@ mp.keys.bind(0x52, true, () => {
 });
 
 mp.events.add('render', () => {
-    if (state.isAuthorized && state.isAnyUiWindowOpen) {
+    if (state.isAuthorized && (state.isAnyUiWindowOpen || state.isChatOpen)) {
         natives.disableMovementControls();
     }
     if (state.isAuthorized && mp.players.local.weapon !== UNARMED_HASH) {

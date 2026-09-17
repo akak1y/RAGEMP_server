@@ -12,6 +12,7 @@ require('./tuning');
 require('./vehicleSync');
 require('./keys');
 require('./bridges');
+require('./chat'); // кастомный чат
 require('./shop');
 require('./mining');
 require('./factions');
