@@ -121,6 +121,7 @@ class MoneyService {
             } // получатель исчез из БД
 
             await t.commit();
+            statsService.invalidateEconomyCache().catch(() => {});
             logger.info(
                 `[MoneyService] Перевод $${amount}: ID ${fromId} → ID ${toId}${reason ? ` (${reason})` : ''}`
             );

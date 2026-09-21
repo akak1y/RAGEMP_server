@@ -160,5 +160,18 @@ describe('MoneyService', () => {
             expect(mockTx.rollback).toHaveBeenCalled();
             expect(mockTx.commit).not.toHaveBeenCalled();
         });
+        test('успешный перевод инвалидирует кэш экономики', async () => {
+            const statsService = require('../services/StatsService');
+            mockUserModel.update.mockResolvedValueOnce([1]).mockResolvedValueOnce([1]);
+            const result = await moneyService.transfer(1, 2, 500);
+            expect(result).toBe(true);
+            expect(statsService.invalidateEconomyCache).toHaveBeenCalled();
+        });
+        test('rollback не инвалидирует кэш', async () => {
+            const statsService = require('../services/StatsService');
+            mockUserModel.update.mockResolvedValueOnce([0]);
+            await moneyService.transfer(1, 2, 500);
+            expect(statsService.invalidateEconomyCache).not.toHaveBeenCalled();
+        });
     });
 });
