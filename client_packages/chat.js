@@ -34,3 +34,18 @@ mp.events.add('client:chat:send', (channel, text) => {
 mp.events.add('client:chat:requestState', () => {
     mp.events.callRemote('server:chat:requestState');
 });
+
+/**
+ * Системное сообщение в кастомный чат для клиентских модулей.
+ * Замена mp.gui.chat.push, который после отключения встроенного чата пишет в никуда.
+ */
+function pushSystem(text) {
+    ui.call('chatPush', {
+        channel: 'system',
+        senderId: null,
+        senderName: null,
+        text: String(text),
+        time: Date.now(),
+    });
+}
+globalThis.chat = { pushSystem };

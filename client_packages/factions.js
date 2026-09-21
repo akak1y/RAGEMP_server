@@ -1,6 +1,7 @@
 const state = globalThis.UIState;
 const ui = globalThis.ui;
 const interactions = globalThis.interactions;
+const pushSystem = (text) => globalThis.chat && globalThis.chat.pushSystem(text);
 
 let factionBlip = null;
 let factionMarker = null;
@@ -26,7 +27,7 @@ mp.events.add('client:faction:open', () => {
 });
 
 mp.events.add('client:faction:moneyResult', (success, errorOrKind) => {
-    mp.gui.chat.push(
+    pushSystem(
         success
             ? '!{#4CAF50}[Фракция] Операция с кассой выполнена.'
             : `!{#FF3333}[Фракция] Ошибка: ${errorOrKind}`
@@ -34,7 +35,7 @@ mp.events.add('client:faction:moneyResult', (success, errorOrKind) => {
 });
 
 mp.events.add('client:faction:memberResult', (success, message) => {
-    mp.gui.chat.push(success ? `!{#4CAF50}[Семья] ${message}` : `!{#FF3333}[Семья] ${message}`);
+    pushSystem(success ? `!{#4CAF50}[Семья] ${message}` : `!{#FF3333}[Семья] ${message}`);
 });
 
 // --- семейный склад ---
@@ -48,7 +49,7 @@ mp.events.add('client:factionStorage:setInfo', (json) => {
 });
 
 mp.events.add('client:factionStorage:result', (success, message) => {
-    mp.gui.chat.push(success ? `!{#4CAF50}[Склад] ${message}` : `!{#FF3333}[Склад] ${message}`);
+    pushSystem(success ? `!{#4CAF50}[Склад] ${message}` : `!{#FF3333}[Склад] ${message}`);
 });
 
 // --- семейный арсенал ---
@@ -62,7 +63,7 @@ mp.events.add('client:armory:setInfo', (json) => {
 });
 
 mp.events.add('client:armory:result', (success, message) => {
-    mp.gui.chat.push(success ? `!{#4CAF50}[Арсенал] ${message}` : `!{#FF3333}[Арсенал] ${message}`);
+    pushSystem(success ? `!{#4CAF50}[Арсенал] ${message}` : `!{#FF3333}[Арсенал] ${message}`);
 });
 
 // VUE → СЕРВЕР: управление составом

@@ -5,6 +5,7 @@ const state = globalThis.UIState;
 const ui = globalThis.ui;
 const natives = globalThis.natives;
 const interactions = globalThis.interactions;
+const pushSystem = (text) => globalThis.chat && globalThis.chat.pushSystem(text);
 
 /**
  * Шахта: ченнелинг добычи и продажа руды боту.
@@ -34,7 +35,7 @@ function cancelChannel() {
     progressTimer = null;
     natives.stopScenario();
     ui.call('hideMiningProgress');
-    mp.gui.chat.push('!{#FF3333}[Шахта] Добыча прервана.');
+    pushSystem('!{#FF3333}[Шахта] Добыча прервана.');
 }
 
 function finishChannel() {
@@ -81,7 +82,7 @@ mp.events.add('client:mining:sellInfo', (json) => {
 });
 
 mp.events.add('client:mining:sellResult', (success, message) => {
-    mp.gui.chat.push(success ? `!{#4CAF50}[Шахта] ${message}` : `!{#FF3333}[Шахта] ${message}`);
+    pushSystem(success ? `!{#4CAF50}[Шахта] ${message}` : `!{#FF3333}[Шахта] ${message}`);
     if (success) ui.toggleWindow('miningSell');
 });
 
@@ -100,7 +101,7 @@ interactions.register({
         state.miningRocksActive[i] !== false ? state.interactionHints.miningRock : null,
     onInteract: (i) => {
         if (state.miningRocksActive[i] === false) {
-            mp.gui.chat.push('!{#FF3333}[Шахта] Камень исчерпан, жди респавн.');
+            pushSystem('!{#FF3333}[Шахта] Камень исчерпан, жди респавн.');
             return;
         }
         mp.events.callRemote('server:mining:start', i);

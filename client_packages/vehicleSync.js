@@ -4,6 +4,7 @@ require('./interactions');
 const state = globalThis.UIState;
 const ui = globalThis.ui;
 const interactions = globalThis.interactions;
+const pushSystem = (text) => globalThis.chat && globalThis.chat.pushSystem(text);
 
 /**
  * Синхронизация тюнинга транспорта между клиентами.
@@ -85,9 +86,9 @@ interactions.register({
     getHint: () => state.interactionHints.fuel,
     onInteract: () => {
         const veh = mp.players.local.vehicle;
-        if (!veh) return mp.gui.chat.push('!{#FF3333}[Заправка] Сначала сядьте в машину.');
+        if (!veh) return pushSystem('!{#FF3333}[Заправка] Сначала сядьте в машину.');
         const dbId = veh.getVariable('dbId');
-        if (!dbId) return mp.gui.chat.push('!{#FF3333}[Заправка] Это не ваша машина.');
+        if (!dbId) return pushSystem('!{#FF3333}[Заправка] Это не ваша машина.');
         mp.events.callRemote('server:fuel:refuel', dbId);
     },
 });

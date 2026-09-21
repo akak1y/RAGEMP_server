@@ -56,4 +56,11 @@ describe('chat: мосты', () => {
         mp.events.__trigger('client:chat:requestState');
         expect(mp.events.callRemote).toHaveBeenCalledWith('server:chat:requestState');
     });
+    test('pushSystem: системное сообщение ушло в Vue', () => {
+        globalThis.chat.pushSystem('!{#FF3333}тест');
+        expect(state.uiBrowser.execute).toHaveBeenCalledWith(expect.stringContaining('chatPush('));
+        expect(state.uiBrowser.execute).toHaveBeenCalledWith(
+            expect.stringContaining('"channel":"system"')
+        );
+    });
 });
