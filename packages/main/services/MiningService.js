@@ -62,10 +62,21 @@ class MiningService {
             return { success: false, error: 'too_far' };
         }
 
+        // резерв
+        if (this.rockState[record.rockIndex].depleted) {
+            logger.warn(
+                `[MiningService] completeMine: ${player.accountName} — камень уже забран другим`
+            );
+            this.activeMiners.delete(player.accountId);
+            return { success: false, error: 'rock_depleted' };
+        }
+        this.rockState[record.rockIndex] = { depleted: true, respawnAt: Infinity };
+
         const shiftCount = this.shiftStats.get(player.accountId) || 0;
 
         const invResult = await inventoryService.giveItem(player, 'ore', 1);
         if (!invResult.success) {
+            this.rockState[record.rockIndex] = { depleted: false, respawnAt: 0 }; // резерв снимаем
             logger.warn(`[MiningService] completeMine: инвентарь ${player.accountName} полон`);
             return { success: false, error: invResult.error };
         }

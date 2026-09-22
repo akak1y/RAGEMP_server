@@ -91,6 +91,47 @@ describe('MiningService', () => {
             expect(result).toMatchObject({ success: false, error: 'too_far' });
             expect(inventoryService.giveItem).not.toHaveBeenCalled();
         });
+
+        test('двойная добыча: второй получает rock_depleted, руда выдана один раз', async () => {
+            const p1 = atRock();
+            const p2 = { ...atRock(), accountId: 2, accountName: 'miner2' };
+            expect(miningService.startWork(p1, 0)).toBe(true);
+            expect(miningService.startWork(p2, 0)).toBe(true);
+            miningService.activeMiners.get(1).startedAt -= MiningConfig.mineTimeMs + 100;
+            miningService.activeMiners.get(2).startedAt -= MiningConfig.mineTimeMs + 100;
+
+            inventoryService.giveItem.mockResolvedValue({ success: true });
+            auditService.logPlayer.mockResolvedValue({ id: 1 });
+            locationService.hideRock.mockImplementation(() => {});
+
+            const [r1, r2] = await Promise.all([
+                miningService.completeMine(p1),
+                miningService.completeMine(p2),
+            ]);
+            const ok = [r1, r2].filter((r) => r.success);
+            const depleted = [r1, r2].filter((r) => r.error === 'rock_depleted');
+            expect(ok).toHaveLength(1);
+            expect(depleted).toHaveLength(1);
+            expect(inventoryService.giveItem).toHaveBeenCalledTimes(1);
+            expect(miningService.rockState[0].depleted).toBe(true);
+            expect(miningService.activeMiners.size).toBe(0);
+        });
+
+        test('неудачная выдача (инвентарь полон) снимает резерв камня', async () => {
+            const player = atRock();
+            miningService.startWork(player, 0);
+            miningService.activeMiners.get(1).startedAt -= MiningConfig.mineTimeMs + 100;
+            inventoryService.giveItem.mockResolvedValue({
+                success: false,
+                error: 'inventory_full',
+            });
+
+            const result = await miningService.completeMine(player);
+            expect(result).toMatchObject({ success: false, error: 'inventory_full' });
+            expect(miningService.rockState[0].depleted).toBe(false);
+            expect(miningService.rockState[0].respawnAt).toBe(0);
+            expect(locationService.hideRock).not.toHaveBeenCalled();
+        });
     });
 
     describe('sellAllOre', () => {
@@ -135,6 +176,15 @@ describe('MiningService', () => {
             miningService.respawnCheck();
             expect(miningService.rockState[0].depleted).toBe(false);
             expect(locationService.showRock).toHaveBeenCalledWith(0);
+        });
+
+        test('зарезервированный камень (respawnAt=Infinity) не респавнится фоновым таймером', () => {
+            miningService.rockState[0] = { depleted: true, respawnAt: Infinity };
+            locationService.showRock.mockImplementation(() => {});
+
+            miningService.respawnCheck();
+            expect(miningService.rockState[0].depleted).toBe(true);
+            expect(locationService.showRock).not.toHaveBeenCalled();
         });
 
         test('randomRespawnDelay: в диапазоне min..max', () => {
