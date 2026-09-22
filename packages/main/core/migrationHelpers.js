@@ -4,6 +4,8 @@
  * Хелперы миграций: идемпотентные операции с индексами.
  */
 
+const logger = require('./logger');
+
 /**
  * Есть ли на таблице индекс ровно с таким составом колонок.
  * @param {Sequelize} sequelize
@@ -55,4 +57,37 @@ async function dropIndexIfExists(sequelize, table, indexName) {
     await sequelize.query(`DROP INDEX ${indexName} ON ${table}`);
 }
 
-module.exports = { ensureIndex, dropIndexIfExists };
+/**
+ * Поставить UNIQUE-индекс по составу колонок, только если:
+ *  - такого unique-покрытия ещё нет;
+ *  - в таблице НЕТ дублей по этим колонкам (иначе CREATE UNIQUE упадёт на старте).
+ */
+async function ensureUniqueIndexGuarded(sequelize, table, columns) {
+    const [idxRows] = await sequelize.query(
+        `SELECT index_name, GROUP_CONCAT(column_name ORDER BY seq_in_index) AS cols,
+                MIN(non_unique) AS non_unique
+         FROM information_schema.statistics
+         WHERE table_schema = DATABASE() AND table_name = ?
+         GROUP BY index_name`,
+        { replacements: [table] }
+    );
+    const wanted = columns.join(',');
+    if (idxRows.some((r) => r.cols === wanted && Number(r.non_unique) === 0)) return;
+    const cols = columns.map((c) => `\`${c}\``).join(', ');
+    const [dupRows] = await sequelize.query(
+        `SELECT COUNT(1) AS cnt FROM (
+            SELECT ${cols} FROM \`${table}\` GROUP BY ${cols} HAVING COUNT(1) > 1
+         ) AS d`
+    );
+    if (Number(dupRows[0].cnt) > 0) {
+        logger.warn(
+            `[migration] ${table}: UNIQUE(${cols}) пропущен — есть дубли, нужна ручная чистка`
+        );
+        return;
+    }
+    await sequelize.query(
+        `CREATE UNIQUE INDEX ${table}_${columns.join('_')}_unique ON ${table} (${cols})`
+    );
+}
+
+module.exports = { ensureIndex, dropIndexIfExists, ensureUniqueIndexGuarded };
