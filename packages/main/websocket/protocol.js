@@ -189,6 +189,27 @@ async function refreshLiveMetrics() {
     }
 }
 
+function sendResult(socket, success, message) {
+    socket.send(JSON.stringify({ type: 'action_result', result: { success, message } }));
+}
+
+async function auditEditFail(socket, msg, reason) {
+    try {
+        await auditService.log({
+            success: 0,
+            category: 'web_edit',
+            action: `update_${msg.table}`,
+            actor: socket.admin.username,
+            actor_id: socket.admin.accountId,
+            target: Number(msg.id),
+            ip: socket.admin.ip,
+            details: { field: msg.field, raw_value: msg.value, reason },
+        });
+    } catch (e) {
+        logger.error(`[Admin] audit fail error: ${e.message}`);
+    }
+}
+
 async function handleMessage(socket, msg, broadcast) {
     try {
         if (msg.type === 'get_table') {
@@ -248,12 +269,36 @@ async function handleMessage(socket, msg, broadcast) {
             const editor = (EDITORS[msg.table] || {})[msg.field];
             const getModel = MODELS[msg.table];
             const id = Number(msg.id);
-            if (!editor || !getModel || !Number.isInteger(id)) return;
+            if (!editor || !getModel || !Number.isInteger(id)) {
+                return sendResult(socket, false, 'Некорректный запрос на редактирование');
+            }
 
-            const value = editor(msg.value);
+            let value;
+            try {
+                value = editor(msg.value);
+            } catch (e) {
+                await auditEditFail(socket, msg, e.message);
+                return sendResult(socket, false, `Значение не принято: ${e.message}`);
+            }
 
-            const [affected] = await getModel().update({ [msg.field]: value }, { where: { id } });
-            if (!affected) return;
+            if (msg.table === 'accounts' && msg.field === 'admin_level') {
+                const editorLevel = socket.admin.adminLevel || 0;
+                if (value > editorLevel) {
+                    await auditEditFail(socket, msg, 'attempt_privilege_escalation');
+                    return sendResult(socket, false, 'Нельзя выставить уровень выше своего');
+                }
+            }
+
+            let affected;
+            try {
+                [affected] = await getModel().update({ [msg.field]: value }, { where: { id } });
+            } catch (e) {
+                await auditEditFail(socket, msg, e.message);
+                return sendResult(socket, false, `Ошибка БД: ${e.message}`);
+            }
+            if (!affected) {
+                return sendResult(socket, false, 'Запись не найдена (возможно, удалена)');
+            }
 
             if (msg.table === 'vehicles' && msg.field === 'fuel') vehicleService.setFuel(id, value);
 
@@ -274,6 +319,7 @@ async function handleMessage(socket, msg, broadcast) {
                 details: { field: msg.field, value },
             });
 
+            sendResult(socket, true, 'Сохранено');
             if (broadcast) {
                 broadcast({ type: 'table', table: msg.table, rows: await TABLES[msg.table]() });
             }
