@@ -105,6 +105,10 @@ createApp({
             this.creating = false;
             this.editing = null;
             this.active = t;
+            if (this._metricsTimer) {
+                clearInterval(this._metricsTimer);
+                this._metricsTimer = null;
+            }
             if (t === 'map') {
                 this.$nextTick(() => {
                     this.initMap();
@@ -115,10 +119,6 @@ createApp({
             if (t === 'audit') {
                 this.ws.send(JSON.stringify({ type: 'get_table', table: t, page: this.auditPage }));
                 return;
-            }
-            if (this._metricsTimer) {
-                clearInterval(this._metricsTimer);
-                this._metricsTimer = null;
             }
             if (t === 'metrics') {
                 this.requestMetrics();
