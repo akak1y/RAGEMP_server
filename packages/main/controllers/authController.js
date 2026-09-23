@@ -3,6 +3,7 @@ const authService = require('../services/AuthService');
 const inventoryService = require('../services/InventoryService');
 const vehicleService = require('../services/VehicleService');
 const courierService = require('../services/CourierService');
+const miningService = require('../services/MiningService');
 const weaponService = require('../services/WeaponService');
 const healthService = require('../services/HealthService');
 const { getRedis } = require('../core/redis');
@@ -120,6 +121,7 @@ mp.events.add(
 
             vehicleService.despawnPlayerVehicles(player.accountId);
             courierService.endWork(player.accountId, true);
+            miningService.endWork(player);
         },
         'playerQuit'
     )

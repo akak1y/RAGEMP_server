@@ -53,6 +53,22 @@ describe('MiningService', () => {
         });
     });
 
+    describe('endWork', () => {
+        test('очищает activeMiners и shiftStats при выходе', () => {
+            const player = atRock();
+            miningService.startWork(player, 0);
+            miningService.shiftStats.set(1, 3);
+            expect(miningService.activeMiners.has(1)).toBe(true);
+            miningService.endWork(player);
+            expect(miningService.activeMiners.has(1)).toBe(false);
+            expect(miningService.shiftStats.has(1)).toBe(false);
+        });
+        test('без accountId / null — no-op без падения', () => {
+            expect(() => miningService.endWork({ accountId: null })).not.toThrow();
+            expect(() => miningService.endWork(null)).not.toThrow();
+        });
+    });
+
     describe('completeMine', () => {
         test('успешно добывает руду', async () => {
             const player = atRock();
