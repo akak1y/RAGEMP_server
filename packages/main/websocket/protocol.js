@@ -6,7 +6,7 @@ const healthService = require('../services/HealthService');
 const vehicleService = require('../services/VehicleService');
 const authService = require('../services/AuthService');
 const statsService = require('../services/StatsService');
-const { ItemConfig, VehicleConfig } = require('../config');
+const { ItemConfig, VehicleConfig, InventoryConfig } = require('../config');
 const logger = require('../core/logger');
 const metrics = require('../core/metrics');
 
@@ -129,7 +129,7 @@ const CREATORS = {
                 return v;
             },
             count: (v) => int(v, 1, 9999, 'count'),
-            slot: (v) => int(v, 0, 99, 'slot'),
+            slot: (v) => int(v, 0, (InventoryConfig.size || 20) - 1, 'slot'),
         },
         create: async (data) => {
             const owner = await getUserModel().findByPk(data.owner_id);
