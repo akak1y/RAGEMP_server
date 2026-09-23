@@ -2,6 +2,7 @@ const { ItemConfig, FactionStorageConfig } = require('../config');
 const { getFactionStorageItemModel } = require('../models/FactionStorageItem');
 const inventoryService = require('./InventoryService');
 const logger = require('../core/logger');
+const { withLock } = require('../core/asyncLock');
 
 /**
  * FactionStorageService — семейный склад: общие слоты предметов фракции.
@@ -85,19 +86,22 @@ class FactionStorageService {
         if (!ItemConfig[itemId]) return { success: false, error: 'item_not_in_config' };
         if (!Number.isInteger(amount) || amount <= 0)
             return { success: false, error: 'invalid_amount' };
-        const pre = await this.loadSlots(factionId);
-        if (this._spaceFor(pre, itemId) < amount) return { success: false, error: 'storage_full' };
-        const removed = await inventoryService.removeItem(player, itemId, amount);
-        if (!removed.success) return { success: false, error: removed.error };
-        const res = await this._mutate(factionId, itemId, amount, 1);
-        if (!res.success) {
-            await inventoryService.giveItem(player, itemId, amount);
-            return res;
-        }
-        logger.info(
-            `[FactionStorageService] ${player.accountName} положил на склад фракции ${factionId}: ${itemId} x${amount}`
-        );
-        return { success: true };
+        return withLock(factionId, async () => {
+            const pre = await this.loadSlots(factionId);
+            if (this._spaceFor(pre, itemId) < amount)
+                return { success: false, error: 'storage_full' };
+            const removed = await inventoryService.removeItem(player, itemId, amount);
+            if (!removed.success) return { success: false, error: removed.error };
+            const res = await this._mutate(factionId, itemId, amount, 1);
+            if (!res.success) {
+                await inventoryService.giveItem(player, itemId, amount);
+                return res;
+            }
+            logger.info(
+                `[FactionStorageService] ${player.accountName} положил на склад фракции ${factionId}: ${itemId} x${amount}`
+            );
+            return { success: true };
+        });
     }
 
     /**
@@ -108,20 +112,22 @@ class FactionStorageService {
         if (!ItemConfig[itemId]) return { success: false, error: 'item_not_in_config' };
         if (!Number.isInteger(amount) || amount <= 0)
             return { success: false, error: 'invalid_amount' };
-        const pre = await this.loadSlots(factionId);
-        if (this._storedCount(pre, itemId) < amount)
-            return { success: false, error: 'not_enough_items' };
-        const given = await inventoryService.giveItem(player, itemId, amount);
-        if (!given.success) return { success: false, error: given.error };
-        const res = await this._mutate(factionId, itemId, amount, -1);
-        if (!res.success) {
-            await inventoryService.removeItem(player, itemId, amount);
-            return res;
-        }
-        logger.info(
-            `[FactionStorageService] ${player.accountName} взял со склада фракции ${factionId}: ${itemId} x${amount}`
-        );
-        return { success: true };
+        return withLock(factionId, async () => {
+            const pre = await this.loadSlots(factionId);
+            if (this._storedCount(pre, itemId) < amount)
+                return { success: false, error: 'not_enough_items' };
+            const given = await inventoryService.giveItem(player, itemId, amount);
+            if (!given.success) return { success: false, error: given.error };
+            const res = await this._mutate(factionId, itemId, amount, -1);
+            if (!res.success) {
+                await inventoryService.removeItem(player, itemId, amount);
+                return res;
+            }
+            logger.info(
+                `[FactionStorageService] ${player.accountName} взял со склада фракции ${factionId}: ${itemId} x${amount}`
+            );
+            return { success: true };
+        });
     }
 
     /**
@@ -136,7 +142,6 @@ class FactionStorageService {
             const rows = await Model.findAll({
                 where: { faction_id: factionId },
                 transaction: t,
-                lock: t.LOCK.UPDATE,
             });
             const slots = new Array(this.size()).fill(null);
             for (const r of rows) {
