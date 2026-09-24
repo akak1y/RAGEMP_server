@@ -8,6 +8,7 @@ const auditService = require('../services/AuditService');
 const logger = require('../core/logger');
 const metrics = require('../core/metrics');
 const eventLog = require('../core/eventLog');
+const { getUserModel } = require('../models/Users');
 const {
     handleMessage,
     getCreateSchema,
@@ -74,6 +75,23 @@ let wss = null;
 const loginFails = new Map();
 const LOGIN_MAX_FAILS = 5;
 const LOGIN_WINDOW_MS = 60000;
+
+/**
+ * Валидация JWT + сверка admin_level с БД.
+ */
+async function verifyAdminToken(token) {
+    if (!token) return null;
+    let payload;
+    try {
+        payload = jwt.verify(token, JWT_SECRET);
+    } catch {
+        return null;
+    }
+    if (!payload || payload.adminLevel < 1) return null;
+    const account = await getUserModel().findByPk(payload.accountId, { raw: true });
+    if (!account || (account.admin_level || 0) < 1) return null;
+    return { ...payload, adminLevel: account.admin_level };
+}
 
 function start() {
     const server = http.createServer((req, res) => {
@@ -156,21 +174,25 @@ function start() {
 
     const wss = new WebSocketServer({ server });
 
-    wss.on('connection', (socket, req) => {
+    wss.on('connection', async (socket, req) => {
         const url = new URL(req.url, 'http://localhost');
-        let payload;
-        try {
-            payload = jwt.verify(url.searchParams.get('token'), JWT_SECRET);
-        } catch {
-            return socket.close(4001, 'bad token');
+        const token = url.searchParams.get('token');
+        const admin = await verifyAdminToken(token);
+        if (!admin) {
+            let code = 4001;
+            try {
+                const p = jwt.verify(token, JWT_SECRET);
+                if (p && p.adminLevel >= 1) code = 4003;
+            } catch {}
+            socket.close(code, code === 4003 ? 'revoked or demoted' : 'bad token');
+            return;
         }
-        if (!payload || payload.adminLevel < 1) return socket.close(4003, 'not admin');
 
-        socket.admin = { ...payload, ip: req.socket.remoteAddress };
+        socket.admin = { ...admin, ip: req.socket.remoteAddress };
         clients.add(socket);
         socket.on('close', () => clients.delete(socket));
         socket.send(
-            JSON.stringify({ type: 'hello', admin: payload.username, online: mp.players.length })
+            JSON.stringify({ type: 'hello', admin: admin.username, online: mp.players.length })
         );
         socket.send(JSON.stringify({ type: 'markers', markers: MAP_MARKERS }));
         socket.send(JSON.stringify({ type: 'create_schema', schema: getCreateSchema() }));
