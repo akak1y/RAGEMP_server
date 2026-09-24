@@ -11,6 +11,7 @@ module.exports = [
             'UI-Server/**',
             'bin/**',
             '.dependency-cruiser.js',
+            'packages/main/websocket/admin/vendor/**',
         ],
     },
     {

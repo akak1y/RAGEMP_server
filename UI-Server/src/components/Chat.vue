@@ -93,6 +93,15 @@ const channel = ref('global');
 const isOpen = ref(false);
 const text = ref('');
 const inputRef = ref(null);
+let hideTimer = null;
+
+function onWindowKeydown(e) {
+    if (!isOpen.value) return; // чат закрыт — не мешаем окнам/игре
+    if (e.key !== 'Escape' && e.keyCode !== 27) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    close();
+}
 
 const push = (msg) => {
     messages.value.push({ segments: buildSegments(msg) });
@@ -103,6 +112,10 @@ const clear = () => {
 };
 const open = () => {
     if (isOpen.value) return;
+    if (hideTimer) {
+        clearTimeout(hideTimer);
+        hideTimer = null;
+    }
     isOpen.value = true;
     nextTick(() => inputRef.value && inputRef.value.focus());
     if (typeof mp !== 'undefined') mp.trigger('client:chat:openState', true);
@@ -111,7 +124,10 @@ const close = () => {
     if (!isOpen.value) return;
     isOpen.value = false;
     text.value = '';
-    if (typeof mp !== 'undefined') mp.trigger('client:chat:openState', false);
+    hideTimer = setTimeout(() => {
+        hideTimer = null;
+        if (typeof mp !== 'undefined') mp.trigger('client:chat:openState', false);
+    }, 150);
 };
 const toggle = () => (isOpen.value ? close() : open());
 const send = () => {
@@ -122,6 +138,7 @@ const send = () => {
 };
 
 onMounted(() => {
+    window.addEventListener('keydown', onWindowKeydown);
     window.chatPush = push;
     window.chatClear = clear;
     window.chatSetChannels = (list) => {
@@ -133,6 +150,8 @@ onMounted(() => {
     if (typeof mp !== 'undefined') mp.trigger('client:chat:requestState');
 });
 onBeforeUnmount(() => {
+    window.removeEventListener('keydown', onWindowKeydown);
+    if (hideTimer) clearTimeout(hideTimer);
     delete window.chatPush;
     delete window.chatClear;
     delete window.chatSetChannels;

@@ -49,11 +49,7 @@ mp.keys.bind(0x1b, true, () => {
     setTimeout(() => {
         state.globalKeyBlock = false;
     }, 60);
-    if (state.isChatOpen) {
-        ui.call('chatClose');
-        return;
-    }
-    if (state.isAnyUiWindowOpen) {
+    if (state.isAnyUiWindowOpen && !state.isChatOpen) {
         const firstOpen = Object.keys(state.openWindowsState).find(
             (key) => state.openWindowsState[key]
         );
@@ -101,6 +97,10 @@ mp.keys.bind(0x52, true, () => {
 mp.events.add('render', () => {
     if (state.isAuthorized && (state.isAnyUiWindowOpen || state.isChatOpen)) {
         natives.disableMovementControls();
+    }
+    if (state.isAuthorized && state.isChatOpen) {
+        mp.game.controls.disableControlAction(0, 199, true);
+        mp.game.controls.disableControlAction(0, 200, true);
     }
     if (state.isAuthorized && mp.players.local.weapon !== UNARMED_HASH) {
         for (const id of MELEE_CONTROLS) {

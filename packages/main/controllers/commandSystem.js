@@ -1,12 +1,13 @@
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
+const logger = require('../core/logger');
 
 const commands = new Map();
 
 /**
  * Регистрация команды
  * @param {string} name - Имя без слэша
- * @param {{guards: Array<Function>, run: Function}} def
+ * @param {{guards: Array<Function>, run: Function, description?: string}} def
  */
 function registerCommand(name, def) {
     commands.set(name, def);
@@ -32,8 +33,41 @@ async function dispatchCommand(player, command) {
             return true;
         }
     }
-    await cmd.run(player, args);
+    try {
+        await cmd.run(player, args);
+    } catch (err) {
+        logger.error(`[Command] /${cmdName} упала: ${err.message}`);
+        player.outputChatBox('!{#FF3333}[Ошибка] Команда завершилась сбоем, смотри лог сервера.');
+    }
     return true;
+}
+
+/**
+ * Команды, доступные игроку по правам (для /help).
+ * @param {mp.Player} player
+ * @returns {Array<{name: string, description: string}>}
+ */
+function visibleCommands(player) {
+    const out = [];
+    for (const [name, def] of commands) {
+        let ok = true;
+        for (const guard of def.guards || []) {
+            let res;
+            try {
+                res = guard(player);
+            } catch {
+                ok = false;
+                break;
+            }
+            if (res && typeof res.then === 'function') continue;
+            if (!res) {
+                ok = false;
+                break;
+            }
+        }
+        if (ok) out.push({ name, description: def.description || '' });
+    }
+    return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 mp.events.add(
@@ -47,4 +81,4 @@ mp.events.add(
     )
 );
 
-module.exports = { registerCommand, dispatchCommand };
+module.exports = { registerCommand, dispatchCommand, visibleCommands };

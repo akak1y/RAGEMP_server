@@ -6,6 +6,7 @@ const courierService = require('../services/CourierService');
 const miningService = require('../services/MiningService');
 const weaponService = require('../services/WeaponService');
 const healthService = require('../services/HealthService');
+const chatService = require('../services/ChatService');
 const { getRedis } = require('../core/redis');
 const withGuards = require('../middleware/withGuards');
 const logger = require('../core/logger');
@@ -70,6 +71,8 @@ mp.events.add(
                 player.money = userDb.money;
                 player.adminLevel = userDb.admin_level;
                 player.lastPos = new mp.Vector3(userDb.pos_x, userDb.pos_y, userDb.pos_z); // заполняем кэш данными из бд
+
+                player.outputChatBox = (text) => chatService.pushSystem(player, text);
 
                 player.posTracker = setInterval(() => {
                     // запускаем таймер позиции и обновляем в ОЗУ раз в 3 сек
