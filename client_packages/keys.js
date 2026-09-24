@@ -49,7 +49,10 @@ mp.keys.bind(0x1b, true, () => {
     setTimeout(() => {
         state.globalKeyBlock = false;
     }, 60);
-    if (state.isChatOpen) ui.call('chatClose');
+    if (state.isChatOpen) {
+        ui.call('chatClose');
+        return;
+    }
     if (state.isAnyUiWindowOpen) {
         const firstOpen = Object.keys(state.openWindowsState).find(
             (key) => state.openWindowsState[key]

@@ -35,6 +35,10 @@ mp.events.add('client:chat:requestState', () => {
     mp.events.callRemote('server:chat:requestState');
 });
 
+mp.events.add('client:account:hideAuth', () => {
+    ui.call('chatClear');
+});
+
 /**
  * Системное сообщение в кастомный чат для клиентских модулей.
  * Замена mp.gui.chat.push, который после отключения встроенного чата пишет в никуда.

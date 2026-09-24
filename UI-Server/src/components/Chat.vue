@@ -98,6 +98,9 @@ const push = (msg) => {
     messages.value.push({ segments: buildSegments(msg) });
     if (messages.value.length > MAX_MESSAGES) messages.value.shift();
 };
+const clear = () => {
+    messages.value = [];
+};
 const open = () => {
     if (isOpen.value) return;
     isOpen.value = true;
@@ -120,6 +123,7 @@ const send = () => {
 
 onMounted(() => {
     window.chatPush = push;
+    window.chatClear = clear;
     window.chatSetChannels = (list) => {
         channels.value = Array.isArray(list) && list.length ? list : ['global'];
         if (!channels.value.includes(channel.value)) channel.value = channels.value[0];
@@ -130,6 +134,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
     delete window.chatPush;
+    delete window.chatClear;
     delete window.chatSetChannels;
     delete window.chatFocus;
     delete window.chatClose;
