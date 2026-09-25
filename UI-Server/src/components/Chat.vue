@@ -1,12 +1,26 @@
 <template>
     <div class="chat-box">
         <!-- история сообщений -->
-        <div class="chat-feed" :class="{ open: isOpen }">
-            <div v-for="(msg, i) in messages" :key="i" class="chat-line">
-                <span v-for="(seg, j) in msg.segments" :key="j" :style="{ color: seg.color }">{{
-                    seg.text
-                }}</span>
+        <div class="chat-feed-wrap" :class="{ open: isOpen }">
+            <div
+                ref="feedRef"
+                class="chat-feed"
+                :class="{ open: isOpen }"
+                @scroll="onFeedScroll"
+                @mouseenter="onFeedEnter"
+                @mouseleave="onFeedLeave"
+            >
+                <div v-for="(msg, i) in messages" :key="i" class="chat-line">
+                    <span v-for="(seg, j) in msg.segments" :key="j" :style="{ color: seg.color }">{{
+                        seg.text
+                    }}</span>
+                </div>
             </div>
+            <div
+                class="chat-scroll-thumb"
+                :class="{ visible: thumbVisible }"
+                :style="{ top: thumbTop, height: thumbHeight }"
+            ></div>
         </div>
         <!-- строка ввода, под ней кнопки каналов -->
         <div v-if="isOpen" class="chat-input-area">
@@ -95,6 +109,60 @@ const text = ref('');
 const inputRef = ref(null);
 let hideTimer = null;
 
+const feedRef = ref(null);
+const thumbTop = ref('0%');
+const thumbHeight = ref('0%');
+const thumbVisible = ref(false);
+let atBottom = true;
+let thumbHideTimer = null;
+
+function isScrollable(el) {
+    return el && el.scrollHeight > el.clientHeight + 1;
+}
+
+function computeThumb() {
+    const el = feedRef.value;
+    if (!isScrollable(el)) {
+        thumbVisible.value = false;
+        return;
+    }
+    const h = Math.max(28, (el.clientHeight / el.scrollHeight) * 100);
+    const t = (el.scrollTop / (el.scrollHeight - el.clientHeight || 1)) * 100;
+    thumbHeight.value = h + '%';
+    thumbTop.value = t + '%';
+}
+
+function showThumb() {
+    if (!isScrollable(feedRef.value)) return;
+    thumbVisible.value = true;
+    if (thumbHideTimer) clearTimeout(thumbHideTimer);
+    thumbHideTimer = setTimeout(() => {
+        thumbVisible.value = false;
+    }, 1200);
+}
+
+function onFeedScroll() {
+    const el = feedRef.value;
+    if (!el) return;
+    atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    computeThumb();
+    showThumb();
+}
+
+function onFeedEnter() {
+    computeThumb();
+    showThumb();
+}
+function onFeedLeave() {
+    if (thumbHideTimer) clearTimeout(thumbHideTimer);
+    thumbVisible.value = false;
+}
+
+function scrollToBottom() {
+    const el = feedRef.value;
+    if (el) el.scrollTop = el.scrollHeight;
+}
+
 function onWindowKeydown(e) {
     if (!isOpen.value) return; // чат закрыт — не мешаем окнам/игре
     if (e.key !== 'Escape' && e.keyCode !== 27) return;
@@ -106,9 +174,15 @@ function onWindowKeydown(e) {
 const push = (msg) => {
     messages.value.push({ segments: buildSegments(msg) });
     if (messages.value.length > MAX_MESSAGES) messages.value.shift();
+    nextTick(() => {
+        if (atBottom) scrollToBottom();
+        computeThumb();
+    });
 };
 const clear = () => {
     messages.value = [];
+    atBottom = true;
+    thumbVisible.value = false;
 };
 const open = () => {
     if (isOpen.value) return;
@@ -117,13 +191,20 @@ const open = () => {
         hideTimer = null;
     }
     isOpen.value = true;
-    nextTick(() => inputRef.value && inputRef.value.focus());
+    atBottom = true;
+    nextTick(() => {
+        inputRef.value && inputRef.value.focus();
+        scrollToBottom();
+        computeThumb();
+    });
     if (typeof mp !== 'undefined') mp.trigger('client:chat:openState', true);
 };
 const close = () => {
     if (!isOpen.value) return;
     isOpen.value = false;
     text.value = '';
+    if (thumbHideTimer) clearTimeout(thumbHideTimer);
+    thumbVisible.value = false;
     hideTimer = setTimeout(() => {
         hideTimer = null;
         if (typeof mp !== 'undefined') mp.trigger('client:chat:openState', false);
@@ -152,6 +233,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
     window.removeEventListener('keydown', onWindowKeydown);
     if (hideTimer) clearTimeout(hideTimer);
+    if (thumbHideTimer) clearTimeout(thumbHideTimer);
     delete window.chatPush;
     delete window.chatClear;
     delete window.chatSetChannels;
