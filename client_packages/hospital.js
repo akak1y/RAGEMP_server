@@ -4,7 +4,7 @@ require('./interactions');
 const state = globalThis.UIState;
 const ui = globalThis.ui;
 const interactions = globalThis.interactions;
-const pushSystem = (text) => globalThis.chat && globalThis.chat.pushSystem(text);
+const notify = (text) => globalThis.chat && globalThis.chat.notify(text);
 
 /**
  * Больница: подсказка E, открытие окна.
@@ -15,7 +15,7 @@ mp.events.add('client:hospital:heal', () => {
 });
 
 mp.events.add('client:hospital:result', (success, message) => {
-    pushSystem(success ? `!{#00FF00}[Больница] ${message}` : `!{#FF3333}[Больница] ${message}`);
+    notify(String(success ? `!{#00FF00}${message}` : `!{#FF3333}${message}`));
 });
 
 // зона больницы

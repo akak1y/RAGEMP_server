@@ -56,4 +56,8 @@ function pushSystem(text) {
         time: Date.now(),
     });
 }
-globalThis.chat = { pushSystem };
+
+function notify(text) {
+    ui.call('chatNotify', String(text ?? ''));
+}
+globalThis.chat = { pushSystem, notify };
