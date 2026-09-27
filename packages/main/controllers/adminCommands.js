@@ -46,7 +46,7 @@ registerCommand('givemoney', {
             return player.outputChatBox('Использование: /givemoney [количество]');
         const success = await player.addMoney(amount);
         if (success) {
-            player.outputChatBox(`[Админ] Вы выдали себе $${amount}`);
+            player.outputChatBox(`[Админ] Вы выдали себе $${amount}`, { toast: true });
             auditService.logPlayer(player, 'givemoney', { category: 'money', amount });
         } else {
             player.outputChatBox(
@@ -67,7 +67,9 @@ registerCommand('giveitem', {
             );
         const result = await inventoryService.giveItem(player, itemId, count);
         if (result.success) {
-            player.outputChatBox(`!{#33FF33}[Админ] Получен предмет: ${itemId} (${count} шт)`);
+            player.outputChatBox(`!{#33FF33}[Админ] Получен предмет: ${itemId} (${count} шт)`, {
+                toast: true,
+            });
         } else {
             player.outputChatBox(
                 '!{#FF3333}[Ошибка] Не удалось выдать предмет. Возможно, нет свободного слота.'
@@ -112,7 +114,7 @@ registerCommand('delacc', {
                 }
             });
         } else {
-            player.outputChatBox('Ошибка: Данный логин не найден в базе.');
+            player.outputChatBox('Ошибка: Данный логин не найден в базе.', { toast: true });
         }
     },
 });
@@ -145,7 +147,7 @@ registerCommand('sethp', {
         if (!args[0] || Number.isNaN(value))
             return player.outputChatBox('!{#FF3333}Использование: /sethp [1-100]');
         const hp = healthService.setHealth(player, value);
-        player.outputChatBox(`!{#00FFFF}[HP] Здоровье установлено: ${hp}`);
+        player.outputChatBox(`!{#00FFFF}[HP] Здоровье установлено: ${hp}`, { toast: true });
     },
 });
 
@@ -153,7 +155,7 @@ registerCommand('heal', {
     guards: [adminOnly],
     run: (player) => {
         healthService.setHealth(player, 100);
-        player.outputChatBox('!{#00FF00}[HP] Вы полностью вылечены');
+        player.outputChatBox('!{#00FF00}[HP] Вы полностью вылечены', { toast: true });
     },
 });
 

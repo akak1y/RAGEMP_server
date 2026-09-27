@@ -38,4 +38,5 @@
 | `client:armory:setInfo`                | string                                    | controllers/armoryController.js                        |
 | `client:armory:result`                 | boolean, string                           | controllers/armoryController.js                        |
 | `client:chat:message`                  | string                                    | services/ChatService.js                                |
+| `client:chat:notify`                   | string                                    | services/ChatService.js                                |
 | `client:chat:state`                    | string                                    | controllers/chatController.js                          |

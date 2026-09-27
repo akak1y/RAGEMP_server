@@ -29,7 +29,9 @@ async function dispatchCommand(player, command) {
     if (!cmd) return false;
     for (const guard of cmd.guards) {
         if (!guard(player)) {
-            player.outputChatBox('!{#FF3333}[Ошибка] Недостаточно прав для этой команды.');
+            player.outputChatBox('!{#FF3333}[Ошибка] Недостаточно прав для этой команды.', {
+                toast: true,
+            });
             return true;
         }
     }

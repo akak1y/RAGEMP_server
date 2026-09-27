@@ -19,7 +19,9 @@ class CourierService {
 
     interact(player) {
         if (player.vehicle)
-            return player.outputChatBox('!{#FF3333}[Курьер] Выйдите из транспорта.');
+            return player.outputChatBox('!{#FF3333}[Курьер] Выйдите из транспорта.', {
+                toast: true,
+            });
 
         const st = this.states.get(player.accountId);
         if (!st) {
@@ -86,7 +88,8 @@ class CourierService {
                 },
             });
             return player.outputChatBox(
-                '!{#FF3333}[Курьер] Слишком быстро! Пройди маршрут честно.'
+                '!{#FF3333}[Курьер] Слишком быстро! Пройди маршрут честно.',
+                { toast: true }
             );
         }
 
@@ -172,7 +175,9 @@ class CourierService {
         if (player) {
             sendEvent(player, 'client:courier:target', [null]);
             if (!silent)
-                player.outputChatBox('!{#FFFF00}[Курьер] Работа завершена. Транспорт возвращён.');
+                player.outputChatBox('!{#FFFF00}[Курьер] Работа завершена. Транспорт возвращён.', {
+                    toast: true,
+                });
         }
     }
 

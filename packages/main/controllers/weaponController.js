@@ -22,9 +22,13 @@ mp.events.add(
                     no_weapon_item: 'У вас нет этого оружия в инвентаре.',
                     magazine_full: 'Магазин уже полон.',
                 };
-                return player.outputChatBox(`!{#FF3333}[Оружие] ${msgs[res.error] || res.error}`);
+                return player.outputChatBox(`!{#FF3333}[Оружие] ${msgs[res.error] || res.error}`, {
+                    toast: true,
+                });
             }
-            player.outputChatBox(`!{#4CAF50}[Оружие] Перезарядка: +${res.loaded} патронов.`);
+            player.outputChatBox(`!{#4CAF50}[Оружие] Перезарядка: +${res.loaded} патронов.`, {
+                toast: true,
+            });
         },
         'weapon:reload'
     )
@@ -35,7 +39,8 @@ registerCommand('gun', {
     run: async (player, args) => {
         const owned = weaponService.listOwned(player);
         const key = args[0] ? String(args[0]).toLowerCase() : owned[0] && owned[0].itemId;
-        if (!key) return player.outputChatBox('!{#FF3333}[Оружие] У вас нет оружия.');
+        if (!key)
+            return player.outputChatBox('!{#FF3333}[Оружие] У вас нет оружия.', { toast: true });
 
         const res = await weaponService.draw(player, key);
         if (!res.success) {
@@ -44,13 +49,17 @@ registerCommand('gun', {
                 no_weapon_item: 'У вас нет этого оружия в инвентаре.',
                 already_in_hands: 'Это оружие уже в руках.',
             };
-            return player.outputChatBox(`!{#FF3333}[Оружие] ${msgs[res.error] || res.error}`);
+            return player.outputChatBox(`!{#FF3333}[Оружие] ${msgs[res.error] || res.error}`, {
+                toast: true,
+            });
         }
 
         if (res.ammoReturned !== undefined) {
-            return player.outputChatBox(`!{#4CAF50}[Оружие] Оружие убрано.`);
+            return player.outputChatBox(`!{#4CAF50}[Оружие] Оружие убрано.`, { toast: true });
         }
-        player.outputChatBox(`!{#4CAF50}[Оружие] Достали ${key}. R — перезарядка.`);
+        player.outputChatBox(`!{#4CAF50}[Оружие] Достали ${key}. R — перезарядка.`, {
+            toast: true,
+        });
     },
 });
 
@@ -58,7 +67,8 @@ registerCommand('holster', {
     guards: [isLoggedIn],
     run: async (player) => {
         const res = await weaponService.holster(player);
-        if (!res.success) return player.outputChatBox('!{#FF3333}[Оружие] Оружие не в руках.');
+        if (!res.success)
+            return player.outputChatBox('!{#FF3333}[Оружие] Оружие не в руках.', { toast: true });
         player.outputChatBox('!{#4CAF50}[Оружие] Оружие убрано.');
     },
 });
@@ -67,7 +77,8 @@ registerCommand('guns', {
     guards: [isLoggedIn],
     run: (player) => {
         const owned = weaponService.listOwned(player);
-        if (!owned.length) return player.outputChatBox('!{#FF3333}[Оружие] У вас нет оружия.');
+        if (!owned.length)
+            return player.outputChatBox('!{#FF3333}[Оружие] У вас нет оружия.', { toast: true });
         player.outputChatBox('!{#00FFFF}[Оружие] Ваш арсенал:');
         owned.forEach((s) => {
             const cfg = weaponService.config(s.itemId);

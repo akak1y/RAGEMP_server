@@ -17,6 +17,8 @@
         />
         <!--кастомный чат-->
         <Chat />
+        <!--bottom-toast уведомления-->
+        <Toasts ref="toastsRef" />
         <!--инвентарь-->
         <Inventory v-if="windows.inventory" :items="inventory" @close="closeWindow('inventory')" />
         <!--телефон-->
@@ -119,6 +121,7 @@ import MiningSell from './components/MiningSell.vue';
 import HospitalWindow from './components/HospitalWindow.vue';
 import Faction from './components/Faction.vue';
 import Chat from './components/Chat.vue';
+import Toasts from './components/Toasts.vue';
 
 const debugLogs = ref([]);
 const windowDebug = ref(false);
@@ -160,6 +163,7 @@ const factionInfo = ref(null);
 const factionStorage = ref(null);
 const armoryInfo = ref(null);
 const hospitalPrice = ref(0);
+const toastsRef = ref(null);
 
 const addDebugLog = (text, type = 'info') => {
     const now = new Date();
@@ -446,5 +450,6 @@ onMounted(() => {
     window.setHospitalPrice = (price) => {
         hospitalPrice.value = price;
     };
+    window.chatNotify = (text) => toastsRef.value?.show(text);
 });
 </script>

@@ -5,6 +5,7 @@ const isLoggedIn = require('../middleware/isLoggedIn');
 const rateLimit = require('../middleware/rateLimit');
 const withGuards = require('../middleware/withGuards');
 const { sendEvent } = require('../core/eventSender');
+const { humanizeError } = require('../core/errorMessages');
 
 /**
  * Шахта: позиции камней, добыча, продажа руды боту
@@ -39,7 +40,7 @@ mp.events.add(
                     MiningConfig.mineTimeMs,
                 ]);
             } else {
-                player.outputChatBox('!{#FF3333}[Шахта] Подойдите ближе к камню.');
+                player.outputChatBox('!{#FF3333}Подойдите ближе к камню.', { toast: true });
             }
         },
         'mining:start'
@@ -53,10 +54,9 @@ mp.events.add(
         async (player) => {
             const result = await miningService.completeMine(player);
             if (result.success) {
-                const count = miningService.getShiftCount(player.accountId);
-                player.outputChatBox(`!{#4CAF50}[Шахта] Руда добыта! Всего за смену: ${count}`);
+                player.outputChatBox(`!{#4CAF50}Руда добыта!`, { toast: true });
             } else {
-                player.outputChatBox(`!{#FF3333}[Шахта] Добыча не удалась: ${result.error}`);
+                player.outputChatBox(`!{#FF3333}${humanizeError(result.error)}`, { toast: true });
             }
         },
         'mining:complete'
@@ -71,7 +71,8 @@ mp.events.add(
             const oreCount = inventoryService.countItem(player, 'ore');
             if (oreCount === 0) {
                 player.outputChatBox(
-                    '!{#FF3333}[Игнат] Сначала накопай руду в шахте, а потом приходи!'
+                    '!{#FF3333}[Игнат] Сначала накопай руду в шахте, а потом приходи!',
+                    { toast: true }
                 );
                 return;
             }

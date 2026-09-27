@@ -27,6 +27,10 @@ mp.events.add('client:chat:openState', (open) => {
     natives.showCursor(!!open || state.isAnyUiWindowOpen);
 });
 
+mp.events.add('client:chat:notify', (text) => {
+    ui.call('chatNotify', String(text ?? ''));
+});
+
 mp.events.add('client:chat:send', (channel, text) => {
     mp.events.callRemote('server:chat:send', channel, text);
 });

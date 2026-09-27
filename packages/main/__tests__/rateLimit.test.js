@@ -67,7 +67,8 @@ describe('rateLimit middleware', () => {
 
         expect(result).toBe(false);
         expect(mockPlayer.outputChatBox).toHaveBeenCalledWith(
-            expect.stringContaining('Слишком часто')
+            expect.stringContaining('Слишком часто'),
+            { toast: true }
         );
         expect(auditService.logPlayer).toHaveBeenCalled();
         expect(mockRedis.set).toHaveBeenCalled();

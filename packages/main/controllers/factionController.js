@@ -7,6 +7,7 @@ const rateLimit = require('../middleware/rateLimit');
 const withGuards = require('../middleware/withGuards');
 const { registerCommand } = require('./commandSystem');
 const { sendEvent } = require('../core/eventSender');
+const { humanizeError } = require('../core/errorMessages');
 
 /**
  * Фракции: инфо для UI, касса, управление составом, открытие окна.
@@ -78,7 +79,7 @@ mp.events.add(
         async (player) => {
             const membership = await factionService.getMembership(player.accountId);
             if (!membership) {
-                player.outputChatBox('!{#FF3333}[Фракция] Вы не состоите во фракции.');
+                player.outputChatBox(`!{#FF3333}${humanizeError('not_member')}`, { toast: true });
             }
             await sendFactionInfo(player);
         },
@@ -94,7 +95,9 @@ mp.events.add(
         async (player) => {
             const membership = await factionService.getMembership(player.accountId);
             if (!membership && (player.adminLevel || 0) < 1) {
-                return player.outputChatBox('!{#FF3333}[Семья] Вы не состоите в семье.');
+                return player.outputChatBox(`!{#FF3333}${humanizeError('not_member')}`, {
+                    toast: true,
+                });
             }
             sendEvent(player, 'client:faction:open', []);
             await sendFactionInfo(player);
@@ -256,14 +259,22 @@ registerCommand('setfaction', {
     run: async (player, args) => {
         const [targetArg, rankArg] = args;
         const target = findOnlinePlayer(targetArg);
-        if (!target) return player.outputChatBox('!{#FF3333}Игрок не найден или не в сети.');
+        if (!target)
+            return player.outputChatBox('!{#FF3333}Игрок не найден или не в сети.', {
+                toast: true,
+            });
 
         const maxRank = factionService.getRanks().length - 1;
         const rank = Math.max(0, Math.min(maxRank, Number(rankArg) || 0));
         const result = await factionService.addMember(1, target.accountId, rank);
-        if (!result.success) return player.outputChatBox(`!{#FF3333}Ошибка: ${result.error}`);
+        if (!result.success)
+            return player.outputChatBox(`!{#FF3333}${humanizeError(result.error)}`, {
+                toast: true,
+            });
 
-        player.outputChatBox(`!{#4CAF50}${target.accountName} зачислен в семью (ранг ${rank}).`);
+        player.outputChatBox(`!{#4CAF50}${target.accountName} зачислен в семью (ранг ${rank}).`, {
+            toast: true,
+        });
         target.outputChatBox('!{#4CAF50}Вы зачислены в семью. E на базе — инфо о фракции.');
     },
 });
@@ -276,7 +287,10 @@ registerCommand('unsetfaction', {
         if (!target) return player.outputChatBox('!{#FF3333}Игрок не найден или не в сети.');
 
         const result = await factionService.removeMember(target.accountId);
-        if (!result.success) return player.outputChatBox(`!{#FF3333}Ошибка: ${result.error}`);
-        player.outputChatBox(`!{#4CAF50}${target.accountName} исключён из семьи.`);
+        if (!result.success)
+            return player.outputChatBox(`!{#FF3333}${humanizeError(result.error)}`, {
+                toast: true,
+            });
+        player.outputChatBox(`!{#4CAF50}${target.accountName} исключён из семьи.`, { toast: true });
     },
 });

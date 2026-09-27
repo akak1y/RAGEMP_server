@@ -36,6 +36,13 @@ class ChatService {
         ]);
     }
 
+    /**
+     * Bottom-toast уведомление: короткий фидбек.
+     */
+    notify(player, text) {
+        sendEvent(player, 'client:chat:notify', [String(text)]);
+    }
+
     /** Сообщение игрока в канал: проверка прав + рассылка получателям */
     async send(player, channel, text) {
         if (!player || !player.isLoggedIn) return { success: false, error: 'not_authorized' };

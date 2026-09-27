@@ -72,7 +72,10 @@ mp.events.add(
                 player.adminLevel = userDb.admin_level;
                 player.lastPos = new mp.Vector3(userDb.pos_x, userDb.pos_y, userDb.pos_z); // заполняем кэш данными из бд
 
-                player.outputChatBox = (text) => chatService.pushSystem(player, text);
+                player.outputChatBox = function (text, opts) {
+                    if (opts && opts.toast) chatService.notify(player, text);
+                    else chatService.pushSystem(player, text);
+                };
 
                 player.posTracker = setInterval(() => {
                     // запускаем таймер позиции и обновляем в ОЗУ раз в 3 сек

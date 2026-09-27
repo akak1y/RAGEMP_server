@@ -76,6 +76,7 @@ const contracts = {
 
     // ===== ChatService.js / chatController.js =====
     'client:chat:message': ['string'],
+    'client:chat:notify': ['string'],
     'client:chat:state': ['string'],
 };
 

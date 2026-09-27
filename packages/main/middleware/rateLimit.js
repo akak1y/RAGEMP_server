@@ -47,7 +47,8 @@ function rateLimit(action, maxCalls, windowSec = 5) {
                     if (rowId) await auditService.bumpRepeats(Number(rowId));
                 }
                 player.outputChatBox(
-                    `!{#FF3333}[Антиспам] Слишком часто. Подождите ${windowSec} секунд.`
+                    `!{#FF3333}[Антиспам] Слишком часто. Подождите ${windowSec} секунд.`,
+                    { toast: true }
                 );
                 metrics.inc('rage_ratelimit_blocks_total', 'Rate-limit blocks');
                 return false;

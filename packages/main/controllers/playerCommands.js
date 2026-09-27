@@ -45,12 +45,13 @@ registerCommand('pay', {
             }
         }
 
-        if (!targetName) return player.outputChatBox('!{#FF3333}Игрок не найден или не в сети');
+        if (!targetName)
+            return player.outputChatBox('!{#FF3333}Игрок не найден или не в сети', { toast: true });
         if (targetAccountId === player.accountId)
-            return player.outputChatBox('!{#FF3333}Нельзя перевести самому себе');
+            return player.outputChatBox('!{#FF3333}Нельзя перевести самому себе', { toast: true });
 
         const ok = await moneyService.transfer(player.accountId, targetAccountId, amount, 'pay');
-        if (!ok) return player.outputChatBox('!{#FF3333}Недостаточно средств');
+        if (!ok) return player.outputChatBox('!{#FF3333}Недостаточно средств', { toast: true });
 
         player.applyMoneyDelta(-amount);
         if (targetPlayer) targetPlayer.applyMoneyDelta(amount);
@@ -71,7 +72,9 @@ registerCommand('endwork', {
     guards: [isLoggedIn],
     run: (player) => {
         if (!courierService.isWorking(player.accountId))
-            return player.outputChatBox('!{#FF3333}[Курьер] Вы не работаете курьером.');
+            return player.outputChatBox('!{#FF3333}[Курьер] Вы не работаете курьером.', {
+                toast: true,
+            });
         courierService.endWork(player.accountId);
     },
 });

@@ -8,11 +8,10 @@ const { sendEvent } = require('../core/eventSender');
 
 /**
  * Кастомный чат: полностью замещает встроенный.
- * Прототипное присваивание — запасной слой; основной путь — per-instance
- * outputChatBox в authController (own выигрывает у нативного own и прототипа).
  */
-mp.Player.prototype.outputChatBox = function (text) {
-    chatService.pushSystem(this, text);
+mp.Player.prototype.outputChatBox = function (text, opts) {
+    if (opts && opts.toast) chatService.notify(this, text);
+    else chatService.pushSystem(this, text);
 };
 
 /** Сообщение из CEF-ввода: обычный текст или /команда */
@@ -24,17 +23,13 @@ mp.events.add(
             const raw = String(text ?? '').trim();
             if (!raw) return;
             if (raw.length > 200)
-                return chatService.pushSystem(
-                    player,
-                    '!{#FF3333}[Чат] Сообщение длиннее 200 символов.'
-                );
+                return player.outputChatBox('!{#FF3333}Сообщение длиннее 200 символов.', {
+                    toast: true,
+                });
             if (raw.startsWith('/')) {
                 const handled = await dispatchCommand(player, raw.slice(1));
                 if (!handled)
-                    chatService.pushSystem(
-                        player,
-                        `!{#FF3333}[Чат] Неизвестная команда: ${raw.split(/[ ]+/)[0]}`
-                    );
+                    player.outputChatBox(`!{#FF3333}Неизвестная команда`, { toast: true });
                 return;
             }
             await chatService.send(player, String(channel ?? 'global'), raw);
@@ -63,7 +58,7 @@ registerCommand('a', {
     description: 'Сообщение в админ-чат',
     run: async (player, args) => {
         const text = (args || []).join(' ').trim();
-        if (!text) return player.outputChatBox('!{#FF3333}Использование: /a [сообщение]');
+        if (!text) return player.outputChatBox('Использование: /a [сообщение]', { toast: true });
         await chatService.send(player, 'admin', text);
     },
 });

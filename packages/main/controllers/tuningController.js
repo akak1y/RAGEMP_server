@@ -78,11 +78,13 @@ mp.events.add(
             } catch (err) {
                 if (err.message === 'not_enough_money')
                     return player.outputChatBox(
-                        '!{#FF3333}[LSC] Недостаточно средств для покупки этой модификации'
+                        '!{#FF3333}[LSC] Недостаточно средств для покупки этой модификации',
+                        { toast: true }
                     );
                 if (err.message === 'already_installed')
                     return player.outputChatBox(
-                        '!{#FFaa00}[LSC] Эта модификация уже установлена на автомобиле'
+                        '!{#FFaa00}[LSC] Эта модификация уже установлена на автомобиле',
+                        { toast: true }
                     );
                 return;
             }

@@ -31,7 +31,9 @@ mp.events.add(
             const config = VehicleConfig[model];
 
             if (player.money < config.price)
-                return player.outputChatBox('!{#FF3333}[Ошибка] Недостаточно денег.'); // проверка баланса
+                return player.outputChatBox('!{#FF3333}[Ошибка] Недостаточно денег.', {
+                    toast: true,
+                }); // проверка баланса
 
             const sequelize = getSequelize();
             await sequelize.transaction(async (t) => {
@@ -109,7 +111,10 @@ mp.events.add(
             if (!vehicleDbId) return;
 
             const hasPhone = inventoryService.hasItem(player, 'phone');
-            if (!hasPhone) return player.outputChatBox('!{#FF3333}[Ошибка] У вас нет телефона!');
+            if (!hasPhone)
+                return player.outputChatBox('!{#FF3333}[Ошибка] У вас нет телефона!', {
+                    toast: true,
+                });
 
             const carData = await vehicleService.getVehicleForOwner(vehicleDbId, player.accountId);
             if (!carData) return;
@@ -117,7 +122,8 @@ mp.events.add(
             if (!config) return; // модель есть в БД, но нет в конфиге — защита
             if (vehicleService.isSpawned(vehicleDbId))
                 return player.outputChatBox(
-                    `!{#FF1111}[Телефон] Машина ${config.name} уже заспавнена.`
+                    `!{#FF1111}[Телефон] Машина ${config.name} уже заспавнена.`,
+                    { toast: true }
                 );
 
             const atGarage = isNear(player.position, GaragePos, GarageInteractionRadius);
@@ -126,7 +132,9 @@ mp.events.add(
                 cost = PhoneConfig.deliveryCar;
                 const paid = await player.takeMoney(cost, 'доставка авто');
                 if (!paid)
-                    return player.outputChatBox('!{#FF3333}[Ошибка] У вас недостаточно денег!');
+                    return player.outputChatBox('!{#FF3333}[Ошибка] У вас недостаточно денег!', {
+                        toast: true,
+                    });
             }
             const posCar = {};
             if (atGarage) {
@@ -180,16 +188,24 @@ mp.events.add(
 
             const veh = vehicleService.spawnedVehicles.get(vehicleDbId);
             if (!veh || !mp.vehicles.exists(veh))
-                return player.outputChatBox('!{#FF3333}[Заправка] Машина не рядом.');
+                return player.outputChatBox('!{#FF3333}[Заправка] Машина не рядом.', {
+                    toast: true,
+                });
             if (player.dist(veh.position) > FuelInteractionRadius)
-                return player.outputChatBox('!{#FF3333}[Заправка] Подойдите ближе к машине.');
+                return player.outputChatBox('!{#FF3333}[Заправка] Подойдите ближе к машине.', {
+                    toast: true,
+                });
 
             const own = await vehicleService.getVehicleForOwner(vehicleDbId, player.accountId);
-            if (!own) return player.outputChatBox('!{#FF3333}[Заправка] Это не ваша машина.');
+            if (!own)
+                return player.outputChatBox('!{#FF3333}[Заправка] Это не ваша машина.', {
+                    toast: true,
+                });
 
             const currentFuel = Number(veh.getVariable('fuel') || 0);
             const liters = 100 - currentFuel;
-            if (liters <= 0.1) return player.outputChatBox('!{#00FFFF}[Заправка] Бак уже полон.');
+            if (liters <= 0.1)
+                return player.outputChatBox('!{#00FFFF}[Заправка] Бак уже полон.', { toast: true });
 
             const cost = Math.ceil(liters * FuelPricePerLiter);
 
@@ -212,10 +228,13 @@ mp.events.add(
                 });
             } catch (err) {
                 if (err.message === 'not_enough_money')
-                    return player.outputChatBox('!{#FF3333}[Заправка] Недостаточно денег!');
+                    return player.outputChatBox('!{#FF3333}[Заправка] Недостаточно денег!', {
+                        toast: true,
+                    });
                 if (err.message === 'refuel_failed')
                     return player.outputChatBox(
-                        '!{#FF3333}[Заправка] Не удалось заправить машину.'
+                        '!{#FF3333}[Заправка] Не удалось заправить машину.',
+                        { toast: true }
                     );
                 throw err;
             }
