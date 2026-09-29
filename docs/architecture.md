@@ -10,7 +10,7 @@
 ## Обзор слоёв
 
 ```text
-client_packages (мосты, клавиши, маркеры)
+client_packages (мосты, клавиши, маркеры, чат)
 ↕  mp.events / callRemote
 controllers (тонкие обработчики)   ←   middleware (guards, rate-limit)
 ↓
@@ -18,42 +18,43 @@ services (бизнес-логика)           ←   websocket/adminServer (ад
 ↓
 models (Sequelize, ленивая инициализация)
 ↓
-MySQL ← core/db   •   Redis ← core/redis
+MySQL ← core/db   •   Redis ← core/redis   •   asyncLock ← core/asyncLock
 ```
 
 ## Сервер
 
-### `controllers/` — тонкие обработчики (16 файлов)
+### `controllers/` — тонкие обработчики (17 файлов)
 
-| Файл                          | Ответственность                                                |
-| ----------------------------- | -------------------------------------------------------------- |
-| `commandSystem.js`            | диспетчер команд: `registerCommand` + `playerCommand`          |
-| `moneyApi.js`                 | денежные методы `mp.Player` (БД + память + HUD)                |
-| `authController.js`           | вход/регистрация, выход с сохранением                          |
-| `gameEvents.js`               | события игрока: смерть, курьер, статистика                     |
-| `playerCommands.js`           | `/pay`, `/kill`, `/endwork`                                    |
-| `adminCommands.js`            | 10 админ-команд (`/checkban` … `/bench`)                       |
-| `vehicleController.js`        | покупка, спавн, заправка                                       |
-| `locationController.js`       | семья `*:requestPos` — координаты 5 локаций                    |
-| `tuningController.js`         | LSC: вход в зону, покупка, выход                               |
-| `factionController.js`        | фракции: запрос инфо, касса                                    |
-| `factionStorageController.js` | семейный склад: deposit/withdraw с проверкой ранга и дистанции |
-| `armoryController.js`         | семейный арсенал: займы стволов из склада семьи                |
-| `weaponController.js`         | оружие: `/gun`, `/holster`, `/guns`, перезарядка по R          |
-| `hospitalController.js`       | лечение в больнице                                             |
-| `shopController.js`           | магазин: конфиг и покупка                                      |
-| `miningController.js`         | шахта: камни, добыча, продажа руды                             |
+| Файл                          | Ответственность                                                                                       |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `commandSystem.js`            | диспетчер команд: `registerCommand` + `dispatchCommand` + `visibleCommands`                           |
+| `moneyApi.js`                 | денежные методы `mp.Player` (БД + память + HUD)                                                       |
+| `authController.js`           | вход/регистрация, выход с сохранением, per-instance `outputChatBox`, `miningService.endWork` при quit |
+| `chatController.js`           | кастомный чат: каналы, `/help`, `/a`, роутинг `outputChatBox` (лента/toast)                           |
+| `gameEvents.js`               | события игрока: смерть, курьер, статистика                                                            |
+| `playerCommands.js`           | `/pay`, `/kill`, `/endwork`                                                                           |
+| `adminCommands.js`            | 10 админ-команд (`/checkban` … `/bench`)                                                              |
+| `vehicleController.js`        | покупка, спавн, заправка                                                                              |
+| `locationController.js`       | семья `*:requestPos` — координаты 5 локаций                                                           |
+| `tuningController.js`         | LSC: вход в зону, покупка, выход                                                                      |
+| `factionController.js`        | фракции: запрос инфо, касса, `/fam`                                                                   |
+| `factionStorageController.js` | семейный склад: deposit/withdraw с проверкой ранга и дистанции                                        |
+| `armoryController.js`         | семейный арсенал: займы стволов из склада семьи                                                       |
+| `weaponController.js`         | оружие: `/gun`, `/holster`, `/guns`, перезарядка по R                                                 |
+| `hospitalController.js`       | лечение в больнице                                                                                    |
+| `shopController.js`           | магазин: конфиг и покупка                                                                             |
+| `miningController.js`         | шахта: камни, добыча, продажа руды                                                                    |
 
 ### `middleware/` — проверки прав и error boundary (4)
 
 - `withGuards` — цепочка проверок + единый error boundary
 - `isLoggedIn`, `isAdmin` — фабрики guard'ов
-- `rateLimit` — Redis-счётчики, fail open, коалесценция нарушений через AuditService
+- `rateLimit` — Redis-счётчики, fail open, коалесценция нарушений через AuditService; предупреждение уходит в bottom-toast (`{ toast: true }`)
 
-### `services/` — бизнес-логика (18)
+### `services/` — бизнес-логика (19)
 
-Account, Auth, Money, Vehicle, Tuning, Inventory, Location, Stats, Health, Audit, Bot, Courier, Faction, FactionStorage, Armory, Mining, Shop, Weapon.
-Сервисы не знают про `mp.*`, кроме осознанных game-world сервисов (Vehicle, Tuning, Bot, Courier) — это помечено в их шапках.
+Account, Auth, Money, Vehicle, Tuning, Inventory, Location, Stats, Health, Audit, Bot, Courier, Faction, FactionStorage, Armory, Mining, Shop, Weapon, **Chat**.
+Сервисы не знают про `mp.*`, кроме осознанных game-world сервисов (Vehicle, Tuning, Bot, Courier) — это помечено в их шапках. `ChatService` рассылает по каналам и разделяет ленту (`pushSystem`) и bottom-toast (`notify`).
 
 ### `models/` — Sequelize-модели, ленивые геттеры (9)
 
@@ -62,17 +63,20 @@ Users, Item, Vehicle, AuditLog, Bot, Faction, FactionMember, FactionStorageItem,
 `FactionStorageItem` — слоты семейного склада: `faction_id → factions.id` (CASCADE), предмет + количество + слот; удаление семьи очищает склад автоматически.
 `FactionArmoryLoan` — займы арсенала: `faction_id + account_id + item_id` (уникальный), количество + дата выдачи; CASCADE по семье и аккаунту.
 
-### Миграции (5)
+### Миграции (7)
 
 `001-initial-schema` (accounts, items, vehicles, audit_logs, bots),  
 `002-factions` (factions, faction_members),  
 `003-ensure-legacy-indexes`,  
 `004-faction-storage` (faction_storage_items),  
-`005-faction-armory` (faction_armory_loans).
+`005-faction-armory` (faction_armory_loans),  
+`006` — `UNIQUE(owner_id, slot)` в `items` (защита от дубля слота при гонке),  
+`007` — `UNIQUE(faction_id, slot)` в `faction_storage_items` через `ensureUniqueIndexGuarded`.  
+Все миграции идут через общий `core/migrationHelpers.js` (`ensureIndex`/`ensureUniqueIndexGuarded` идемпотентны, читают `information_schema`).
 
-### `core/` — инфраструктура: БД, кэш, логи, замеры, события
+### `core/` — инфраструктура: БД, кэш, логи, замеры, события, блокировки
 
-`db.js` (пул + initDB), `redis.js` (singleton), `logger.js` (асинхронный, combined/error), `profiler.js` (`perf_hooks`), `eventContracts.js` (контракты событий сервер→клиент с типами аргументов), `eventSender.js` (валидация + логирование), `eventLog.js` (кольцевой буфер 200 записей для админки).
+`db.js` (пул + initDB), `redis.js` (singleton), `logger.js` (асинхронный, combined/error), `profiler.js` (`perf_hooks`), `metrics.js` (Prometheus-exporter), `eventContracts.js` (контракты событий сервер→клиент с типами аргументов), `eventSender.js` (валидация + логирование), `eventLog.js` (кольцевой буфер 200 записей для админки), `autoRegister.js`, `crashLogger.js`, **`asyncLock.js`** (ключевой async-мьютекс: очередь по key, разные ключи параллельно), **`migrationHelpers.js`** (`ensureIndex`/`ensureUniqueIndexGuarded`), **`errorMessages.js`** (`humanizeError` — маппинг машинных кодов ошибок в читаемый текст).
 
 ## Клиентская инфраструктура событий
 
@@ -89,27 +93,36 @@ Users, Item, Vehicle, AuditLog, Bot, Faction, FactionMember, FactionStorageItem,
 ## Клиент (`client_packages/`)
 
 - `state.js` — общее состояние в `globalThis.UIState` (в клиенте RAGE MP нет `module.exports`)
-- 14 доменных модулей: `auth`, `keys`, `windows`, `interactions`, `speedometer`, `bridges`, `tuning`, `vehicleSync`, `courier`, `bots`, `factions`, `hospital`, `mining`, `shop`
+- 15 доменных модулей: `auth`, `keys`, `windows`, `interactions`, `speedometer`, `bridges`, `tuning`, `vehicleSync`, `courier`, `bots`, `factions`, `hospital`, `mining`, `shop`, **`chat`**
+- инфраструктурные: `ui.js`, `natives.js`, `debug.js`
 - `index.js` — только создание браузера и порядок `require`
+- `chat.js` экспортирует `globalThis.chat = { pushSystem, notify }`; `notify` ведёт в bottom-toast через событие `client:chat:notify`
+
+## UI-Server (Vue 3 SPA)
+
+- Одно браузерное окно на всю игру; `App.vue` держит состояние окон и фокус-трап
+- Компоненты: `Auth`, `Hud`, `Inventory`, `Phone`, `Dealership`, `CarCustom`, `Shop`, `MiningSell`, `HospitalWindow`, `Faction`, `Chat`, **`Toasts`**
+- `Chat.vue` — скроллируемая лента с появляющимся индикатором (без нативного скроллбара), автопрокрутка с уважением к чтению истории, Esc через глобальный `window`-слушатель (поэтапно: чат → окно, карта не открывается), сброс ленты при релоге
+- `Toasts.vue` — стек до 3 плашек внизу экрана, slide/fade, авто-скрытие 3 с, парсинг ведущего `!{#RRGGBB}`
 
 ## Веб-админка (`websocket/`)
 
-- HTTP (статика + `/login`) и WS на одном порту; JWT 8 ч, `admin_level >= 1`; битый токен → 4001/4003
-- `protocol.js` — типы сообщений: `get_table`, `update_cell`, `player_action`, `vehicle_action`, `delete_row`, `create_row`, `get_metrics`, `event_log_init`, `event_log`
-- Schema-driven формы: сервер шлёт `create_schema` — фронт генерирует формы сам
+- HTTP (статика + `/login`) и WS на одном порту; JWT 8 ч, `admin_level >= 1`; **ревалидация уровня по БД при handshake** (устаревший токен пониженного/удалённого админа не открывает соединение; 4001/4003)
+- `protocol.js` — типы сообщений: `get_table`, `update_cell`, `player_action`, `vehicle_action`, `delete_row`, `create_row`, `get_metrics`, `event_log_init`, `event_log`; `update_cell` даёт обратную связь `action_result`, пишет аудит при отказе и запрещает эскалацию `admin_level` выше своего
+- Schema-driven формы: сервер шлёт `create_schema` — фронт генерирует формы сам; слот предмета ограничен `InventoryConfig.size`
 - Whitelist редактируемых полей + серверная валидация; каждое действие → аудит
-- Карта CanvasMapper (**собственная библиотека**): тайловая пирамида 8K (z0..z5), LOD + LRU кэш, маркеры-спрайты, привязка через `GAME_BOUNDS`
+- Карта CanvasMapper (**собственная библиотека**): тайловая пирамида 8K (z0..z5), LOD + LRU кэш, маркеры-спрайты, привязка через `GAME_BOUNDS`; бандлы локализованы в `admin/vendor` (офлайн, без CDN)
 - Вкладка events: real-time лента из `eventLog`, фильтры, тумблер «только ошибки валидации», hover-панель с разбором аргументов ключ-значение
 - Живая лента аудита: pub/sub через `AuditService.subscribe`
-- `get_metrics` (WS) и HTTP `/metrics` — метрики: собственный Prometheus-exporter без внешних зависимостей
-- Вкладка metrics с автообновлением (15 с); аудит — серверная пагинация
+- `get_metrics` (WS) и публичный HTTP `/metrics` — метрики: собственный Prometheus-exporter без внешних зависимостей
+- Вкладка metrics с автообновлением (15 с); `openTab` гасит metrics-таймер до ранних return (нет фонового опроса БД с неактивной вкладки); аудит — серверная пагинация
 - Автореконнект с экспоненциальным бэкоффом; 4001/4003 — без реконнекта
 - Тайлы карты (`tiles/`) генерируются CLI из `map.png`, **не в репозитории** (`npm run build:tiles`)
 
 ## Ключевые решения
 
 1. **Деньги** — атомарный SQL `UPDATE … WHERE money >= X`; составные операции — внешние транзакции.
-2. **Инвентарь** — паттерн «план → транзакция → память»: память мутирует только после commit.
+2. **Инвентарь** — паттерн «план → транзакция → память»: память мутирует только после commit; `UNIQUE(owner_id, slot)` как страховка на уровне БД.
 3. **Server-authoritative визуал** — клиент не применяет тюнинг локально.
 4. **Rate-limit** — два режима (кулдаун / анти-флуд); серия нарушений сворачивается в одну строку аудита с `repeats`.
 5. **Кэш-aside** — экономика в Redis (TTL 60 с); в hot path честный замер реальной операции, синтетический бенчмарк — on-demand (`/bench`).
@@ -118,16 +131,20 @@ Users, Item, Vehicle, AuditLog, Bot, Faction, FactionMember, FactionStorageItem,
 8. **Координаты в одном месте** — `config.js` → `LocationService` → клиент и админка.
 9. **Типобезопасность событий** — все `player.call` заменены на `sendEvent` с валидацией контрактов; битое событие не уйдёт клиенту, будет видно в админке.
 10. **Самописный logger** — winston несовместим с окружением RAGE MP (старый Node, `node:`-импорты).
-11. **Склад семьи** — общие слоты фракции: повторная проверка места и остатка под блокировкой строк (`SELECT … FOR UPDATE`), компенсация при сбое транзакции (предмет возвращается игроку).
+11. **Склад семьи** — общие слоты фракции: повторная проверка места и остатка под `asyncLock(factionId)` + транзакция с блокировкой строк, компенсация при сбое (предмет возвращается игроку).
 12. **Оружие через инвентарь** — ствол как предмет инвентаря; перезарядка добирает резерв до `maxClip`; при holster патроны возвращаются в резерв.
-13. **Арсенал семьи** — займы стволов из склада под учётную запись: лимит займов и права по рангам из конфига, добор в существующий займ не тратит слот, авторасчёт на смерти (`ArmoryService.returnAll` в `playerDeath`).
+13. **Арсенал семьи** — займы стволов из склада под учётную запись: лимит займов и права по рангам из конфига, добор в существующий займ не тратит слот, авторасчёт на смерти (`ArmoryService.returnAll` в `playerDeath`), `asyncLock(accountId)` на лимит активных займов.
+14. **Сериализация гонок** — `core/asyncLock.js`: очередь промисов по ключу сущности; `withLock(key, fn)` закрывает read-modify-write в инвентаре (`accountId`), складе (`factionId`), арсенале (`accountId`), шахте (резерв камня до `await`). Вложенные локи с другим ключом безопасны (склад внутри арсенала берёт `factionId`, арсенал — `accountId`).
+15. **Роутинг уведомлений** — `outputChatBox(text, { toast })`: явный флаг вместо эвристики по длине (длина ломалась на `/help`, где каждая строка списка короткая, но список — лента). По умолчанию лента; короткие фидбеки помечаются `{ toast: true }` и уходят в `ChatService.notify` → `client:chat:notify` → `Toasts.vue`. Клиентские модули используют симметричный `chat.notify`.
+16. **Человекочитаемые ошибки** — `core/errorMessages.js` (`humanizeError`) маппит машинные коды сервисов (`too_fast`, `inventory_full`, `not_enough_items`, …) в строки для игрока, чтобы в плашках не мелькали идентификаторы.
+17. **Идемпотентные миграции** — все индексы через `core/migrationHelpers.js` (`ensureIndex`/`ensureUniqueIndexGuarded` читают `information_schema`), контракт един для 001–007; убран дубль индекса в 004.
 
 ## Тесты и CI
 
-- Сервер: Jest (MoneyService, InventoryService, AuditService, rateLimit, FactionService, FactionStorageService, ArmoryService, WeaponService, eventContracts)
-- Клиент: глобальный мок `mp.*` + тестовый `__trigger` (`__tests__/setup.js`)
+- Сервер: Jest (MoneyService, InventoryService, AuditService, rateLimit, FactionService, FactionStorageService, ArmoryService, WeaponService, ChatService, eventContracts)
+- Клиент: глобальный мок `mp.*` + тестовый `__trigger` (`__tests__/setup.js`); моки `chat`/`keys`/`windows`/`speedometer`/`tuning`/`auth`
 - Корневой `npm test` гоняет оба пакета (`npm --prefix packages/main test && npm --prefix client_packages test`)
-- CI: `syntax-check` (сервер + клиент), `server-tests`, `client-tests`
+- CI: `pull_request` + `push` в master, `concurrency` (отмена устаревших прогонов), таймауты по jobs; `syntax-check` (сервер + клиент), `ui-build` (сборка Vite — ловит ошибки Vue-шаблонов до мержа), `server-tests`, `client-tests`, `integration-tests`, `lint`, `docs-freshness` (`git diff --exit-code docs/events.md`)
 - Интеграционные тесты: реальные MySQL (`ragemp_test`) и Redis (DB 1), миграции в globalSetup, последовательный прогон (`--runInBand`), полный дроп БД в teardown; env-приоритет над settings.json
 - `eventContracts.test.js` — тест-инвентаризация: все `sendEvent` имеют контракты, нет мёртвых контрактов
 
@@ -138,19 +155,22 @@ RAGEMP_server/
 ├── packages/main/
 │   ├── index.js             точка входа
 │   ├── config.js            игровые конфиги (координаты, цены)
-│   ├── core/                db, redis, logger, profiler, eventContracts/Sender/Log
-│   ├── controllers/         16 файлов по доменам
-│   ├── services/            18 сервисов
+│   ├── core/                db, redis, logger, profiler, metrics, asyncLock,
+│   │                        migrationHelpers, errorMessages, eventContracts/Sender/Log,
+│   │                        autoRegister, crashLogger
+│   ├── controllers/         17 файлов по доменам
+│   ├── services/            19 сервисов
 │   ├── middleware/          4 файла
 │   ├── models/              9 моделей
+│   ├── migrations/          7 миграций
 │   ├── utils/               distance.js
-│   ├── websocket/           админка: adminServer, protocol, admin/
-│   └── __tests__/           тесты сервера
+│   ├── websocket/           админка: adminServer, protocol, admin/ (+ admin/vendor)
+│   └── __tests__/           тесты сервера (+ integration/)
 ├── client_packages/
 │   ├── index.js, state.js   вход + общее состояние
-│   ├── 14 доменных модулей
+│   ├── 15 доменных модулей
 │   └── __tests__/           тесты клиента + мок mp.*
-├── UI-Server/               Vue 3 SPA (Vite)
-├── docs/                    architecture.md, графы, events.md (авто-ген)
-── .github/workflows/       CI
+├── UI-Server/               Vue 3 SPA (Vite): App.vue + компоненты (Chat, Toasts, …)
+├── docs/                    architecture.md, architecture-graph.png, deps-full.dot, events.md (авто-ген)
+└── .github/workflows/       CI
 ```

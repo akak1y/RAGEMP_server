@@ -27,11 +27,11 @@ mp.events.add('client:faction:open', () => {
 });
 
 mp.events.add('client:faction:moneyResult', (success, errorOrKind) => {
-    notify(String(
-        success
-            ? '!{#4CAF50}Операция с кассой выполнена.'
-            : `!{#FF3333}Ошибка: ${errorOrKind}`
-    ));
+    notify(
+        String(
+            success ? '!{#4CAF50}Операция с кассой выполнена.' : `!{#FF3333}Ошибка: ${errorOrKind}`
+        )
+    );
 });
 
 mp.events.add('client:faction:memberResult', (success, message) => {
