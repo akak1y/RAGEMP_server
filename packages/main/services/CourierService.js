@@ -4,13 +4,14 @@ const factionService = require('./FactionService');
 const { isNear } = require('../utils/distance');
 const logger = require('../core/logger');
 const { sendEvent } = require('../core/eventSender');
+const { withLock } = require('../core/asyncLock');
 
 /**
  * Работа «Курьер»
  */
 class CourierService {
     constructor() {
-        this.states = new Map(); // accountId → { stage, pointIdx, vehicleId, pay }
+        this.states = new Map(); // accountId → { stage: pickup|delivery|return|processing, pointIdx, vehicleId, pay }
     }
 
     isWorking(accountId) {
@@ -45,7 +46,8 @@ class CourierService {
             const point = CourierConfig.deliveryPoints[st.pointIdx];
             if (isNear(player.position, point)) this.dropOff(player, st);
         } else if (st.stage === 'return') {
-            if (isNear(player.position, CourierConfig.warehousePos)) this.completeOrder(player, st);
+            if (isNear(player.position, CourierConfig.warehousePos))
+                return this.completeOrder(player, st);
         }
     }
 
@@ -107,60 +109,108 @@ class CourierService {
         );
     }
 
+    /**
+     * Завершение заказа.
+     */
     async completeOrder(player, st) {
-        const success = await player.addMoney(st.pay, 'курьерская доставка');
+        return withLock(player.accountId, async () => {
+            if (!st || st.stage !== 'return') return;
 
-        if (!success) {
-            logger.error(
-                `[CourierService] Начисление $${st.pay} игроку ${player.accountId} провалилось`
-            );
-            return;
-        }
+            const registered = this.states.get(player.accountId);
+            const wasRegistered = registered === st;
 
-        let bonusPlayer = 0;
-        let bonusTreasury = 0;
-        let factionName = null;
+            if (registered && registered !== st) return;
 
-        const membership = await factionService.getMembership(player.accountId);
-        if (membership) {
-            bonusPlayer = Math.round((st.pay * FactionConfig.courierBonusPlayer) / 10) * 10;
-            bonusTreasury = Math.round((st.pay * FactionConfig.courierBonusTreasury) / 10) * 10;
-            factionName = membership.faction.name;
+            st.stage = 'processing';
+            let basePaid = false;
 
-            if (bonusPlayer > 0) {
-                await player.addMoney(bonusPlayer, `бонус семьи ${factionName}`);
+            const stillCurrent = () => !wasRegistered || this.states.get(player.accountId) === st;
+
+            try {
+                const success = await player.addMoney(st.pay, 'курьерская доставка');
+
+                if (!success) {
+                    logger.error(
+                        `[CourierService] Начисление $${st.pay} игроку ${player.accountId} провалилось`
+                    );
+                    if (stillCurrent()) st.stage = 'return';
+                    return;
+                }
+
+                basePaid = true;
+
+                if (!stillCurrent()) return;
+
+                let bonusPlayer = 0;
+                let bonusTreasury = 0;
+                let factionName = null;
+
+                const membership = await factionService.getMembership(player.accountId);
+
+                if (!stillCurrent()) return;
+
+                if (membership) {
+                    bonusPlayer = Math.round((st.pay * FactionConfig.courierBonusPlayer) / 10) * 10;
+                    bonusTreasury =
+                        Math.round((st.pay * FactionConfig.courierBonusTreasury) / 10) * 10;
+                    factionName = membership.faction.name;
+
+                    if (bonusPlayer > 0) {
+                        await player.addMoney(bonusPlayer, `бонус семьи ${factionName}`);
+                    }
+                    if (bonusTreasury > 0) {
+                        await factionService.addTreasury(membership.faction.id, bonusTreasury);
+                    }
+
+                    if (!stillCurrent()) return;
+                }
+
+                auditService.logPlayer(player, 'courier', {
+                    category: 'money',
+                    amount: st.pay,
+                    details: {
+                        point: st.pointIdx,
+                        dist: Math.round(this.distTo(st.pointIdx)),
+                        bonusPlayer,
+                        bonusTreasury,
+                        factionName,
+                    },
+                });
+
+                let message = `!{#00FF00}[Курьер] Заказ выполнен: +$${st.pay}.`;
+                if (bonusPlayer > 0 || bonusTreasury > 0) {
+                    message += ` Бонус: +$${bonusPlayer} (вам), +$${bonusTreasury} (в казну ${factionName}).`;
+                }
+                player.outputChatBox(message);
+
+                st.stage = 'delivery';
+                st.pointIdx = this.randomPoint(st.pointIdx);
+                st.pay = this.calcPay(st.pointIdx);
+                st.deliveryStart = Date.now();
+                this.sendTarget(player, st);
+                player.outputChatBox(
+                    `!{#00FFFF}[Курьер] Новая посылка взята. Точка доставки: ~${Math.round(this.distTo(st.pointIdx))} м, награда $${st.pay}.`
+                );
+            } catch (err) {
+                logger.error(`[CourierService] completeOrder error: ${err.message}`);
+
+                if (!stillCurrent()) return;
+
+                if (!basePaid) {
+                    st.stage = 'return';
+                    return;
+                }
+
+                st.stage = 'delivery';
+                st.pointIdx = this.randomPoint(st.pointIdx);
+                st.pay = this.calcPay(st.pointIdx);
+                st.deliveryStart = Date.now();
+                this.sendTarget(player, st);
+                player.outputChatBox(
+                    '!{#FFFF00}[Курьер] Заказ засчитан, но часть бонусов не применилась. Возьми новую посылку.'
+                );
             }
-            if (bonusTreasury > 0) {
-                await factionService.addTreasury(membership.faction.id, bonusTreasury);
-            }
-        }
-
-        auditService.logPlayer(player, 'courier', {
-            category: 'money',
-            amount: st.pay,
-            details: {
-                point: st.pointIdx,
-                dist: Math.round(this.distTo(st.pointIdx)),
-                bonusPlayer,
-                bonusTreasury,
-                factionName,
-            },
         });
-
-        let message = `!{#00FF00}[Курьер] Заказ выполнен: +$${st.pay}.`;
-        if (bonusPlayer > 0 || bonusTreasury > 0) {
-            message += ` Бонус: +$${bonusPlayer} (вам), +$${bonusTreasury} (в казну ${factionName}).`;
-        }
-        player.outputChatBox(message);
-
-        st.stage = 'delivery';
-        st.pointIdx = this.randomPoint(st.pointIdx);
-        st.pay = this.calcPay(st.pointIdx);
-        st.deliveryStart = Date.now();
-        this.sendTarget(player, st);
-        player.outputChatBox(
-            `!{#00FFFF}[Курьер] Новая посылка взята. Точка доставки: ~${Math.round(this.distTo(st.pointIdx))} м, награда $${st.pay}.`
-        );
     }
 
     endWork(accountId, silent = false) {
