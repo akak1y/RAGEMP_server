@@ -8,6 +8,7 @@ const weaponService = require('../services/WeaponService');
 const healthService = require('../services/HealthService');
 const chatService = require('../services/ChatService');
 const tuningService = require('../services/TuningService');
+const armoryService = require('../services/ArmoryService');
 const { getRedis } = require('../core/redis');
 const withGuards = require('../middleware/withGuards');
 const rateLimit = require('../middleware/rateLimit');
@@ -125,6 +126,12 @@ mp.events.add(
                     );
             } catch (err) {
                 logger.error(`[Sequelize Save Error]: ${err.message}`);
+            }
+
+            try {
+                await armoryService.returnAll(player, 'quit');
+            } catch (err) {
+                logger.error(`[Armory] ошибка авто-возврата займов при выходе: ${err.message}`);
             }
 
             vehicleService.despawnPlayerVehicles(player.accountId);
