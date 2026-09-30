@@ -9,6 +9,7 @@ const healthService = require('../services/HealthService');
 const chatService = require('../services/ChatService');
 const { getRedis } = require('../core/redis');
 const withGuards = require('../middleware/withGuards');
+const rateLimit = require('../middleware/rateLimit');
 const logger = require('../core/logger');
 const profile = require('../core/profiler');
 const { sendEvent } = require('../core/eventSender');
@@ -20,7 +21,7 @@ const { sendEvent } = require('../core/eventSender');
 mp.events.add(
     'server:account:login',
     withGuards(
-        [],
+        [rateLimit('account:login', 5, 60)],
         async (player, username, password) => {
             logger.info(`Игрок ${username} инициировал процесс входа на сервер.`);
 
