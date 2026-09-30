@@ -88,7 +88,7 @@ class InventoryService {
         }
         const config = ItemConfig[itemId];
 
-        return withLock(player.accountId, async () => {
+        return withLock(`inventory:${player.accountId}`, async () => {
             let space = 0;
             for (const slot of player.inventory) {
                 if (slot && slot.itemId === itemId)
@@ -171,7 +171,7 @@ class InventoryService {
             return { success: false, error: 'invalid_amount' };
         }
 
-        return withLock(player.accountId, async () => {
+        return withLock(`inventory:${player.accountId}`, async () => {
             if (!this.hasItem(player, itemId, amount)) {
                 return { success: false, error: 'not_enough_items' };
             }
