@@ -31,6 +31,34 @@ class FactionService {
         return !!member && member.rank >= (PERMISSIONS[action] ?? 0);
     }
 
+    /**
+     * Возвращает блокировку для транзакции, если она поддерживается.
+     * @private
+     */
+    _lockFor(transaction) {
+        return transaction && transaction.LOCK ? transaction.LOCK.UPDATE : undefined;
+    }
+
+    /**
+     * Читает членство игрока внутри транзакции.
+     * @private
+     */
+    async _getMembershipInTransaction(accountId, transaction) {
+        const lock = this._lockFor(transaction);
+        const member = await getFactionMemberModel().findOne({
+            where: { account_id: accountId },
+            transaction,
+            lock,
+        });
+        if (!member) return null;
+        const faction = await getFactionModel().findByPk(member.faction_id, {
+            transaction,
+            lock,
+        });
+        if (!faction) return null;
+        return { member, faction };
+    }
+
     /** Стартовая фракция, если таблица пуста */
     async ensureSeed() {
         const Faction = getFactionModel();
@@ -127,16 +155,17 @@ class FactionService {
         const amount = Number(sum);
         if (!Number.isInteger(amount) || amount <= 0)
             return { success: false, error: 'invalid_sum' };
-        const membership = await this.getMembership(player.accountId);
-        if (!membership) return { success: false, error: 'no_faction' };
-
         const sequelize = getSequelize();
+        let factionName = null;
         try {
             await sequelize.transaction(async (t) => {
+                const membership = await this._getMembershipInTransaction(player.accountId, t);
+                if (!membership) throw new Error('no_faction');
+                factionName = membership.faction.name;
                 const paid = await moneyService.takeMoney(
                     player.accountId,
                     amount,
-                    `взнос в кассу ${membership.faction.name}`,
+                    `взнос в кассу ${factionName}`,
                     t
                 );
                 if (!paid) throw new Error('not_enough_money');
@@ -146,13 +175,13 @@ class FactionService {
                 );
             });
         } catch (err) {
-            if (err.message === 'not_enough_money')
-                return { success: false, error: 'not_enough_money' };
+            if (err.message === 'not_enough_money' || err.message === 'no_faction')
+                return { success: false, error: err.message };
             throw err;
         }
         player.applyMoneyDelta(-amount);
         logger.info(
-            `[FactionService] ${player.accountName} внёс $${amount} в кассу ${membership.faction.name}`
+            `[FactionService] ${player.accountName} внёс $${amount} в кассу ${factionName}`
         );
         return { success: true };
     }
@@ -162,14 +191,15 @@ class FactionService {
         const amount = Number(sum);
         if (!Number.isInteger(amount) || amount <= 0)
             return { success: false, error: 'invalid_sum' };
-        const membership = await this.getMembership(player.accountId);
-        if (!membership) return { success: false, error: 'no_faction' };
-        if (!this.can(membership.member, 'withdraw'))
-            return { success: false, error: 'no_permission' };
-        if (membership.faction.treasury < amount) return { success: false, error: 'treasury_poor' };
         const sequelize = getSequelize();
+        let factionName = null;
         try {
             await sequelize.transaction(async (t) => {
+                const membership = await this._getMembershipInTransaction(player.accountId, t);
+                if (!membership) throw new Error('no_faction');
+                if (!this.can(membership.member, 'withdraw')) throw new Error('no_permission');
+                factionName = membership.faction.name;
+                if (membership.faction.treasury < amount) throw new Error('treasury_poor');
                 const [affected] = await getFactionModel().update(
                     { treasury: sequelize.literal(`treasury - ${amount}`) },
                     {
@@ -184,18 +214,21 @@ class FactionService {
                 const paid = await moneyService.addMoney(
                     player.accountId,
                     amount,
-                    `выплата из кассы ${membership.faction.name}`,
+                    `выплата из кассы ${factionName}`,
                     t
                 );
                 if (!paid) throw new Error('payout_failed');
             });
         } catch (err) {
+            if (err.message === 'no_faction') return { success: false, error: 'no_faction' };
+            if (err.message === 'no_permission') return { success: false, error: 'no_permission' };
             if (err.message === 'treasury_poor') return { success: false, error: 'treasury_poor' };
+            if (err.message === 'payout_failed') return { success: false, error: 'db_error' };
             throw err;
         }
         player.applyMoneyDelta(amount);
         logger.info(
-            `[FactionService] ${player.accountName} вывел $${amount} из кассы ${membership.faction.name}`
+            `[FactionService] ${player.accountName} вывел $${amount} из кассы ${factionName}`
         );
         return { success: true };
     }
