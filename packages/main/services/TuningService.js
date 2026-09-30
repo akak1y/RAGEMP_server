@@ -230,6 +230,15 @@ class TuningService {
         this.tuningVehicles.delete(player.accountId);
         player.dimension = 0;
     }
+
+    /**
+     * Очистка сессионного состояния LSC при выходе игрока.
+     * @param {mp.Player} player - Игрок
+     */
+    cleanupOnQuit(player) {
+        if (!player || !player.accountId) return;
+        this.tuningVehicles.delete(player.accountId);
+    }
 }
 
 module.exports = new TuningService();

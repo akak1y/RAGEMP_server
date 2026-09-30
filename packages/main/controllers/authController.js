@@ -7,6 +7,7 @@ const miningService = require('../services/MiningService');
 const weaponService = require('../services/WeaponService');
 const healthService = require('../services/HealthService');
 const chatService = require('../services/ChatService');
+const tuningService = require('../services/TuningService');
 const { getRedis } = require('../core/redis');
 const withGuards = require('../middleware/withGuards');
 const rateLimit = require('../middleware/rateLimit');
@@ -129,6 +130,7 @@ mp.events.add(
             vehicleService.despawnPlayerVehicles(player.accountId);
             courierService.endWork(player.accountId, true);
             miningService.endWork(player);
+            tuningService.cleanupOnQuit(player);
         },
         'playerQuit'
     )
