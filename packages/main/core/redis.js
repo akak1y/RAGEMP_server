@@ -1,4 +1,5 @@
 const { createClient } = require('redis');
+const logger = require('./logger');
 
 let settings = {};
 try {
@@ -20,11 +21,40 @@ function buildRedisUrl() {
 
 async function initRedis(maxRetries = 5) {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        let connectedOnce = false;
         try {
-            redisClient = createClient({ url: buildRedisUrl() });
-            redisClient.on('error', (err) => console.error('[Redis Error]', err.message));
+            redisClient = createClient({
+                url: buildRedisUrl(),
+                socket: {
+                    reconnectStrategy: (retries) => {
+                        if (!connectedOnce) {
+                            return new Error('Redis initial connection failed');
+                        }
+                        return Math.min((retries + 1) * 100, 5000);
+                    },
+                },
+            });
+
+            redisClient.on('error', (err) => {
+                logger.error(`[Redis] ошибка: ${err.message}`);
+            });
+
+            redisClient.on('connect', () => {
+                connectedOnce = true;
+            });
+
+            redisClient.on('reconnecting', () => {
+                logger.warn('[Redis] соединение потеряно, выполняю переподключение...');
+            });
+
+            redisClient.on('end', () => {
+                if (connectedOnce) {
+                    logger.warn('[Redis] соединение закрыто');
+                }
+            });
+
             await redisClient.connect();
-            console.log('[Redis] Успешно подключено к серверу ОЗУ.');
+            logger.info('[Redis] Успешно подключено к серверу ОЗУ.');
             return redisClient;
         } catch (err) {
             try {
@@ -37,7 +67,7 @@ async function initRedis(maxRetries = 5) {
             }
 
             const delay = Math.pow(2, attempt) * 1000;
-            console.log(
+            logger.warn(
                 `[Redis] Не удалось подключиться (попытка ${attempt}/${maxRetries}): ${err.message}. Повтор через ${delay / 1000}с...`
             );
             await new Promise((r) => setTimeout(r, delay));
