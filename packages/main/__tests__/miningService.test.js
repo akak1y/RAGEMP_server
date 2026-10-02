@@ -148,6 +148,21 @@ describe('MiningService', () => {
             expect(miningService.rockState[0].respawnAt).toBe(0);
             expect(locationService.hideRock).not.toHaveBeenCalled();
         });
+
+        test('ошибка giveItem снимает резерв камня и оставляет игрока в активной добыче', async () => {
+            const player = atRock();
+            miningService.startWork(player, 0);
+            miningService.activeMiners.get(1).startedAt -= MiningConfig.mineTimeMs + 100;
+
+            inventoryService.giveItem.mockRejectedValue(new Error('db down'));
+
+            const result = await miningService.completeMine(player);
+            expect(result).toMatchObject({ success: false, error: 'db_error' });
+            expect(miningService.rockState[0].depleted).toBe(false);
+            expect(miningService.rockState[0].respawnAt).toBe(0);
+            expect(miningService.activeMiners.has(1)).toBe(true);
+            expect(locationService.hideRock).not.toHaveBeenCalled();
+        });
     });
 
     describe('sellAllOre', () => {

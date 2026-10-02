@@ -74,11 +74,21 @@ class MiningService {
 
         const shiftCount = this.shiftStats.get(player.accountId) || 0;
 
-        const invResult = await inventoryService.giveItem(player, 'ore', 1);
-        if (!invResult.success) {
+        let invResult;
+        try {
+            invResult = await inventoryService.giveItem(player, 'ore', 1);
+        } catch (err) {
+            logger.error(
+                `[MiningService] completeMine: giveItem упала для ${player.accountName}: ${err.message}`
+            );
+            this.rockState[record.rockIndex] = { depleted: false, respawnAt: 0 };
+            return { success: false, error: 'db_error' };
+        }
+
+        if (!invResult || !invResult.success) {
             this.rockState[record.rockIndex] = { depleted: false, respawnAt: 0 }; // резерв снимаем
             logger.warn(`[MiningService] completeMine: инвентарь ${player.accountName} полон`);
-            return { success: false, error: invResult.error };
+            return { success: false, error: (invResult && invResult.error) || 'db_error' };
         }
 
         this.shiftStats.set(player.accountId, shiftCount + 1);
