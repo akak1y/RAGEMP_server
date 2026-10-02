@@ -70,7 +70,11 @@ function broadcast(obj) {
     }
 }
 
+let httpServer = null;
 let wss = null;
+let playersTimer = null;
+let unsubAudit = null;
+let unsubEvents = null;
 
 const loginFails = new Map();
 const LOGIN_MAX_FAILS = 5;
@@ -88,13 +92,19 @@ async function verifyAdminToken(token) {
         return null;
     }
     if (!payload || payload.adminLevel < 1) return null;
-    const account = await getUserModel().findByPk(payload.accountId, { raw: true });
-    if (!account || (account.admin_level || 0) < 1) return null;
-    return { ...payload, adminLevel: account.admin_level };
+    try {
+        const account = await getUserModel().findByPk(payload.accountId, { raw: true });
+        if (!account || (account.admin_level || 0) < 1) return null;
+        return { ...payload, adminLevel: account.admin_level };
+    } catch (err) {
+        logger.error(`[Admin] verifyAdminToken: ${err.message}`);
+        return null;
+    }
 }
 
 function start() {
-    const server = http.createServer((req, res) => {
+    if (httpServer) return;
+    httpServer = http.createServer((req, res) => {
         metrics.inc('rage_http_requests_total', 'Admin panel HTTP requests');
         if (req.method === 'POST' && req.url === '/login') {
             let body = '';
@@ -140,15 +150,24 @@ function start() {
 
         if (req.method === 'GET' && req.url === '/metrics') {
             (async () => {
-                await refreshLiveMetrics();
-                res.writeHead(200, { 'Content-Type': 'text/plain; version=0.0.4' });
-                res.end(metrics.render());
+                try {
+                    await refreshLiveMetrics();
+                    res.writeHead(200, { 'Content-Type': 'text/plain; version=0.0.4' });
+                    res.end(metrics.render());
+                } catch (err) {
+                    logger.error(`[Admin] metrics error: ${err.message}`);
+                    if (!res.headersSent) {
+                        res.writeHead(500, { 'Content-Type': 'application/json' });
+                    }
+                    res.end(JSON.stringify({ error: 'metrics_unavailable' }));
+                }
             })();
             return;
         }
 
         if (req.method === 'GET') {
-            const urlPath = req.url.split('?')[0] === '/' ? '/index.html' : req.url.split('?')[0];
+            const rawPath = req.url.split('?')[0];
+            const urlPath = rawPath === '/' ? '/index.html' : rawPath;
             const adminDir = path.resolve(__dirname, 'admin');
             const filePath = path.resolve(adminDir, '.' + urlPath);
 
@@ -172,7 +191,14 @@ function start() {
         res.end('not found');
     });
 
-    const wss = new WebSocketServer({ server });
+    httpServer.on('error', (err) => {
+        logger.error(`[Admin] HTTP server error: ${err.message}`);
+    });
+
+    wss = new WebSocketServer({ server: httpServer });
+    wss.on('error', (err) => {
+        logger.error(`[Admin] WebSocket server error: ${err.message}`);
+    });
 
     wss.on('connection', async (socket, req) => {
         const url = new URL(req.url, 'http://localhost');
@@ -190,6 +216,10 @@ function start() {
 
         socket.admin = { ...admin, ip: req.socket.remoteAddress };
         clients.add(socket);
+
+        socket.on('error', (err) => {
+            logger.error(`[Admin] socket error: ${err.message}`);
+        });
         socket.on('close', () => clients.delete(socket));
         socket.send(
             JSON.stringify({ type: 'hello', admin: admin.username, online: mp.players.length })
@@ -209,15 +239,15 @@ function start() {
         });
     });
 
-    auditService.subscribe((row) => {
+    unsubAudit = auditService.subscribe((row) => {
         broadcast({ type: 'audit_row', row: row.toJSON ? row.toJSON() : row });
     });
 
-    eventLog.subscribe((event) => {
+    unsubEvents = eventLog.subscribe((event) => {
         broadcast({ type: 'event_log', event });
     });
 
-    setInterval(() => {
+    playersTimer = setInterval(() => {
         const players = mp.players
             .toArray()
             .filter((p) => p.isLoggedIn)
@@ -232,18 +262,62 @@ function start() {
         broadcast({ type: 'players', online: players.length, players });
     }, 5000);
 
-    server.listen(ADMIN_PORT, () => {
+    if (playersTimer.unref) playersTimer.unref();
+
+    httpServer.listen(ADMIN_PORT, () => {
         logger.info(`[Admin] Веб-админка на http://localhost:${ADMIN_PORT}`);
     });
 }
 
 function stop() {
     return new Promise((resolve) => {
-        if (!wss) return resolve();
-        wss.close(() => {
-            logger.info('[AdminWS] WebSocket сервер остановлен');
-            resolve();
-        });
+        if (!httpServer && !wss) return resolve();
+        if (playersTimer) {
+            clearInterval(playersTimer);
+            playersTimer = null;
+        }
+        if (unsubAudit) {
+            try {
+                unsubAudit();
+            } catch {}
+            unsubAudit = null;
+        }
+        if (unsubEvents) {
+            try {
+                unsubEvents();
+            } catch {}
+            unsubEvents = null;
+        }
+        for (const s of clients) {
+            try {
+                s.terminate();
+            } catch {}
+        }
+        clients.clear();
+        const closeHttp = () => {
+            if (!httpServer) return resolve();
+            const server = httpServer;
+            httpServer = null;
+            try {
+                if (typeof server.closeAllConnections === 'function') {
+                    server.closeAllConnections();
+                }
+            } catch {}
+            server.close(() => {
+                logger.info('[Admin] HTTP сервер остановлен');
+                resolve();
+            });
+        };
+        if (wss) {
+            const serverWs = wss;
+            wss = null;
+            serverWs.close(() => {
+                logger.info('[AdminWS] WebSocket сервер остановлен');
+                closeHttp();
+            });
+        } else {
+            closeHttp();
+        }
     });
 }
 
