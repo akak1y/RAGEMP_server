@@ -5,6 +5,7 @@ const isLoggedIn = require('../middleware/isLoggedIn');
 const rateLimit = require('../middleware/rateLimit');
 const withGuards = require('../middleware/withGuards');
 const { sendEvent } = require('../core/eventSender');
+const { humanizeError } = require('../core/errorMessages');
 
 /**
  * Магазин: выдача позиции/конфига, покупка предметов
@@ -45,7 +46,7 @@ mp.events.add(
             if (result.success) {
                 sendEvent(player, 'client:shop:buyResult', [true, 'Покупка успешна']);
             } else {
-                sendEvent(player, 'client:shop:buyResult', [false, result.error]);
+                sendEvent(player, 'client:shop:buyResult', [false, humanizeError(result.error)]);
             }
         },
         'shop:buy'

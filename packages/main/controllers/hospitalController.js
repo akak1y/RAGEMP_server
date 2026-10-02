@@ -4,6 +4,7 @@ const isLoggedIn = require('../middleware/isLoggedIn');
 const rateLimit = require('../middleware/rateLimit');
 const withGuards = require('../middleware/withGuards');
 const { sendEvent } = require('../core/eventSender');
+const { humanizeError } = require('../core/errorMessages');
 
 /**
  * Больница: лечение за HospitalConfig.healPrice через healForMoney.
@@ -27,7 +28,7 @@ mp.events.add(
                     `Вы вылечены. Здоровье: ${result.newHealth}. Списано $${price}.`,
                 ]);
             } else {
-                sendEvent(player, 'client:hospital:result', [false, result.error]);
+                sendEvent(player, 'client:hospital:result', [false, humanizeError(result.error)]);
             }
         },
         'hospital:heal'
