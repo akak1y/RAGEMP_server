@@ -109,39 +109,94 @@ class MiningService {
      * Продать всю руду боту.
      */
     async sellAllOre(player) {
-        if (!player || !player.accountId) return { success: false, message: 'Не авторизован' };
-
+        if (!player || !player.accountId) {
+            return { success: false, error: 'not_authorized', message: 'Не авторизован' };
+        }
         if (!isNear(player.position, BotConfig.position, MiningConfig.interactRadius)) {
-            return { success: false, message: 'Подойдите к скупщику' };
+            return { success: false, error: 'too_far', message: 'Подойдите к скупщику' };
         }
 
         const oreCount = inventoryService.countItem(player, 'ore');
         if (oreCount <= 0) {
-            return { success: false, message: 'Нет руды для продажи' };
+            return { success: false, error: 'no_ore', message: 'Нет руды для продажи' };
         }
+        let oreRemoved = false;
+        try {
+            const removeResult = await inventoryService.removeItem(player, 'ore', oreCount);
+            if (!removeResult || !removeResult.success) {
+                return {
+                    success: false,
+                    error: (removeResult && removeResult.error) || 'inventory_error',
+                    message: 'Ошибка инвентаря',
+                };
+            }
+            oreRemoved = true;
 
-        const removeResult = await inventoryService.removeItem(player, 'ore', oreCount);
-        if (!removeResult.success) {
-            return { success: false, message: 'Ошибка инвентаря' };
+            const totalPrice = MiningConfig.oreSellPrice * oreCount;
+
+            let moneyOk = false;
+            try {
+                moneyOk = await player.addMoney(totalPrice, 'mining');
+            } catch (err) {
+                logger.error(
+                    `[MiningService] sellAllOre: addMoney упала для ${player.accountName}: ${err.message}`
+                );
+            }
+            if (!moneyOk) {
+                try {
+                    const refund = await inventoryService.giveItem(player, 'ore', oreCount);
+                    if (!refund || !refund.success) {
+                        logger.error(
+                            `[MiningService] sellAllOre: КРИТИЧНО не удалось вернуть руду ${player.accountName} после сбоя денег: ${(refund && refund.error) || 'unknown'}`
+                        );
+                    }
+                } catch (err) {
+                    logger.error(
+                        `[MiningService] sellAllOre: КРИТИЧНО исключение при возврате руды ${player.accountName}: ${err.message}`
+                    );
+                }
+                return {
+                    success: false,
+                    error: 'money_error',
+                    message: 'Не удалось зачислить деньги, руда возвращена',
+                };
+            }
+
+            auditService.logPlayer(player, 'mining_sell', {
+                category: 'economy',
+                success: true,
+                details: { amount: oreCount, totalPrice },
+            });
+
+            logger.info(
+                `[MiningService] ${player.accountName} продал ${oreCount} руды за $${totalPrice}`
+            );
+            return { success: true, message: `Продано ${oreCount} руды за $${totalPrice}` };
+        } catch (err) {
+            logger.error(
+                `[MiningService] sellAllOre: непредвиденная ошибка для ${player.accountName}: ${err.message}`
+            );
+            if (oreRemoved) {
+                try {
+                    const refund = await inventoryService.giveItem(player, 'ore', oreCount);
+                    if (!refund || !refund.success) {
+                        logger.error(
+                            `[MiningService] sellAllOre: КРИТИЧНО не удалось вернуть руду ${player.accountName} после непредвиденной ошибки: ${(refund && refund.error) || 'unknown'}`
+                        );
+                    }
+                } catch (refundErr) {
+                    logger.error(
+                        `[MiningService] sellAllOre: КРИТИЧНО исключение при возврате руды ${player.accountName}: ${refundErr.message}`
+                    );
+                }
+            }
+
+            return {
+                success: false,
+                error: 'db_error',
+                message: 'Ошибка продажи руды, попробуй позже',
+            };
         }
-
-        const totalPrice = MiningConfig.oreSellPrice * oreCount;
-        const moneyOk = await player.addMoney(totalPrice, 'mining');
-        if (!moneyOk) {
-            await inventoryService.giveItem(player, 'ore', oreCount);
-            return { success: false, message: 'Ошибка денег' };
-        }
-
-        auditService.logPlayer(player, 'mining_sell', {
-            category: 'economy',
-            success: true,
-            details: { amount: oreCount, totalPrice },
-        });
-
-        logger.info(
-            `[MiningService] ${player.accountName} продал ${oreCount} руды за $${totalPrice}`
-        );
-        return { success: true, message: `Продано ${oreCount} руды за $${totalPrice}` };
     }
 
     /**

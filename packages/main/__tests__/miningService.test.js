@@ -197,6 +197,24 @@ describe('MiningService', () => {
             expect(result.success).toBe(false);
             expect(player.addMoney).not.toHaveBeenCalled();
         });
+
+        test('исключение при зачислении денег возвращает руду и не пишет успешный аудит', async () => {
+            const player = atBot();
+            player.addMoney = jest.fn().mockRejectedValue(new Error('money db down'));
+
+            inventoryService.countItem.mockReturnValue(5);
+            inventoryService.removeItem.mockResolvedValue({ success: true });
+            inventoryService.giveItem.mockResolvedValue({ success: true });
+
+            const result = await miningService.sellAllOre(player);
+
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('money_error');
+            expect(result.message).toContain('руда возвращена');
+            expect(inventoryService.removeItem).toHaveBeenCalledWith(player, 'ore', 5);
+            expect(inventoryService.giveItem).toHaveBeenCalledWith(player, 'ore', 5);
+            expect(auditService.logPlayer).not.toHaveBeenCalled();
+        });
     });
 
     describe('rockState', () => {
