@@ -41,10 +41,16 @@ class InventoryService {
         const clientData = player.inventory.map((slot) =>
             slot ? { itemId: slot.itemId, count: slot.count } : null
         );
-        sendEvent(player, 'client:inventory:update', [
-            JSON.stringify(clientData),
-            JSON.stringify(ItemConfig),
-        ]);
+        try {
+            sendEvent(player, 'client:inventory:update', [
+                JSON.stringify(clientData),
+                JSON.stringify(ItemConfig),
+            ]);
+        } catch (err) {
+            logger.error(
+                `[InventoryService] syncInventory: не удалось отправить обновление инвентаря ${player.accountName}: ${err.message}`
+            );
+        }
     }
 
     /**
