@@ -8,11 +8,32 @@ const logger = require('../core/logger');
  */
 class ShopService {
     /**
+     * Безопасный возврат денег после неудачной выдачи товара.
+     * @private
+     */
+    async _refund(player, amount, reason) {
+        try {
+            const ok = await player.addMoney(amount, reason);
+            if (!ok) {
+                logger.error(
+                    `[ShopService] Не удалось вернуть $${amount} игроку ${player.accountName}: addMoney вернул false`
+                );
+            }
+            return ok;
+        } catch (err) {
+            logger.error(
+                `[ShopService] Исключение при возврате $${amount} игроку ${player.accountName}: ${err.message}`
+            );
+            return false;
+        }
+    }
+
+    /**
      * Покупка предмета
      * @param {mp.Player} player - Игрок
      * @param {string} itemId - ID предмета из ItemConfig
      * @param {number} [amount=1] - Количество
-     * @returns {Promise<boolean>} Успешность покупки
+     * @returns {Promise<{success: boolean, error?: string, data?: Object}>}
      */
     async buyItem(player, itemId, amount = 1) {
         // Валидация входных данных
@@ -49,12 +70,22 @@ class ShopService {
             return { success: false, error: 'insufficient_funds' };
         }
 
-        // Выдаём предмет
-        const invResult = await inventoryService.giveItem(player, itemId, amount);
-        if (!invResult.success) {
-            logger.warn(`[ShopService] buyItem: инвентарь полон, возврат денег`);
-            await player.addMoney(totalPrice, 'shop_refund');
-            return { success: false, error: invResult.error };
+        // Выдаём предмет.
+        let invResult;
+        try {
+            invResult = await inventoryService.giveItem(player, itemId, amount);
+        } catch (err) {
+            logger.error(
+                `[ShopService] buyItem: giveItem упала для ${itemId} x${amount} игроку ${player.accountName}: ${err.message}`
+            );
+            await this._refund(player, totalPrice, 'shop_refund');
+            return { success: false, error: 'db_error' };
+        }
+
+        if (!invResult || !invResult.success) {
+            logger.warn(`[ShopService] buyItem: инвентарь не принял товар, возврат денег`);
+            await this._refund(player, totalPrice, 'shop_refund');
+            return { success: false, error: (invResult && invResult.error) || 'db_error' };
         }
 
         // Логирование

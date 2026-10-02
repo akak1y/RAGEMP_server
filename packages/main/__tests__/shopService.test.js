@@ -67,6 +67,19 @@ describe('ShopService', () => {
         expect(player.money).toBe(1000);
     });
 
+    test('ошибка выдачи предмета: деньги возвращены, аудит не пишется', async () => {
+        const player = makePlayer();
+        inventoryService.giveItem.mockRejectedValue(new Error('db down'));
+
+        const result = await shopService.buyItem(player, 'burger', 2);
+
+        expect(result).toMatchObject({ success: false, error: 'db_error' });
+        expect(player.takeMoney).toHaveBeenCalledWith(100, 'shop');
+        expect(player.addMoney).toHaveBeenCalledWith(100, 'shop_refund');
+        expect(player.money).toBe(1000);
+        expect(auditService.logPlayer).not.toHaveBeenCalled();
+    });
+
     test('товар не найден в ShopConfig: покупка отклонена', async () => {
         const player = makePlayer();
 
