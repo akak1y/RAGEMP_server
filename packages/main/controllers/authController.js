@@ -113,6 +113,11 @@ mp.events.add(
             healthService.onDisconnect(player.accountId);
             try {
                 await weaponService.holster(player);
+            } catch (err) {
+                logger.error(`[Weapon] holster при выходе ${player.accountName}: ${err.message}`);
+            }
+
+            try {
                 const updateData = { money: player.money || 0 };
                 if (player.lastPos) {
                     updateData.pos_x = player.lastPos.x;
