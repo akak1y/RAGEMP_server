@@ -3,9 +3,15 @@ const vehicleService = require('../services/VehicleService');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
 const rateLimit = require('../middleware/rateLimit');
-const { CustomBoxPos, TuningConfig } = require('../config');
+const {
+    CustomBoxPos,
+    CarCustomPos,
+    CarCustomInteractionRadius,
+    TuningConfig,
+} = require('../config');
 const { getSequelize } = require('../core/db');
 const { sendEvent } = require('../core/eventSender');
+const { isNear } = require('../utils/distance');
 
 /**
  * Тюнинг транспорта: вход в LCS, покупка тюнинга, выход.
@@ -18,6 +24,11 @@ mp.events.add(
         async (player) => {
             // вход в LSC
             if (!player.vehicle) return;
+            if (!isNear(player.position, CarCustomPos, CarCustomInteractionRadius)) {
+                return player.outputChatBox('!{#FF3333}[LSC] Подгоните машину к мастерской.', {
+                    toast: true,
+                });
+            }
 
             const result = await tuningService.enterTuning(player);
             if (!result.success) return;
