@@ -132,6 +132,7 @@ module.exports = {
             { itemId: 'ammo_9mm', price: 10 },
         ],
     },
+    ShopInteractionRadius: 5,
     MiningConfig: {
         rocks: [
             { x: -484.0, y: -134.0, z: 37.84 },

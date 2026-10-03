@@ -1,4 +1,4 @@
-const { ShopConfig } = require('../config');
+const { ShopConfig, ShopInteractionRadius } = require('../config');
 const shopService = require('../services/ShopService');
 const locationService = require('../services/LocationService');
 const isLoggedIn = require('../middleware/isLoggedIn');
@@ -6,6 +6,7 @@ const rateLimit = require('../middleware/rateLimit');
 const withGuards = require('../middleware/withGuards');
 const { sendEvent } = require('../core/eventSender');
 const { humanizeError } = require('../core/errorMessages');
+const { isNear } = require('../utils/distance');
 
 /**
  * Магазин: выдача позиции/конфига, покупка предметов
@@ -42,6 +43,11 @@ mp.events.add(
     withGuards(
         [isLoggedIn, rateLimit('shop:buy', 10, 5)],
         async (player, itemId, amount) => {
+            if (!isNear(player.position, ShopConfig.position, ShopInteractionRadius)) {
+                return player.outputChatBox('!{#FF3333}[Магазин] Подойдите к магазину.', {
+                    toast: true,
+                });
+            }
             const result = await shopService.buyItem(player, itemId, amount);
             if (result.success) {
                 sendEvent(player, 'client:shop:buyResult', [true, 'Покупка успешна']);
