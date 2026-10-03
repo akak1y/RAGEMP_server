@@ -14,6 +14,22 @@ function registerCommand(name, def) {
 }
 
 /**
+ * Безопасно выполняет один guard команды.
+ * @param {Function} guard
+ * @param {mp.Player} player
+ * @param {string} cmdName - имя команды для лога
+ * @returns {Promise<boolean>}
+ */
+async function runGuard(guard, player, cmdName) {
+    try {
+        return !!(await guard(player));
+    } catch (err) {
+        logger.error(`[Command] /${cmdName} guard упал: ${err.message}`);
+        return false;
+    }
+}
+
+/**
  * Диспетчер командной строки (без ведущего слэша).
  * Используется и встроенным playerCommand, и кастомным CEF-чатом.
  * @param {mp.Player} player
@@ -27,8 +43,8 @@ async function dispatchCommand(player, command) {
     const cmdName = (args.shift() || '').toLowerCase();
     const cmd = commands.get(cmdName);
     if (!cmd) return false;
-    for (const guard of cmd.guards) {
-        if (!guard(player)) {
+    for (const guard of cmd.guards || []) {
+        if (!(await runGuard(guard, player, cmdName))) {
             player.outputChatBox('!{#FF3333}[Ошибка] Недостаточно прав для этой команды.', {
                 toast: true,
             });
@@ -47,22 +63,14 @@ async function dispatchCommand(player, command) {
 /**
  * Команды, доступные игроку по правам (для /help).
  * @param {mp.Player} player
- * @returns {Array<{name: string, description: string}>}
+ * @returns {Promise<Array<{name: string, description: string}>>}
  */
-function visibleCommands(player) {
+async function visibleCommands(player) {
     const out = [];
     for (const [name, def] of commands) {
         let ok = true;
         for (const guard of def.guards || []) {
-            let res;
-            try {
-                res = guard(player);
-            } catch {
-                ok = false;
-                break;
-            }
-            if (res && typeof res.then === 'function') continue;
-            if (!res) {
+            if (!(await runGuard(guard, player, name))) {
                 ok = false;
                 break;
             }

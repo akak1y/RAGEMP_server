@@ -67,8 +67,8 @@ registerCommand('a', {
 registerCommand('help', {
     guards: [isLoggedIn],
     description: 'Список доступных команд',
-    run: (player) => {
-        const list = visibleCommands(player);
+    run: async (player) => {
+        const list = await visibleCommands(player);
         player.outputChatBox('!{#B0C4DE}[Справка] Доступные команды:');
         for (const c of list) {
             player.outputChatBox(
