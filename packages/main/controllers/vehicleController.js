@@ -8,6 +8,8 @@ const rateLimit = require('../middleware/rateLimit');
 const {
     VehicleConfig,
     PhoneConfig,
+    DealershipPos,
+    DealershipInteractionRadius,
     GaragePos,
     GarageInteractionRadius,
     FuelPricePerLiter,
@@ -29,6 +31,14 @@ mp.events.add(
         async (player, model) => {
             if (!VehicleConfig[model]) return;
             const config = VehicleConfig[model];
+            if (!isNear(player.position, DealershipPos, DealershipInteractionRadius)) {
+                return player.outputChatBox(
+                    '!{#FF3333}[Автосалон] Покупка доступна только в автосалоне.',
+                    {
+                        toast: true,
+                    }
+                );
+            }
 
             if (player.money < config.price)
                 return player.outputChatBox('!{#FF3333}[Ошибка] Недостаточно денег.', {

@@ -76,6 +76,7 @@ module.exports = {
         },
     },
     DealershipPos: { x: -474.0, y: -95.0, z: 39.0 },
+    DealershipInteractionRadius: 5,
     GaragePos: { x: -439.2, y: -102.7, z: 40.5, h: 33.0 },
     GarageInteractionRadius: 5,
     CarCustomPos: { x: -403.5, y: -71.6, z: 44.5, h: 52.0 },
