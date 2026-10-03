@@ -42,7 +42,15 @@ mp.events.add(
     withGuards(
         [isLoggedIn, rateLimit('buy_upgrade', 1, 5)],
         async (player, categoryKey, optionJson, price) => {
-            // покупка тюнинга
+            if (!tuningService.isInShop(player)) {
+                return player.outputChatBox(
+                    '!{#FF3333}[LSC] Тюнинг доступен только внутри мастерской.',
+                    {
+                        toast: true,
+                    }
+                );
+            }
+
             let option;
             try {
                 option = JSON.parse(optionJson);

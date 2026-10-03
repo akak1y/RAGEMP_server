@@ -239,6 +239,17 @@ class TuningService {
         if (!player || !player.accountId) return;
         this.tuningVehicles.delete(player.accountId);
     }
+
+    /**
+     * Находится ли игрок внутри мастерской (LSC) со своей машиной.
+     * @param {mp.Player} player - Игрок
+     * @returns {boolean}
+     */
+    isInShop(player) {
+        if (!player || !player.accountId) return false;
+        const veh = this.tuningVehicles.get(player.accountId);
+        return !!(veh && mp.vehicles.exists(veh) && player.vehicle === veh);
+    }
 }
 
 module.exports = new TuningService();
