@@ -1,8 +1,10 @@
 const { getBotModel, ensureBotReady } = require('../models/Bot');
 const accountService = require('./AccountService');
+const authService = require('./AuthService');
 const { BotConfig } = require('../config');
 const logger = require('../core/logger');
 const { sendEvent } = require('../core/eventSender');
+const { randomUUID } = require('crypto');
 
 /**
  * BotService — тестовый бот для мультиплеер-тестов
@@ -52,6 +54,9 @@ class BotService {
         }
     }
 
+    /**
+     * Спавн бота и, при необходимости, создание его сервисного аккаунта.
+     */
     async spawn(botName = 'TestBot') {
         try {
             await ensureBotReady();
@@ -59,9 +64,12 @@ class BotService {
             const User = accountService.getModel();
             let account = await User.findOne({ where: { username: botName } });
             if (!account) {
+                const disabledPassword = await authService.hashPassword(
+                    `bot-disabled:${randomUUID()}`
+                );
                 account = await User.create({
                     username: botName,
-                    password: 'bot_no_login',
+                    password: disabledPassword,
                     money: 10000,
                 });
                 logger.info(`[BotService] Создан аккаунт для бота: ${botName} (ID ${account.id})`);

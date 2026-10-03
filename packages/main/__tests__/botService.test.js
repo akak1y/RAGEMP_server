@@ -23,7 +23,14 @@ jest.mock('../models/Bot', () => ({
 jest.mock('../services/AccountService', () => ({
     getModel: jest.fn(),
 }));
-jest.mock('../core/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
+jest.mock('../services/AuthService', () => ({
+    hashPassword: jest.fn().mockResolvedValue('hashed-bot-password'),
+}));
+jest.mock('../core/logger', () => ({
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+}));
 jest.mock('../config', () => ({
     ...jest.requireActual('../config'),
     BotConfig: {
@@ -36,6 +43,7 @@ jest.mock('../config', () => ({
 
 const botService = require('../services/BotService');
 const accountService = require('../services/AccountService');
+const authService = require('../services/AuthService');
 
 describe('BotService', () => {
     beforeEach(() => {
@@ -61,7 +69,8 @@ describe('BotService', () => {
             expect(global.mp.colshapes.newSphere).toHaveBeenCalledWith(100, 200, 30, 5);
             expect(botService.bots.has('TestBot')).toBe(true);
         });
-        test('аккаунт не существует — создаём', async () => {
+
+        test('аккаунт не существует — создаём с хэшированным сервисным паролем', async () => {
             const User = {
                 findOne: jest.fn().mockResolvedValue(null),
                 create: jest.fn().mockResolvedValue({ id: 6, username: 'NewBot' }),
@@ -70,9 +79,14 @@ describe('BotService', () => {
 
             await botService.spawn('NewBot');
 
+            expect(authService.hashPassword).toHaveBeenCalledTimes(1);
+            expect(authService.hashPassword).toHaveBeenCalledWith(
+                expect.stringMatching(/^bot-disabled:/)
+            );
+
             expect(User.create).toHaveBeenCalledWith({
                 username: 'NewBot',
-                password: 'bot_no_login',
+                password: 'hashed-bot-password',
                 money: 10000,
             });
             expect(botService.bots.has('NewBot')).toBe(true);
