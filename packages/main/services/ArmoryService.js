@@ -36,7 +36,7 @@ class ArmoryService {
         if (!this.isArmoryItem(itemId)) return { success: false, error: 'not_armory_item' };
         if (!Number.isInteger(count) || count <= 0)
             return { success: false, error: 'invalid_amount' };
-        return withLock(player.accountId, async () => {
+        return withLock(`armory:${player.accountId}`, async () => {
             const loans = await this.getMyLoans(player.accountId);
             const existing = loans.find((l) => l.itemId === itemId);
             if (!existing && loans.length >= ArmoryConfig.maxActiveLoans)
@@ -75,7 +75,7 @@ class ArmoryService {
         if (!player || !player.accountId) return { success: false, error: 'not_authorized' };
         if (!Number.isInteger(count) || count <= 0)
             return { success: false, error: 'invalid_amount' };
-        return withLock(player.accountId, async () => {
+        return withLock(`armory:${player.accountId}`, async () => {
             const Model = getFactionArmoryLoanModel();
             const loan = await Model.findOne({
                 where: { faction_id: factionId, account_id: player.accountId, item_id: itemId },
@@ -98,7 +98,7 @@ class ArmoryService {
     /** Авто-возврат всех займов (смерть/выход): возвращаем только то, что в инвентаре */
     async returnAll(player, reason = 'auto') {
         if (!player || !player.accountId) return 0;
-        return withLock(player.accountId, async () => {
+        return withLock(`armory:${player.accountId}`, async () => {
             const loans = await this.getMyLoans(player.accountId);
             const Model = getFactionArmoryLoanModel();
             let returnedRows = 0;

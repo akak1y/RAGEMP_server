@@ -86,7 +86,7 @@ class FactionStorageService {
         if (!ItemConfig[itemId]) return { success: false, error: 'item_not_in_config' };
         if (!Number.isInteger(amount) || amount <= 0)
             return { success: false, error: 'invalid_amount' };
-        return withLock(factionId, async () => {
+        return withLock(`factionStorage:${factionId}`, async () => {
             const pre = await this.loadSlots(factionId);
             if (this._spaceFor(pre, itemId) < amount)
                 return { success: false, error: 'storage_full' };
@@ -112,7 +112,7 @@ class FactionStorageService {
         if (!ItemConfig[itemId]) return { success: false, error: 'item_not_in_config' };
         if (!Number.isInteger(amount) || amount <= 0)
             return { success: false, error: 'invalid_amount' };
-        return withLock(factionId, async () => {
+        return withLock(`factionStorage:${factionId}`, async () => {
             const pre = await this.loadSlots(factionId);
             if (this._storedCount(pre, itemId) < amount)
                 return { success: false, error: 'not_enough_items' };
@@ -225,4 +225,5 @@ class FactionStorageService {
         }
     }
 }
+
 module.exports = new FactionStorageService();
