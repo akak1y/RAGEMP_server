@@ -86,21 +86,21 @@ class TuningService {
      * @param {Object} [option] - { r, g, b } для color, { wheelType, wheelId } для wheels
      * @param {number} [clientPrice] - Цена от клиента
      * @param {Object} [transaction] - Sequelize-транзакция (если null — автокоммит)
-     * @returns {Promise<{success: boolean, error: string|null, realPrice: number|null}>}
+     * @returns {Promise<{success: boolean, error: string|null, realPrice: number|null, variables?: Array<{key: string, value: any}>}>}
      */
     async buyUpgrade(player, veh, categoryKey, option = {}, clientPrice = 0, transaction = null) {
         const carData = await vehicleService.getVehicleForOwner(veh.vehicleDbId, player.accountId);
-        if (!carData) return { success: false, error: 'not_owner' };
+        if (!carData) return { success: false, error: 'not_owner', realPrice: null };
 
         if (categoryKey === 'color' && !this._findColorOption(option)) {
             logger.warn(`[TuningService] Некорректный цвет от игрока ${player.accountName}`);
-            return { success: false, error: 'invalid_option' };
+            return { success: false, error: 'invalid_option', realPrice: null };
         }
         if (categoryKey === 'wheels' && !this._findWheelOption(option)) {
             logger.warn(
                 `[TuningService] Некорректный комплект дисков от игрока ${player.accountName}`
             );
-            return { success: false, error: 'invalid_option' };
+            return { success: false, error: 'invalid_option', realPrice: null };
         }
         if (
             categoryKey !== 'color' &&
@@ -110,11 +110,11 @@ class TuningService {
             logger.warn(
                 `[TuningService] Некорректная категория "${categoryKey}" от игрока ${player.accountName}`
             );
-            return { success: false, error: 'invalid_category' };
+            return { success: false, error: 'invalid_category', realPrice: null };
         }
 
         if (this.isInstalled(carData, categoryKey, option))
-            return { success: false, error: 'already_installed' };
+            return { success: false, error: 'already_installed', realPrice: null };
 
         const realPrice = this.getPrice(categoryKey, option);
         if (clientPrice !== realPrice)
@@ -128,17 +128,26 @@ class TuningService {
             `тюнинг: ${categoryKey}`,
             transaction
         );
-        if (!paid) return { success: false, error: 'not_enough_money' };
+        if (!paid) return { success: false, error: 'not_enough_money', realPrice: null };
 
-        await this._applyUpgrade(veh, categoryKey, option, transaction);
+        const variables = await this._applyUpgrade(veh, categoryKey, option, transaction);
+        if (!transaction) {
+            this.applyVariables(veh, variables);
+        }
+
         logger.info(
             `[TuningService] Игрок ${player.accountName} установил ${categoryKey} за $${realPrice}`
         );
-        return { success: true, error: null, realPrice };
+        const result = { success: true, error: null, realPrice };
+        if (transaction) {
+            result.variables = variables;
+        }
+
+        return result;
     }
 
     /**
-     * Внутреннее применение тюнинга: БД + синхронизация с клиентами
+     * Внутреннее применение тюнинга к БД.
      * @private
      */
     async _applyUpgrade(veh, categoryKey, option, transaction = null) {
@@ -154,19 +163,26 @@ class TuningService {
                 },
                 { where: { id: vehicleDbId }, transaction }
             );
-            veh.setVariable('customColor', { r: option.r, g: option.g, b: option.b });
-            return;
+            return [
+                {
+                    key: 'customColor',
+                    value: { r: option.r, g: option.g, b: option.b },
+                },
+            ];
         }
 
         const perf = TuningConfig.performanceMods[categoryKey];
         if (perf) {
-            // [ИЗМЕНЕНО] записываем ТОПОВЫЙ уровень в БД (не 0, а topLevel) — задел на будущее расширение
             await VehicleModel.update(
                 { [perf.currentField]: perf.topLevel },
                 { where: { id: vehicleDbId }, transaction }
             );
-            veh.setVariable(`customMod_${perf.modType}`, perf.topLevel);
-            return;
+            return [
+                {
+                    key: `customMod_${perf.modType}`,
+                    value: perf.topLevel,
+                },
+            ];
         }
 
         if (categoryKey === 'wheels') {
@@ -177,7 +193,36 @@ class TuningService {
                 },
                 { where: { id: vehicleDbId }, transaction }
             );
-            veh.setVariable('customWheels', { type: option.wheelType, id: option.wheelId });
+            return [
+                {
+                    key: 'customWheels',
+                    value: { type: option.wheelType, id: option.wheelId },
+                },
+            ];
+        }
+
+        return [];
+    }
+
+    /**
+     * Публикация сетевых переменных машины.
+     * @param {mp.Vehicle} veh
+     * @param {Array<{key: string, value: any}>} variables
+     */
+    applyVariables(veh, variables) {
+        if (!veh || typeof veh.setVariable !== 'function') return;
+        if (!Array.isArray(variables)) return;
+
+        for (const change of variables) {
+            if (!change || change.key === undefined) continue;
+
+            try {
+                veh.setVariable(change.key, change.value);
+            } catch (err) {
+                logger.error(
+                    `[TuningService] Не удалось применить переменную ${change.key}: ${err.message}`
+                );
+            }
         }
     }
 

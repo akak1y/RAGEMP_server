@@ -75,6 +75,8 @@ mp.events.add(
             const sequelize = getSequelize();
 
             let realPrice = null;
+            let tuningVariables = [];
+
             try {
                 await sequelize.transaction(async (t) => {
                     const result = await tuningService.buyUpgrade(
@@ -93,6 +95,7 @@ mp.events.add(
                         throw new Error(result.error);
                     }
                     realPrice = result.realPrice;
+                    tuningVariables = result.variables || [];
                 });
             } catch (err) {
                 if (err.message === 'not_enough_money')
@@ -107,6 +110,8 @@ mp.events.add(
                     );
                 return;
             }
+            tuningService.applyVariables(veh, tuningVariables);
+
             player.applyMoneyDelta(-realPrice);
             const freshCar = await vehicleService.getVehicleForOwner(
                 veh.vehicleDbId,
