@@ -83,6 +83,7 @@ module.exports = {
     CarCustomInteractionRadius: 8,
     CustomBoxPos: { x: -401.3, y: -84.2, z: 53.9, h: 298.0 },
     HospitalPos: { x: -449.6, y: -133.1, z: 39.1, h: 120.6 },
+    HospitalInteractionRadius: 5,
     HospitalConfig: {
         healPrice: 150, // цена лечения в больнице
     },

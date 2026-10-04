@@ -1,10 +1,11 @@
 const healthService = require('../services/HealthService');
-const { HospitalConfig } = require('../config');
+const { HospitalConfig, HospitalPos, HospitalInteractionRadius } = require('../config');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const rateLimit = require('../middleware/rateLimit');
 const withGuards = require('../middleware/withGuards');
 const { sendEvent } = require('../core/eventSender');
 const { humanizeError } = require('../core/errorMessages');
+const { isNear } = require('../utils/distance');
 
 /**
  * Больница: лечение за HospitalConfig.healPrice через healForMoney.
@@ -14,6 +15,13 @@ mp.events.add(
     withGuards(
         [isLoggedIn, rateLimit('hospital:heal', 1, 5)],
         async (player) => {
+            if (!isNear(player.position, HospitalPos, HospitalInteractionRadius)) {
+                return sendEvent(player, 'client:hospital:result', [
+                    false,
+                    'Лечение доступно только в больнице.',
+                ]);
+            }
+
             if (player.health >= 100) {
                 return sendEvent(player, 'client:hospital:result', [
                     true,
