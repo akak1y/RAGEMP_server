@@ -108,9 +108,7 @@ describe('rateLimit middleware', () => {
     });
 
     test('сбой аудита при превышении лимита не снимает блокировку', async () => {
-        mockRedis.incr
-            .mockResolvedValueOnce(6)
-            .mockResolvedValueOnce(1);
+        mockRedis.incr.mockResolvedValueOnce(6).mockResolvedValueOnce(1);
         mockRedis.expire.mockResolvedValue(1);
         auditService.logPlayer.mockRejectedValue(new Error('audit db down'));
 
@@ -125,9 +123,7 @@ describe('rateLimit middleware', () => {
     });
 
     test('сбой Redis при учёте серии нарушений не снимает блокировку', async () => {
-        mockRedis.incr
-            .mockResolvedValueOnce(6)
-            .mockRejectedValueOnce(new Error('viol redis down'));
+        mockRedis.incr.mockResolvedValueOnce(6).mockRejectedValueOnce(new Error('viol redis down'));
 
         const guard = rateLimit('test_action', 5, 60);
         const result = await guard(mockPlayer);
@@ -140,9 +136,7 @@ describe('rateLimit middleware', () => {
     });
 
     test('сбой outputChatBox при превышении лимита не снимает блокировку', async () => {
-        mockRedis.incr
-            .mockResolvedValueOnce(6)
-            .mockResolvedValueOnce(1);
+        mockRedis.incr.mockResolvedValueOnce(6).mockResolvedValueOnce(1);
         mockRedis.expire.mockResolvedValue(1);
         auditService.logPlayer.mockResolvedValue({ id: 42 });
         mockPlayer.outputChatBox.mockImplementation(() => {
