@@ -96,4 +96,62 @@ describe('rateLimit middleware', () => {
 
         expect(result).toBe(true);
     });
+
+    test('сбой expire основного окна не разблокирует первый запрос', async () => {
+        mockRedis.incr.mockResolvedValue(1);
+        mockRedis.expire.mockRejectedValue(new Error('expire down'));
+
+        const guard = rateLimit('test_action', 5, 60);
+        const result = await guard(mockPlayer);
+
+        expect(result).toBe(true);
+    });
+
+    test('сбой аудита при превышении лимита не снимает блокировку', async () => {
+        mockRedis.incr
+            .mockResolvedValueOnce(6)
+            .mockResolvedValueOnce(1);
+        mockRedis.expire.mockResolvedValue(1);
+        auditService.logPlayer.mockRejectedValue(new Error('audit db down'));
+
+        const guard = rateLimit('test_action', 5, 60);
+        const result = await guard(mockPlayer);
+
+        expect(result).toBe(false);
+        expect(mockPlayer.outputChatBox).toHaveBeenCalledWith(
+            expect.stringContaining('Слишком часто'),
+            { toast: true }
+        );
+    });
+
+    test('сбой Redis при учёте серии нарушений не снимает блокировку', async () => {
+        mockRedis.incr
+            .mockResolvedValueOnce(6)
+            .mockRejectedValueOnce(new Error('viol redis down'));
+
+        const guard = rateLimit('test_action', 5, 60);
+        const result = await guard(mockPlayer);
+
+        expect(result).toBe(false);
+        expect(mockPlayer.outputChatBox).toHaveBeenCalledWith(
+            expect.stringContaining('Слишком часто'),
+            { toast: true }
+        );
+    });
+
+    test('сбой outputChatBox при превышении лимита не снимает блокировку', async () => {
+        mockRedis.incr
+            .mockResolvedValueOnce(6)
+            .mockResolvedValueOnce(1);
+        mockRedis.expire.mockResolvedValue(1);
+        auditService.logPlayer.mockResolvedValue({ id: 42 });
+        mockPlayer.outputChatBox.mockImplementation(() => {
+            throw new Error('client gone');
+        });
+
+        const guard = rateLimit('test_action', 5, 60);
+        const result = await guard(mockPlayer);
+
+        expect(result).toBe(false);
+    });
 });
