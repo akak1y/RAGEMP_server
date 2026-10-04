@@ -19,6 +19,7 @@ packages/main/websocket/admin/tiles/
 *.env.*
 
 .vscode/
+.vs/
 .idea/
 
 *.o
