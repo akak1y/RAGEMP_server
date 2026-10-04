@@ -8,6 +8,8 @@ const withGuards = require('../middleware/withGuards');
 const { registerCommand } = require('./commandSystem');
 const { sendEvent } = require('../core/eventSender');
 const { humanizeError } = require('../core/errorMessages');
+const { MafiaBasePos, FactionStorageConfig } = require('../config');
+const { isNear } = require('../utils/distance');
 
 /**
  * Фракции: инфо для UI, касса, управление составом, открытие окна.
@@ -111,6 +113,9 @@ mp.events.add(
     withGuards(
         [isLoggedIn, rateLimit('faction:deposit', 3, 10)],
         async (player, sum) => {
+            if (!isNear(player.position, MafiaBasePos, FactionStorageConfig.interactRadius)) {
+                return sendEvent(player, 'client:faction:moneyResult', [false, 'too_far']);
+            }
             const result = await factionService.deposit(player, sum);
             sendEvent(player, 'client:faction:moneyResult', [
                 result.success,
@@ -127,6 +132,9 @@ mp.events.add(
     withGuards(
         [isLoggedIn, rateLimit('faction:withdraw', 3, 10)],
         async (player, sum) => {
+            if (!isNear(player.position, MafiaBasePos, FactionStorageConfig.interactRadius)) {
+                return sendEvent(player, 'client:faction:moneyResult', [false, 'too_far']);
+            }
             const result = await factionService.withdraw(player, sum);
             sendEvent(player, 'client:faction:moneyResult', [
                 result.success,
