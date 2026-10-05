@@ -59,6 +59,7 @@ class MiningService {
         const rock = MiningConfig.rocks[record.rockIndex];
         if (!rock || !isNear(player.position, rock, MiningConfig.interactRadius)) {
             logger.warn(`[MiningService] completeMine: ${player.accountName} отошёл от камня`);
+            this.activeMiners.delete(player.accountId);
             return { success: false, error: 'too_far' };
         }
 

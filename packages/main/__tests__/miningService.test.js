@@ -106,6 +106,9 @@ describe('MiningService', () => {
             const result = await miningService.completeMine(player);
             expect(result).toMatchObject({ success: false, error: 'too_far' });
             expect(inventoryService.giveItem).not.toHaveBeenCalled();
+            expect(miningService.activeMiners.has(1)).toBe(false);
+            const repeated = await miningService.completeMine(player);
+            expect(repeated).toMatchObject({ success: false, error: 'work_not_started' });
         });
 
         test('двойная добыча: второй получает rock_depleted, руда выдана один раз', async () => {
