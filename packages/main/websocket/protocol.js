@@ -326,6 +326,28 @@ async function handleMessage(socket, msg, broadcast) {
                     await auditEditFail(socket, msg, 'attempt_privilege_escalation');
                     return sendResult(socket, false, 'Нельзя выставить уровень выше своего');
                 }
+
+                let target;
+                try {
+                    target = await getUserModel().findByPk(id, {
+                        raw: true,
+                        attributes: ['id', 'admin_level'],
+                    });
+                } catch (e) {
+                    await auditEditFail(socket, msg, `target_lookup_failed: ${e.message}`);
+                    return sendResult(socket, false, `Ошибка БД: ${e.message}`);
+                }
+                if (!target) {
+                    return sendResult(socket, false, 'Запись не найдена (возможно, удалена)');
+                }
+                if ((target.admin_level || 0) > editorLevel) {
+                    await auditEditFail(socket, msg, 'attempt_modify_higher_admin');
+                    return sendResult(
+                        socket,
+                        false,
+                        'Нельзя изменять уровень администратора выше своего'
+                    );
+                }
             }
 
             let affected;
