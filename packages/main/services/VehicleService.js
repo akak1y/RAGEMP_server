@@ -125,7 +125,16 @@ class VehicleService {
     async despawnPlayerVehicles(accountId) {
         const playerCarsSet = this.playerOwnedVehicles.get(accountId);
         if (!playerCarsSet || playerCarsSet.size === 0) return;
-        for (const vehicleDbId of [...playerCarsSet]) await this.despawnVehicle(vehicleDbId);
+
+        for (const vehicleDbId of [...playerCarsSet]) {
+            try {
+                await this.despawnVehicle(vehicleDbId);
+            } catch (err) {
+                logger.error(
+                    `[VehicleService] despawnPlayerVehicles: не удалось деспаунить машину ${vehicleDbId}: ${err.message}`
+                );
+            }
+        }
     }
 
     /**
@@ -232,14 +241,32 @@ class VehicleService {
     async despawnVehicle(dbId) {
         const veh = this.spawnedVehicles.get(dbId);
         if (!veh) return;
-        const fuel = veh.getVariable('fuel');
+
+        let fuel = 100;
+
+        try {
+            const rawFuel = veh.getVariable('fuel');
+            const parsedFuel = Number(rawFuel);
+            fuel = Number.isFinite(parsedFuel) ? parsedFuel : 100;
+        } catch (err) {
+            logger.error(
+                `[VehicleService] despawnVehicle: не удалось прочитать топливо машины ${dbId}: ${err.message}`
+            );
+        }
+
         try {
             await getVehicleModel().update({ fuel }, { where: { id: dbId } });
         } catch (err) {
             logger.error(`[VehicleService] despawnVehicle fuel save error: ${err.message}`);
         }
 
-        if (mp.vehicles.exists(veh)) veh.destroy();
+        try {
+            if (mp.vehicles.exists(veh)) veh.destroy();
+        } catch (err) {
+            logger.error(
+                `[VehicleService] despawnVehicle: не удалось destroy машины ${dbId}: ${err.message}`
+            );
+        }
 
         this.spawnedVehicles.delete(dbId);
         for (const [accountId, cars] of this.playerOwnedVehicles) {

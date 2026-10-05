@@ -212,10 +212,31 @@ mp.events.add(
                 logger.error(`[Armory] ошибка авто-возврата займов при выходе: ${err.message}`);
             }
 
-            vehicleService.despawnPlayerVehicles(player.accountId);
-            courierService.endWork(player.accountId, true);
-            miningService.endWork(player);
-            tuningService.cleanupOnQuit(player);
+            try {
+                await vehicleService.despawnPlayerVehicles(player.accountId);
+            } catch (err) {
+                logger.error(
+                    `[Vehicle] ошибка деспауна транспорта при выходе ${player.accountName}: ${err.message}`
+                );
+            }
+
+            try {
+                courierService.endWork(player.accountId, true);
+            } catch (err) {
+                logger.error(`[Courier] ошибка завершения работы при выходе: ${err.message}`);
+            }
+
+            try {
+                miningService.endWork(player);
+            } catch (err) {
+                logger.error(`[Mining] ошибка завершения смены при выходе: ${err.message}`);
+            }
+
+            try {
+                tuningService.cleanupOnQuit(player);
+            } catch (err) {
+                logger.error(`[Tuning] ошибка очистки LSC при выходе: ${err.message}`);
+            }
         },
         'playerQuit'
     )
