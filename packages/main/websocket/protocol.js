@@ -480,6 +480,31 @@ async function handleCreateRow(socket, msg, broadcast) {
             cleaned[field] = validator(raw);
         }
 
+        if (table === 'accounts') {
+            const requestedAdminLevel = Number(cleaned.admin_level ?? 0);
+            const actorAdminLevel = Number(socket?.admin?.adminLevel ?? 0);
+            if (requestedAdminLevel > actorAdminLevel) {
+                try {
+                    await auditService.log({
+                        success: 0,
+                        category: 'web_security',
+                        action: 'create_account_privilege_escalation',
+                        actor: socket.admin.username,
+                        actor_id: socket.admin.accountId,
+                        ip: socket.admin.ip,
+                        details: {
+                            requestedAdminLevel,
+                            actorAdminLevel,
+                            username: cleaned.username,
+                        },
+                    });
+                } catch (auditErr) {
+                    logger.error(`[Admin] audit create privilege error: ${auditErr.message}`);
+                }
+                throw new Error('Нельзя создать аккаунт с уровнем администратора выше своего');
+            }
+        }
+
         const created = await cfg.create(cleaned);
 
         await auditService.log({
