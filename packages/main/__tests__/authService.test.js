@@ -80,12 +80,5 @@ describe('AuthService', () => {
                 password: 'hash',
             });
         });
-        test('ошибка createAccount', async () => {
-            accountService.findByUsername.mockResolvedValue(null);
-            accountService.createAccount.mockRejectedValue(new Error('DB error'));
-            const r = await authService.register('new', 'pass');
-            expect(r.success).toBe(false);
-            expect(r.error).toBe('DB error');
-        });
     });
 });

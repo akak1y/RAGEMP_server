@@ -48,14 +48,22 @@ class AccountService {
      * @private
      */
     _validateUsername(username) {
-        if (!username || typeof username !== 'string')
-            throw new Error('Username не должно быть пустым');
+        if (!username || typeof username !== 'string') {
+            const err = new Error('Username не должно быть пустым');
+            err.code = 'invalid_username';
+            throw err;
+        }
         const trimmed = username.trim().toLowerCase();
-
-        if (trimmed.length > 32) throw new Error('Username должно содержать не более 32 символов');
-        if (!/^[a-zA-Z0-9]+$/.test(trimmed))
-            throw new Error('Username может содержать только буквы и цифры');
-
+        if (trimmed.length > 32) {
+            const err = new Error('Username должно содержать не более 32 символов');
+            err.code = 'invalid_username';
+            throw err;
+        }
+        if (!/^[a-zA-Z0-9]+$/.test(trimmed)) {
+            const err = new Error('Username может содержать только буквы и цифры');
+            err.code = 'invalid_username';
+            throw err;
+        }
         return trimmed;
     }
 
@@ -88,14 +96,23 @@ class AccountService {
     async findByUsername(username) {
         this._ensureInitialized();
 
+        let validatedUsername;
         try {
-            const validatedUsername = this._validateUsername(username);
+            validatedUsername = this._validateUsername(username);
+        } catch (err) {
+            if (err.code === 'invalid_username') {
+                logger.warn(`[AccountService] findByUsername: невалидный username ${username}`);
+                return null;
+            }
+            throw err;
+        }
+        try {
             return await this._model.findOne({
                 where: { username: validatedUsername },
             });
         } catch (err) {
             logger.error(`[AccountService] findByUsername error: ${err.message}`);
-            return null;
+            throw err;
         }
     }
 
@@ -116,7 +133,7 @@ class AccountService {
             });
         } catch (err) {
             logger.error(`[AccountService] findByHwid error: ${err.message}`);
-            return null;
+            throw err;
         }
     }
 
@@ -132,9 +149,17 @@ class AccountService {
      */
     async createAccount(data) {
         this._ensureInitialized();
-        if (!data || typeof data !== 'object')
-            throw new Error('Данные аккаунта должны быть объектом');
-        if (!data.password) throw new Error('Требуется пароль');
+
+        if (!data || typeof data !== 'object') {
+            const err = new Error('Данные аккаунта должны быть объектом');
+            err.code = 'invalid_data';
+            throw err;
+        }
+        if (!data.password) {
+            const err = new Error('Требуется пароль');
+            err.code = 'invalid_password';
+            throw err;
+        }
 
         try {
             const validatedUsername = this._validateUsername(data.username);
@@ -153,8 +178,13 @@ class AccountService {
             logger.info(`[AccountService] Создан аккаунт: ${validatedUsername} (ID: ${user.id})`);
             return user;
         } catch (err) {
+            if (err.code === 'invalid_username') {
+                throw err;
+            }
             if (err.name === 'SequelizeUniqueConstraintError') {
-                throw new Error(`Username "${data.username}" уже занят`);
+                const uniqueErr = new Error(`Username "${data.username}" уже занят`);
+                uniqueErr.code = 'username_taken';
+                throw uniqueErr;
             }
             logger.error(`[AccountService] createAccount error: ${err.message}`);
             throw err;

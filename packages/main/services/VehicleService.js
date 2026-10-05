@@ -48,12 +48,13 @@ class VehicleService {
      * Безопасное чтение текущего топлива из сетевой переменной машины.
      * @private
      */
-    _readFuel(veh) {
+    _readFuel(veh, dbId = null) {
         try {
             const raw = veh.getVariable('fuel');
             return this._normalizeFuel(raw, 100);
         } catch (err) {
-            logger.error(`[VehicleService] Не удалось прочитать топливо: ${err.message}`);
+            const suffix = dbId !== null && dbId !== undefined ? ` машины ${dbId}` : '';
+            logger.error(`[VehicleService] не удалось прочитать топливо${suffix}: ${err.message}`);
             return 100;
         }
     }
@@ -61,10 +62,11 @@ class VehicleService {
     /**
      * Публичный доступ к текущему топливу заспавненной машины.
      * @param {mp.Vehicle} veh
+     * @param {number} [dbId] - ID машины в БД для более точного лога
      * @returns {number}
      */
-    getFuel(veh) {
-        return this._readFuel(veh);
+    getFuel(veh, dbId = null) {
+        return this._readFuel(veh, dbId);
     }
 
     /**
@@ -209,7 +211,7 @@ class VehicleService {
         this.lastFuelTick = now;
         if (dt <= 0) return;
 
-        for (const [_dbId, veh] of this.spawnedVehicles) {
+        for (const [dbId, veh] of this.spawnedVehicles) {
             try {
                 if (!this._vehicleExists(veh)) continue;
                 if (veh.getVariable('courierWork')) continue;
@@ -225,7 +227,7 @@ class VehicleService {
 
                 const rate = this.getConsumptionRate(kmh);
                 const delta = rate * dt;
-                const current = this._readFuel(veh);
+                const current = this._readFuel(veh, dbId);
                 const next = Math.max(0, current - delta);
                 veh.setVariable('fuel', next);
 
@@ -262,7 +264,7 @@ class VehicleService {
         if (!vehDb) return { success: false, error: 'not_found' };
         const spawned = this.spawnedVehicles.get(vehicleDbId);
         if (!this._vehicleExists(spawned)) return { success: false, error: 'not_spawned' };
-        const current = this._readFuel(spawned);
+        const current = this._readFuel(spawned, vehicleDbId);
         if (current >= 100) return { success: false, error: 'full' };
         const liters = Math.max(0, 100 - current);
         try {
@@ -313,7 +315,7 @@ class VehicleService {
     async despawnVehicle(dbId) {
         const veh = this.spawnedVehicles.get(dbId);
         if (!veh) return;
-        const fuel = this._readFuel(veh);
+        const fuel = this._readFuel(veh, dbId);
         try {
             await getVehicleModel().update({ fuel }, { where: { id: dbId } });
         } catch (err) {

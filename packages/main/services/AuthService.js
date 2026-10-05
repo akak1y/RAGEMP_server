@@ -12,8 +12,13 @@ class AuthService {
      * @returns {Promise<string>} Хэш пароля
      */
     async hashPassword(password) {
-        if (!password || typeof password !== 'string')
-            throw new Error('[AuthService] hashPassword: пароль должен быть непустой строкой');
+        if (!password || typeof password !== 'string') {
+            const err = new Error(
+                '[AuthService] hashPassword: пароль должен быть непустой строкой'
+            );
+            err.code = 'invalid_password';
+            throw err;
+        }
         const salt = await bcrypt.genSalt(10);
         return await bcrypt.hash(password, salt);
     }
@@ -70,8 +75,19 @@ class AuthService {
             logger.info(`[AuthService] Зарегистрирован новый аккаунт: ${user.username}`);
             return { success: true, user, error: null };
         } catch (err) {
-            logger.warn(`[AuthService] Отказ в регистрации: ${err.message}`);
-            return { success: false, user: null, error: err.message };
+            if (err.code === 'username_taken') {
+                return { success: false, user: null, error: 'username_taken' };
+            }
+            if (err.code === 'invalid_username') {
+                logger.warn(`[AuthService] Отказ в регистрации: невалидный username ${username}`);
+                return { success: false, user: null, error: 'invalid_username' };
+            }
+            if (err.code === 'invalid_password') {
+                logger.warn(`[AuthService] Отказ в регистрации: невалидный пароль для ${username}`);
+                return { success: false, user: null, error: 'invalid_password' };
+            }
+            logger.error(`[AuthService] Ошибка регистрации ${username}: ${err.message}`);
+            return { success: false, user: null, error: 'db_error' };
         }
     }
 }

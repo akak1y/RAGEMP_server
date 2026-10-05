@@ -56,6 +56,20 @@ function clearAuthSession(player) {
     }
 }
 
+function registrationErrorMessage(error) {
+    switch (error) {
+        case 'username_taken':
+            return 'Этот логин уже занят!';
+        case 'invalid_username':
+            return 'Некорректный логин.';
+        case 'invalid_password':
+            return 'Некорректный пароль.';
+        case 'db_error':
+        default:
+            return 'Внутренняя ошибка сервера базы данных.';
+    }
+}
+
 mp.events.add(
     'server:account:login',
     withGuards(
@@ -88,9 +102,7 @@ mp.events.add(
 
                     if (!regResult.success) {
                         sendEvent(player, 'client:account:authError', [
-                            regResult.error === 'username_taken'
-                                ? 'Этот логин уже занят!'
-                                : 'Некорректный логин.',
+                            registrationErrorMessage(regResult.error),
                         ]);
                         return;
                     }
