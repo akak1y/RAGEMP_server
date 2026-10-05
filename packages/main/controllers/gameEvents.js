@@ -3,6 +3,7 @@ const courierService = require('../services/CourierService');
 const healthService = require('../services/HealthService');
 const armoryService = require('../services/ArmoryService');
 const weaponService = require('../services/WeaponService');
+const tuningService = require('../services/TuningService');
 const { getRedis } = require('../core/redis');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
@@ -53,6 +54,14 @@ mp.events.add('playerDeath', async (player, _reason, _killer) => {
         await armoryService.returnAll(player, 'death');
     } catch (err) {
         logger.error(`[Armory] ошибка авто-возврата займов на смерти: ${err.message}`);
+    }
+
+    try {
+        tuningService.exitTuning(player);
+    } catch (err) {
+        logger.error(
+            `[Tuning] ошибка выхода из LSC на смерти ${player.accountName}: ${err.message}`
+        );
     }
 
     healthService.onPlayerDeath(player);

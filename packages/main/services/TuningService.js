@@ -265,15 +265,36 @@ class TuningService {
      * @param {mp.Player} player - Игрок
      */
     exitTuning(player) {
+        if (!player || !player.accountId) return;
         const veh = this.tuningVehicles.get(player.accountId);
 
-        if (veh && mp.vehicles.exists(veh)) {
-            veh.position = new mp.Vector3(CarCustomPos.x, CarCustomPos.y, CarCustomPos.z);
-            veh.rotation = new mp.Vector3(0.0, 0.0, CarCustomPos.h);
-            veh.dimension = 0;
+        try {
+            if (
+                veh &&
+                typeof mp !== 'undefined' &&
+                mp.vehicles &&
+                typeof mp.vehicles.exists === 'function' &&
+                mp.vehicles.exists(veh)
+            ) {
+                veh.position = new mp.Vector3(CarCustomPos.x, CarCustomPos.y, CarCustomPos.z);
+                veh.rotation = new mp.Vector3(0.0, 0.0, CarCustomPos.h);
+                veh.dimension = 0;
+            }
+        } catch (err) {
+            logger.error(
+                `[TuningService] Не удалось корректно вывести машину из LSC для игрока ${player.accountName || player.accountId}: ${err.message}`
+            );
         }
+
         this.tuningVehicles.delete(player.accountId);
-        player.dimension = 0;
+
+        try {
+            player.dimension = 0;
+        } catch (err) {
+            logger.warn(
+                `[TuningService] Не удалось вернуть игрока ${player.accountName || player.accountId} в dimension 0: ${err.message}`
+            );
+        }
     }
 
     /**
