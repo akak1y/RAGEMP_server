@@ -17,6 +17,57 @@ class VehicleService {
     }
 
     /**
+     * Безопасная проверка, что объект транспорта ещё жив в мире.
+     * @private
+     */
+    _vehicleExists(veh) {
+        try {
+            return !!(
+                veh &&
+                typeof mp !== 'undefined' &&
+                mp.vehicles &&
+                typeof mp.vehicles.exists === 'function' &&
+                mp.vehicles.exists(veh)
+            );
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * Нормализация значения топлива в диапазон 0..100.
+     * @private
+     */
+    _normalizeFuel(value, fallback = 100) {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return fallback;
+        return Math.max(0, Math.min(100, n));
+    }
+
+    /**
+     * Безопасное чтение текущего топлива из сетевой переменной машины.
+     * @private
+     */
+    _readFuel(veh) {
+        try {
+            const raw = veh.getVariable('fuel');
+            return this._normalizeFuel(raw, 100);
+        } catch (err) {
+            logger.error(`[VehicleService] Не удалось прочитать топливо: ${err.message}`);
+            return 100;
+        }
+    }
+
+    /**
+     * Публичный доступ к текущему топливу заспавненной машины.
+     * @param {mp.Vehicle} veh
+     * @returns {number}
+     */
+    getFuel(veh) {
+        return this._readFuel(veh);
+    }
+
+    /**
      * Покупка машины
      * @param {number} userId - ID аккаунта
      * @param {string} model - Модель из VehicleConfig
@@ -61,7 +112,7 @@ class VehicleService {
      */
     isSpawned(vehicleDbId) {
         const old = this.spawnedVehicles.get(vehicleDbId);
-        return !!(old && mp.vehicles.exists(old));
+        return this._vehicleExists(old);
     }
 
     /**
@@ -79,7 +130,8 @@ class VehicleService {
             locked: false,
             dimension: dimension,
         });
-        veh.setVariable('fuel', Number(carData.fuel || 100));
+
+        veh.setVariable('fuel', this._normalizeFuel(carData.fuel, 100));
         veh.prevPos = { x: veh.position.x, y: veh.position.y, z: veh.position.z };
         veh.vehicleDbId = carData.id;
         veh.setVariable('dbId', carData.id);
@@ -159,7 +211,7 @@ class VehicleService {
 
         for (const [_dbId, veh] of this.spawnedVehicles) {
             try {
-                if (!veh || !mp.vehicles.exists(veh)) continue;
+                if (!this._vehicleExists(veh)) continue;
                 if (veh.getVariable('courierWork')) continue;
                 const driver = veh.getOccupants().find((p) => p.seat === 0);
                 if (!driver) continue;
@@ -173,7 +225,7 @@ class VehicleService {
 
                 const rate = this.getConsumptionRate(kmh);
                 const delta = rate * dt;
-                const current = Number(veh.getVariable('fuel') || 0);
+                const current = this._readFuel(veh);
                 const next = Math.max(0, current - delta);
                 veh.setVariable('fuel', next);
 
@@ -195,27 +247,37 @@ class VehicleService {
         if (this.fuelTimer) return;
         this.lastFuelTick = Date.now();
         this.fuelTimer = setInterval(() => this.tickFuel(), 1000);
+        if (this.fuelTimer.unref) this.fuelTimer.unref();
     }
 
     /**
      * Заправить машину до 100
      * @param {number} vehicleDbId
      * @param {number} ownerId
-     * @returns {Promise<{success: boolean, error?: string, liters?: number}>}
+     * @param {Object} [transaction]
+     * @returns {Promise<{success: boolean, error?: string, liters?: number, fuel?: number}>}
      */
-    async refuelVehicle(vehicleDbId, ownerId) {
-        const veh = await this.getVehicleForOwner(vehicleDbId, ownerId);
-        if (!veh) return { success: false, error: 'not_found' };
-
+    async refuelVehicle(vehicleDbId, ownerId, transaction = null) {
+        const vehDb = await this.getVehicleForOwner(vehicleDbId, ownerId);
+        if (!vehDb) return { success: false, error: 'not_found' };
         const spawned = this.spawnedVehicles.get(vehicleDbId);
-        if (!spawned || !mp.vehicles.exists(spawned))
-            return { success: false, error: 'not_spawned' };
-
-        const current = Number(spawned.getVariable('fuel') || 0);
+        if (!this._vehicleExists(spawned)) return { success: false, error: 'not_spawned' };
+        const current = this._readFuel(spawned);
         if (current >= 100) return { success: false, error: 'full' };
-
-        spawned.setVariable('fuel', 100);
-        return { success: true, liters: 100 - current };
+        const liters = Math.max(0, 100 - current);
+        try {
+            await getVehicleModel().update(
+                { fuel: 100 },
+                { where: { id: vehicleDbId }, transaction }
+            );
+        } catch (err) {
+            logger.error(`[VehicleService] refuelVehicle fuel save error: ${err.message}`);
+            return { success: false, error: 'db_error' };
+        }
+        if (!transaction) {
+            this.setFuel(vehicleDbId, 100);
+        }
+        return { success: true, liters, fuel: 100 };
     }
 
     /**
@@ -226,12 +288,22 @@ class VehicleService {
      * @returns {boolean} true, если машина была в мире
      */
     setFuel(dbId, value, _transaction = null) {
-        const veh = this.spawnedVehicles.get(dbId);
-        if (veh && mp.vehicles.exists(veh)) {
-            veh.setVariable('fuel', Number(value));
-            return true;
+        const fuel = Number(value);
+        if (!Number.isFinite(fuel)) {
+            logger.warn(`[VehicleService] setFuel: некорректное значение топлива ${value}`);
+            return false;
         }
-        return false;
+        const veh = this.spawnedVehicles.get(dbId);
+        if (!this._vehicleExists(veh)) return false;
+        try {
+            veh.setVariable('fuel', this._normalizeFuel(fuel, 100));
+            return true;
+        } catch (err) {
+            logger.error(
+                `[VehicleService] setFuel: не удалось обновить сетевое топливо машины ${dbId}: ${err.message}`
+            );
+            return false;
+        }
     }
 
     /**
@@ -241,19 +313,7 @@ class VehicleService {
     async despawnVehicle(dbId) {
         const veh = this.spawnedVehicles.get(dbId);
         if (!veh) return;
-
-        let fuel = 100;
-
-        try {
-            const rawFuel = veh.getVariable('fuel');
-            const parsedFuel = Number(rawFuel);
-            fuel = Number.isFinite(parsedFuel) ? parsedFuel : 100;
-        } catch (err) {
-            logger.error(
-                `[VehicleService] despawnVehicle: не удалось прочитать топливо машины ${dbId}: ${err.message}`
-            );
-        }
-
+        const fuel = this._readFuel(veh);
         try {
             await getVehicleModel().update({ fuel }, { where: { id: dbId } });
         } catch (err) {
@@ -261,7 +321,7 @@ class VehicleService {
         }
 
         try {
-            if (mp.vehicles.exists(veh)) veh.destroy();
+            if (this._vehicleExists(veh)) veh.destroy();
         } catch (err) {
             logger.error(
                 `[VehicleService] despawnVehicle: не удалось destroy машины ${dbId}: ${err.message}`
@@ -287,9 +347,20 @@ class VehicleService {
         if (!this.isSpawned(dbId)) return false;
 
         const veh = this.spawnedVehicles.get(dbId);
-        const coords = veh.position;
-        const heading = veh.heading;
-        const dimension = veh.dimension;
+        let coords;
+        let heading;
+        let dimension;
+        try {
+            coords = veh.position;
+            heading = veh.heading;
+            dimension = veh.dimension;
+        } catch (err) {
+            logger.error(
+                `[VehicleService] respawnVehicle: не удалось прочитать состояние машины ${dbId}: ${err.message}`
+            );
+            await this.despawnVehicle(dbId);
+            return false;
+        }
 
         await this.despawnVehicle(dbId);
 

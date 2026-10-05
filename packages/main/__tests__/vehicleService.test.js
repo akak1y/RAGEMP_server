@@ -47,13 +47,22 @@ global.mp = {
     },
 };
 
+const logger = require('../core/logger');
+
 describe('VehicleService', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+
+        mockVehicleModel.create.mockReset();
+        mockVehicleModel.findAll.mockReset();
+        mockVehicleModel.findOne.mockReset();
+        mockVehicleModel.findByPk.mockReset();
+        mockVehicleModel.update.mockReset().mockResolvedValue([1]);
+
         getVehicleModel.mockReturnValue(mockVehicleModel);
         vehicleService.spawnedVehicles.clear();
         vehicleService.playerOwnedVehicles.clear();
-        global.mp.vehicles.exists.mockReturnValue(true);
+        global.mp.vehicles.exists.mockReset().mockReturnValue(true);
     });
 
     describe('buyVehicle', () => {
@@ -255,7 +264,7 @@ describe('VehicleService', () => {
             const r = await vehicleService.refuelVehicle(10, 7);
             expect(r.error).toBe('full');
         });
-        test('успех: setVariable + liters', async () => {
+        test('успех без транзакции: БД + setVariable', async () => {
             mockVehicleModel.findOne.mockResolvedValue({ id: 10 });
             const veh = { getVariable: jest.fn(() => 40), setVariable: jest.fn() };
             vehicleService.spawnedVehicles.set(10, veh);
@@ -263,7 +272,43 @@ describe('VehicleService', () => {
             const r = await vehicleService.refuelVehicle(10, 7);
             expect(r.success).toBe(true);
             expect(r.liters).toBe(60);
+            expect(r.fuel).toBe(100);
+            expect(mockVehicleModel.update).toHaveBeenCalledWith(
+                { fuel: 100 },
+                { where: { id: 10 }, transaction: null }
+            );
             expect(veh.setVariable).toHaveBeenCalledWith('fuel', 100);
+        });
+
+        test('с транзакцией обновляет БД и не применяет сетевое топливо до commit', async () => {
+            mockVehicleModel.findOne.mockResolvedValue({ id: 10 });
+            const veh = { getVariable: jest.fn(() => 40), setVariable: jest.fn() };
+            vehicleService.spawnedVehicles.set(10, veh);
+            const tx = {};
+
+            const r = await vehicleService.refuelVehicle(10, 7, tx);
+
+            expect(r).toEqual({ success: true, liters: 60, fuel: 100 });
+            expect(mockVehicleModel.update).toHaveBeenCalledWith(
+                { fuel: 100 },
+                { where: { id: 10 }, transaction: tx }
+            );
+            expect(veh.setVariable).not.toHaveBeenCalled();
+        });
+
+        test('ошибка обновления БД возвращает db_error и не применяет сетевое топливо', async () => {
+            mockVehicleModel.findOne.mockResolvedValue({ id: 10 });
+            mockVehicleModel.update.mockRejectedValue(new Error('db down'));
+            const veh = { getVariable: jest.fn(() => 40), setVariable: jest.fn() };
+            vehicleService.spawnedVehicles.set(10, veh);
+
+            const r = await vehicleService.refuelVehicle(10, 7);
+
+            expect(r).toEqual({ success: false, error: 'db_error' });
+            expect(veh.setVariable).not.toHaveBeenCalled();
+            expect(logger.error).toHaveBeenCalledWith(
+                expect.stringContaining('refuelVehicle fuel save error')
+            );
         });
     });
 
@@ -282,6 +327,19 @@ describe('VehicleService', () => {
         });
         test('false если нет в карте', () => {
             expect(vehicleService.setFuel(99, 75)).toBe(false);
+        });
+        test('исключение setVariable не бросает наружу и возвращает false', () => {
+            const veh = {
+                setVariable: jest.fn(() => {
+                    throw new Error('client gone');
+                }),
+            };
+            vehicleService.spawnedVehicles.set(10, veh);
+
+            expect(vehicleService.setFuel(10, 75)).toBe(false);
+            expect(logger.error).toHaveBeenCalledWith(
+                expect.stringContaining('не удалось обновить сетевое топливо машины 10')
+            );
         });
     });
 

@@ -5,6 +5,7 @@ const moneyService = require('../services/MoneyService');
 const isLoggedIn = require('../middleware/isLoggedIn');
 const withGuards = require('../middleware/withGuards');
 const rateLimit = require('../middleware/rateLimit');
+const logger = require('../core/logger');
 const {
     VehicleConfig,
     PhoneConfig,
@@ -197,11 +198,24 @@ mp.events.add(
             if (!vehicleDbId) return;
 
             const veh = vehicleService.spawnedVehicles.get(vehicleDbId);
-            if (!veh || !mp.vehicles.exists(veh))
+            if (!veh || !vehicleService.isSpawned(vehicleDbId))
                 return player.outputChatBox('!{#FF3333}[Заправка] Машина не рядом.', {
                     toast: true,
                 });
-            if (player.dist(veh.position) > FuelInteractionRadius)
+
+            let vehiclePos;
+            try {
+                vehiclePos = veh.position;
+            } catch (err) {
+                logger.error(
+                    `[Fuel] Не удалось прочитать позицию машины ${vehicleDbId}: ${err.message}`
+                );
+                return player.outputChatBox('!{#FF3333}[Заправка] Машина недоступна.', {
+                    toast: true,
+                });
+            }
+
+            if (player.dist(vehiclePos) > FuelInteractionRadius)
                 return player.outputChatBox('!{#FF3333}[Заправка] Подойдите ближе к машине.', {
                     toast: true,
                 });
@@ -212,7 +226,7 @@ mp.events.add(
                     toast: true,
                 });
 
-            const currentFuel = Number(veh.getVariable('fuel') || 0);
+            const currentFuel = vehicleService.getFuel(veh);
             const liters = 100 - currentFuel;
             if (liters <= 0.1)
                 return player.outputChatBox('!{#00FFFF}[Заправка] Бак уже полон.', { toast: true });
@@ -232,7 +246,8 @@ mp.events.add(
 
                     const result = await vehicleService.refuelVehicle(
                         vehicleDbId,
-                        player.accountId
+                        player.accountId,
+                        t
                     );
                     if (!result.success) throw new Error('refuel_failed');
                 });
@@ -247,6 +262,12 @@ mp.events.add(
                         { toast: true }
                     );
                 throw err;
+            }
+            const applied = vehicleService.setFuel(vehicleDbId, 100);
+            if (!applied) {
+                logger.warn(
+                    `[Fuel] Топливо сохранено в БД, но не удалось обновить сетевое состояние машины ${vehicleDbId}`
+                );
             }
 
             player.applyMoneyDelta(-cost);
