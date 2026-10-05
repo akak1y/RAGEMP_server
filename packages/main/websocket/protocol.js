@@ -21,6 +21,16 @@ const TABLES = {
     items: async () => getItemModel().findAll({ order: [['id', 'DESC']], raw: true }),
 };
 
+// Write-действия админки, требующие актуальных прав.
+// Read-only (get_table / get_metrics) не входят: они не меняют состояние мира.
+const WRITE_ACTIONS = new Set([
+    'update_cell',
+    'create_row',
+    'delete_row',
+    'player_action',
+    'vehicle_action',
+]);
+
 const int = (v, min, max, name) => {
     const n = Number(v);
     if (!Number.isInteger(n) || n < min || n > max) throw new Error(`${name} ${min}..${max}`);
@@ -193,6 +203,25 @@ function sendResult(socket, success, message) {
     socket.send(JSON.stringify({ type: 'action_result', result: { success, message } }));
 }
 
+/**
+ * Повторная валидация прав администратора перед write-действием.
+ * @param {WebSocket} socket
+ * @returns {Promise<boolean>}
+ */
+async function revalidateAdminSocket(socket) {
+    if (!socket || !socket.admin || !Number.isInteger(socket.admin.accountId)) return false;
+    try {
+        const account = await getUserModel().findByPk(socket.admin.accountId, { raw: true });
+        if (!account || (account.admin_level || 0) < 1) return false;
+        socket.admin.adminLevel = account.admin_level;
+        if (account.username) socket.admin.username = account.username;
+        return true;
+    } catch (err) {
+        logger.error(`[Admin] revalidateAdminSocket error: ${err.message}`);
+        return false;
+    }
+}
+
 async function auditEditFail(socket, msg, reason) {
     try {
         await auditService.log({
@@ -212,6 +241,16 @@ async function auditEditFail(socket, msg, reason) {
 
 async function handleMessage(socket, msg, broadcast) {
     try {
+        if (msg && typeof msg === 'object' && WRITE_ACTIONS.has(msg.type)) {
+            const valid = await revalidateAdminSocket(socket);
+            if (!valid) {
+                try {
+                    socket.close(4003, 'revoked or demoted');
+                } catch {}
+                return;
+            }
+        }
+
         if (msg.type === 'get_table') {
             if (msg.table === 'audit') {
                 const per = 50;
@@ -553,4 +592,10 @@ function getCreateSchema() {
     );
 }
 
-module.exports = { handleMessage, getCreateSchema, refreshLiveMetrics, setWsClientsGetter };
+module.exports = {
+    handleMessage,
+    getCreateSchema,
+    refreshLiveMetrics,
+    setWsClientsGetter,
+    revalidateAdminSocket,
+};
