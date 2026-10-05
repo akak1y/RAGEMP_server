@@ -20,6 +20,42 @@ const { sendEvent } = require('../core/eventSender');
  * Сессия игрока: вход/регистрация и выход с сохранением прогресса.
  */
 
+/**
+ * Очищает частично созданную сессию игрока.
+ * @param {mp.Player} player
+ */
+function clearAuthSession(player) {
+    if (!player) return;
+
+    if (player.posTracker) {
+        clearInterval(player.posTracker);
+        player.posTracker = null;
+    }
+
+    player.isLoggedIn = false;
+    player.accountId = null;
+    player.accountName = null;
+    player.money = 0;
+    player.adminLevel = 0;
+    player.lastPos = null;
+    player.inventory = null;
+
+    try {
+        if (
+            typeof mp !== 'undefined' &&
+            mp.Player &&
+            mp.Player.prototype &&
+            typeof mp.Player.prototype.outputChatBox === 'function'
+        ) {
+            player.outputChatBox = mp.Player.prototype.outputChatBox;
+        } else if (Object.prototype.hasOwnProperty.call(player, 'outputChatBox')) {
+            delete player.outputChatBox;
+        }
+    } catch (err) {
+        logger.warn(`[Auth] Не удалось сбросить outputChatBox: ${err.message}`);
+    }
+}
+
 mp.events.add(
     'server:account:login',
     withGuards(
@@ -27,12 +63,11 @@ mp.events.add(
         async (player, username, password) => {
             logger.info(`Игрок ${username} инициировал процесс входа на сервер.`);
 
+            let userDb = null;
             try {
                 const authResult = await profile(`Auth:Login:${username}`, async () => {
                     return await authService.authenticate(username, password);
                 });
-
-                let userDb;
 
                 if (authResult.success) {
                     // если пароли совпали
@@ -60,24 +95,59 @@ mp.events.add(
                         return;
                     }
                     userDb = regResult.user;
-
-                    const redis = getRedis();
-                    if (redis) await redis.incr('server:stats:total_accounts'); // +1 в статистику аккаунтов сразу в ОЗУ
-                    logger.info(
-                        `Зарегистрирован новый аккаунт: ${userDb.username}. Кэш Redis инкрементирован.`
-                    );
+                    try {
+                        const redis = getRedis();
+                        if (redis) await redis.incr('server:stats:total_accounts');
+                        logger.info(
+                            `Зарегистрирован новый аккаунт: ${userDb.username}. Кэш Redis инкрементирован.`
+                        );
+                    } catch (err) {
+                        logger.warn(
+                            `[Auth] Не удалось обновить счётчик аккаунтов в Redis: ${err.message}`
+                        );
+                    }
                 }
+            } catch (err) {
+                logger.error(`[Auth] Ошибка входа/регистрации ${username}: ${err.message}`);
+                sendEvent(player, 'client:account:authError', [
+                    'Внутренняя ошибка сервера базы данных.',
+                ]);
+                return;
+            }
 
+            if (!userDb) {
+                logger.error(`[Auth] Пустой результат входа для ${username}`);
+                sendEvent(player, 'client:account:authError', [
+                    'Внутренняя ошибка сервера базы данных.',
+                ]);
+                return;
+            }
+
+            player.accountId = userDb.id;
+            player.accountName = userDb.username;
+            player.money = Number(userDb.money) || 0;
+            player.adminLevel = Number(userDb.admin_level) || 0;
+            player.lastPos = new mp.Vector3(userDb.pos_x, userDb.pos_y, userDb.pos_z);
+
+            try {
+                await inventoryService.loadPlayerInventory(player);
+            } catch (err) {
+                logger.error(
+                    `[Auth] Не удалось загрузить инвентарь игрока ${userDb.username}: ${err.message}`
+                );
+                clearAuthSession(player);
+                sendEvent(player, 'client:account:authError', [
+                    'Не удалось загрузить инвентарь. Попробуйте позже.',
+                ]);
+                return;
+            }
+
+            try {
                 player.isLoggedIn = true;
-                player.accountId = userDb.id;
-                player.accountName = userDb.username;
-                player.money = userDb.money;
-                player.adminLevel = userDb.admin_level;
-                player.lastPos = new mp.Vector3(userDb.pos_x, userDb.pos_y, userDb.pos_z); // заполняем кэш данными из бд
 
                 player.outputChatBox = function (text, opts) {
-                    if (opts && opts.toast) chatService.notify(player, text);
-                    else chatService.pushSystem(player, text);
+                    if (opts && opts.toast) chatService.notify(this, text);
+                    else chatService.pushSystem(this, text);
                 };
 
                 player.posTracker = setInterval(() => {
@@ -87,15 +157,18 @@ mp.events.add(
                     }
                 }, 3000);
 
-                await inventoryService.loadPlayerInventory(player);
-
                 const isDeveloper = player.adminLevel;
                 sendEvent(player, 'client:account:hideAuth', [isDeveloper]);
                 sendEvent(player, 'client:updateMoney', [player.money]);
                 player.spawn(player.lastPos);
+                logger.info(`[Auth] Игрок ${player.accountName} успешно вошёл на сервер.`);
             } catch (err) {
+                logger.error(
+                    `[Auth] Не удалось завершить вход игрока ${player.accountName || username}: ${err.message}`
+                );
+                clearAuthSession(player);
                 sendEvent(player, 'client:account:authError', [
-                    'Внутренняя ошибка сервера базы данных.',
+                    'Внутренняя ошибка сервера при входе.',
                 ]);
             }
         },
