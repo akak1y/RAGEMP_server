@@ -1,3 +1,7 @@
+require('./natives');
+
+const natives = globalThis.natives;
+
 /**
  * Боты: запоминание ped'ов и отключение их реакции на события мира.
  */
