@@ -1,3 +1,5 @@
+const logger = require('./logger');
+
 const RING_SIZE = 200;
 const ring = [];
 let listener = null;
@@ -8,7 +10,14 @@ let listener = null;
 function push(record) {
     ring.push(record);
     if (ring.length > RING_SIZE) ring.shift();
-    if (listener) listener(record);
+
+    if (listener) {
+        try {
+            listener(record);
+        } catch (err) {
+            logger.error(`[EventLog] Ошибка слушателя журнала: ${err.message}`);
+        }
+    }
 }
 
 function subscribe(fn) {

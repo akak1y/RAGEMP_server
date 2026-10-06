@@ -63,10 +63,46 @@ const clients = new Set();
 
 setWsClientsGetter(() => clients.size);
 
+/**
+ * Безопасная отправка JSON в один WebSocket.
+ */
+function safeSend(socket, obj) {
+    let data;
+    try {
+        data = JSON.stringify(obj);
+    } catch (err) {
+        logger.error(`[Admin] Не удалось сериализовать сообщение: ${err.message}`);
+        return false;
+    }
+    try {
+        if (socket && socket.readyState === 1) {
+            socket.send(data);
+            return true;
+        }
+    } catch (err) {
+        logger.error(`[Admin] Не удалось отправить сообщение клиенту: ${err.message}`);
+    }
+    return false;
+}
+
+/**
+ * Безопасное вещание всем подключённым админ-клиентам.
+ */
 function broadcast(obj) {
-    const data = JSON.stringify(obj);
+    let data;
+    try {
+        data = JSON.stringify(obj);
+    } catch (err) {
+        logger.error(`[Admin] Не удалось сериализовать broadcast: ${err.message}`);
+        return;
+    }
+
     for (const s of clients) {
-        if (s.readyState === 1) s.send(data);
+        try {
+            if (s.readyState === 1) s.send(data);
+        } catch (err) {
+            logger.error(`[Admin] Ошибка broadcast одному клиенту: ${err.message}`);
+        }
     }
 }
 
@@ -210,7 +246,9 @@ function start() {
                 const p = jwt.verify(token, JWT_SECRET);
                 if (p && p.adminLevel >= 1) code = 4003;
             } catch {}
-            socket.close(code, code === 4003 ? 'revoked or demoted' : 'bad token');
+            try {
+                socket.close(code, code === 4003 ? 'revoked or demoted' : 'bad token');
+            } catch {}
             return;
         }
 
@@ -221,12 +259,15 @@ function start() {
             logger.error(`[Admin] socket error: ${err.message}`);
         });
         socket.on('close', () => clients.delete(socket));
-        socket.send(
-            JSON.stringify({ type: 'hello', admin: admin.username, online: mp.players.length })
-        );
-        socket.send(JSON.stringify({ type: 'markers', markers: MAP_MARKERS }));
-        socket.send(JSON.stringify({ type: 'create_schema', schema: getCreateSchema() }));
-        socket.send(JSON.stringify({ type: 'event_log_init', events: eventLog.getRecent(100) }));
+
+        safeSend(socket, {
+            type: 'hello',
+            admin: admin.username,
+            online: typeof mp !== 'undefined' && mp.players ? mp.players.length : 0,
+        });
+        safeSend(socket, { type: 'markers', markers: MAP_MARKERS });
+        safeSend(socket, { type: 'create_schema', schema: getCreateSchema() });
+        safeSend(socket, { type: 'event_log_init', events: eventLog.getRecent(100) });
 
         socket.on('message', (data) => {
             let msg;
@@ -240,26 +281,40 @@ function start() {
     });
 
     unsubAudit = auditService.subscribe((row) => {
-        broadcast({ type: 'audit_row', row: row.toJSON ? row.toJSON() : row });
+        try {
+            broadcast({ type: 'audit_row', row: row.toJSON ? row.toJSON() : row });
+        } catch (err) {
+            logger.error(`[Admin] Ошибка broadcast аудита: ${err.message}`);
+        }
     });
 
     unsubEvents = eventLog.subscribe((event) => {
-        broadcast({ type: 'event_log', event });
+        try {
+            broadcast({ type: 'event_log', event });
+        } catch (err) {
+            logger.error(`[Admin] Ошибка broadcast журнала событий: ${err.message}`);
+        }
     });
 
     playersTimer = setInterval(() => {
-        const players = mp.players
-            .toArray()
-            .filter((p) => p.isLoggedIn)
-            .map((p) => ({
-                id: p.accountId,
-                name: p.accountName,
-                x: p.position.x,
-                y: p.position.y,
-                z: p.position.z,
-                heading: p.heading,
-            }));
-        broadcast({ type: 'players', online: players.length, players });
+        try {
+            if (typeof mp === 'undefined' || !mp.players) return;
+
+            const players = mp.players
+                .toArray()
+                .filter((p) => p && p.isLoggedIn)
+                .map((p) => ({
+                    id: p.accountId,
+                    name: p.accountName,
+                    x: p.position ? p.position.x : 0,
+                    y: p.position ? p.position.y : 0,
+                    z: p.position ? p.position.z : 0,
+                    heading: p.heading || 0,
+                }));
+            broadcast({ type: 'players', online: players.length, players });
+        } catch (err) {
+            logger.error(`[Admin] Ошибка обновления списка игроков: ${err.message}`);
+        }
     }, 5000);
 
     if (playersTimer.unref) playersTimer.unref();
