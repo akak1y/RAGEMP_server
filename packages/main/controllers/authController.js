@@ -203,7 +203,7 @@ mp.events.add(
             }
 
             try {
-                const updateData = { money: player.money || 0 };
+                const updateData = {};
                 if (player.lastPos) {
                     updateData.pos_x = player.lastPos.x;
                     updateData.pos_y = player.lastPos.y;
@@ -212,7 +212,7 @@ mp.events.add(
                 const saved = await accountService.updateAccount(player.accountId, updateData);
                 if (saved)
                     logger.info(
-                        `[Sequelize Save] Игрок "${player.accountName}" сохранён (позиция + деньги).`
+                        `[Sequelize Save] Игрок "${player.accountName}" сохранён (позиция).`
                     );
             } catch (err) {
                 logger.error(`[Sequelize Save Error]: ${err.message}`);
