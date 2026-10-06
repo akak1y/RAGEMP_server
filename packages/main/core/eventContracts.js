@@ -87,6 +87,7 @@ function typeOf(value) {
 }
 
 function matchesSignature(args, signature) {
+    if (!Array.isArray(args) || !Array.isArray(signature)) return false;
     if (args.length !== signature.length) return false;
     for (let i = 0; i < signature.length; i++) {
         if (signature[i] === 'any') continue;
@@ -95,18 +96,80 @@ function matchesSignature(args, signature) {
     return true;
 }
 
-function validateEvent(eventName, args) {
-    const contract = contracts[eventName];
-    if (!contract) return true; // нет контракта - пропускаем
-
-    const signatures = Array.isArray(contract[0]) ? contract : [contract];
-    for (const sig of signatures) {
-        if (matchesSignature(args, sig)) return true;
+/**
+ * Безопасное описание аргументов для лога.
+ * @param {unknown} value
+ * @returns {string}
+ */
+function safeStringify(value) {
+    try {
+        const json = JSON.stringify(value);
+        if (json !== undefined) return json;
+    } catch {
+        // fallthrough
     }
-    console.warn(
-        `[EventContract] ${eventName}: аргументы не подошли ни под одну сигнатуру: ${JSON.stringify(args)}`
-    );
-    return false;
+
+    try {
+        if (value === null) return 'null';
+        if (Array.isArray(value)) {
+            return `[${value.map((item) => safeStringify(item)).join(', ')}]`;
+        }
+
+        const t = typeof value;
+        if (t === 'bigint') return `${value.toString()}n`;
+        if (t === 'function') return '[Function]';
+        if (t === 'symbol') return value.toString();
+        if (t === 'object') {
+            const ctor = value && value.constructor && value.constructor.name;
+            return `[Object ${ctor || 'anonymous'}]`;
+        }
+        return String(value);
+    } catch {
+        return '[Unserializable]';
+    }
+}
+
+/**
+ * Краткое безопасное описание массива аргументов.
+ * @param {unknown[]} args
+ * @returns {string}
+ */
+function describeArgs(args) {
+    if (!Array.isArray(args)) return safeStringify(args);
+
+    try {
+        const types = args.map((arg) => typeOf(arg)).join(', ');
+        const preview = safeStringify(args);
+
+        if (preview && preview !== '[Unserializable]') {
+            return `${preview} (types: ${types})`;
+        }
+
+        return `(types: ${types})`;
+    } catch {
+        return '(не удалось сериализовать аргументы)';
+    }
+}
+
+function validateEvent(eventName, args) {
+    try {
+        const contract = contracts[eventName];
+        if (!contract) return true; // нет контракта - пропускаем
+
+        const signatures = Array.isArray(contract[0]) ? contract : [contract];
+        for (const sig of signatures) {
+            if (matchesSignature(args, sig)) return true;
+        }
+        console.warn(
+            `[EventContract] ${eventName}: аргументы не подошли ни под одну сигнатуру: ${describeArgs(args)}`
+        );
+        return false;
+    } catch (err) {
+        console.error(
+            `[EventContract] ${eventName}: внутренняя ошибка валидации: ${err && err.message ? err.message : String(err)}`
+        );
+        return true;
+    }
 }
 
 module.exports = { contracts, validateEvent };
