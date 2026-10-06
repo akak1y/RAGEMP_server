@@ -6,6 +6,27 @@ const logger = require('../core/logger');
 /**
  * Сервис денежных операций
  */
+
+const MAX_SIGNED_INT32 = 2147483647;
+
+/**
+ * Корректная денежная сумма для add/take/transfer.
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+function isPositiveMoneyAmount(value) {
+    return Number.isSafeInteger(value) && value > 0 && value <= MAX_SIGNED_INT32;
+}
+
+/**
+ * Корректный ID сущности для денежных операций.
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+function isEntityId(value) {
+    return Number.isSafeInteger(value) && value > 0 && value <= MAX_SIGNED_INT32;
+}
+
 class MoneyService {
     /**
      * Внутренний доступ к модели User через AccountService
@@ -24,7 +45,11 @@ class MoneyService {
      * @returns {Promise<boolean>} Успешность операции
      */
     async addMoney(userId, amount, reason = '', transaction = null) {
-        if (!Number.isInteger(amount) || amount <= 0) {
+        if (!isEntityId(userId)) {
+            logger.warn(`[MoneyService] addMoney отклонена: некорректный userId ${userId}`);
+            return false;
+        }
+        if (!isPositiveMoneyAmount(amount)) {
             logger.warn(`[MoneyService] addMoney отклонена: некорректная сумма ${amount}`);
             return false;
         }
@@ -58,7 +83,11 @@ class MoneyService {
      * @returns {Promise<boolean>} Успешность (false — недостаточно средств)
      */
     async takeMoney(userId, amount, reason = '', transaction = null) {
-        if (!Number.isInteger(amount) || amount <= 0) {
+        if (!isEntityId(userId)) {
+            logger.warn(`[MoneyService] takeMoney отклонена: некорректный userId ${userId}`);
+            return false;
+        }
+        if (!isPositiveMoneyAmount(amount)) {
             logger.warn(`[MoneyService] takeMoney отклонена: некорректная сумма ${amount}`);
             return false;
         }
@@ -90,7 +119,15 @@ class MoneyService {
      * Перевод между аккаунтами в ОДНОЙ транзакции
      */
     async transfer(fromId, toId, amount, reason = '') {
-        if (!Number.isInteger(amount) || amount <= 0) {
+        if (!isEntityId(fromId)) {
+            logger.warn(`[MoneyService] transfer отклонена: некорректный fromId ${fromId}`);
+            return false;
+        }
+        if (!isEntityId(toId)) {
+            logger.warn(`[MoneyService] transfer отклонена: некорректный toId ${toId}`);
+            return false;
+        }
+        if (!isPositiveMoneyAmount(amount)) {
             logger.warn(`[MoneyService] transfer отклонена: некорректная сумма ${amount}`);
             return false;
         }
