@@ -21,6 +21,7 @@ const locationService = require('./services/LocationService');
 
 let refreshInterval = null;
 let adminServer = null;
+let shuttingDown = false;
 
 async function refreshStatsCache() {
     try {
@@ -71,16 +72,25 @@ async function refreshStatsCache() {
         logger.info(`[System] Все системы запущены за ${Date.now() - bootStart}ms`);
     } catch (err) {
         logger.error(`[System ERROR] Ошибка запуска сервера: ${err.message}`);
-        writeCrashLog(err);
+        try {
+            writeCrashLog(err);
+        } catch {}
         process.exit(1);
     }
 })();
 
 async function shutdown(signal) {
+    if (shuttingDown) {
+        process.exit(1);
+    }
+    shuttingDown = true;
     logger.info(`[${signal}] Получен сигнал остановки, закрываем подключения...`);
+    const forceExit = setTimeout(() => process.exit(1), 10000);
+    if (forceExit.unref) forceExit.unref();
 
     if (refreshInterval) {
         clearInterval(refreshInterval);
+        refreshInterval = null;
         logger.info('[System] Периодическое обновление статистики остановлено');
     }
 
@@ -105,7 +115,9 @@ async function shutdown(signal) {
         process.exit(0);
     } catch (err) {
         logger.error(`Ошибка при shutdown: ${err.message}`);
-        writeCrashLog(err);
+        try {
+            writeCrashLog(err);
+        } catch {}
         process.exit(1);
     }
 }
@@ -115,10 +127,17 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 process.on('uncaughtException', (err) => {
     logger.error(`[uncaughtException] ${err.stack || err.message}`);
-    writeCrashLog(err);
+    try {
+        writeCrashLog(err);
+    } catch {}
     shutdown('uncaughtException');
 });
 
 process.on('unhandledRejection', (reason) => {
-    logger.error(`[unhandledRejection] ${reason}`);
+    const err = reason instanceof Error ? reason : new Error(String(reason));
+    logger.error(`[unhandledRejection] ${err.stack || err.message}`);
+    try {
+        writeCrashLog(err);
+    } catch {}
+    shutdown('unhandledRejection');
 });
