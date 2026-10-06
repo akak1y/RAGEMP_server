@@ -139,6 +139,7 @@ mp.events.add(
 
             const atGarage = isNear(player.position, GaragePos, GarageInteractionRadius);
             let cost = 0;
+            let deliveryPaid = false;
             if (!atGarage) {
                 cost = PhoneConfig.deliveryCar;
                 const paid = await player.takeMoney(cost, 'доставка авто');
@@ -146,7 +147,9 @@ mp.events.add(
                     return player.outputChatBox('!{#FF3333}[Ошибка] У вас недостаточно денег!', {
                         toast: true,
                     });
+                deliveryPaid = true;
             }
+
             const posCar = {};
             if (atGarage) {
                 posCar.coords = new mp.Vector3(GaragePos.x, GaragePos.y, GaragePos.z); // спавним на метке гаража
@@ -161,19 +164,57 @@ mp.events.add(
                 posCar.heading = player.heading;
                 posCar.inside = false;
             }
-            const veh = vehicleService.spawnVehicle(
-                carData,
-                posCar.coords,
-                posCar.heading,
-                player.dimension
-            );
+
+            let veh;
+            try {
+                veh = vehicleService.spawnVehicle(
+                    carData,
+                    posCar.coords,
+                    posCar.heading,
+                    player.dimension
+                );
+                if (!veh) throw new Error('spawnVehicle вернул пустой результат');
+            } catch (err) {
+                logger.error(
+                    `[Vehicle] Ошибка спавна авто ${vehicleDbId} для игрока ${player.accountName}: ${err.message}`
+                );
+                if (deliveryPaid) {
+                    const refunded = await player.addMoney(cost, 'возврат за доставку авто');
+                    if (!refunded) {
+                        logger.error(
+                            `[Vehicle] КРИТИЧНО: не удалось вернуть $${cost} игроку ${player.accountName} после сбоя спавна`
+                        );
+                    }
+                }
+                return player.outputChatBox(
+                    '!{#FF3333}[Ошибка] Не удалось заспавнить машину. Деньги возвращены.',
+                    { toast: true }
+                );
+            }
+
             if (posCar.inside) {
                 setTimeout(() => {
-                    if (mp.players.exists(player) && mp.vehicles.exists(veh)) {
-                        player.putIntoVehicle(veh, 0);
-                    } // садим игрока за руль с задержкой
+                    try {
+                        if (
+                            typeof mp !== 'undefined' &&
+                            mp.players &&
+                            typeof mp.players.exists === 'function' &&
+                            mp.players.exists(player) &&
+                            mp.vehicles &&
+                            typeof mp.vehicles.exists === 'function' &&
+                            mp.vehicles.exists(veh) &&
+                            typeof player.putIntoVehicle === 'function'
+                        ) {
+                            player.putIntoVehicle(veh, 0);
+                        }
+                    } catch (err) {
+                        logger.error(
+                            `[Vehicle] Ошибка посадки игрока ${player.accountName} в машину ${vehicleDbId}: ${err.message}`
+                        );
+                    }
                 }, 150);
             }
+
             auditService.logPlayer(player, 'spawn_vehicle', {
                 category: 'money',
                 amount: cost,
