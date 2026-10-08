@@ -1,5 +1,6 @@
 const courierService = require('../services/CourierService');
 const auditService = require('../services/AuditService');
+const logger = require('../core/logger');
 
 jest.mock('../services/AuditService', () => ({ logPlayer: jest.fn() }));
 jest.mock('../services/FactionService', () => ({
@@ -174,6 +175,183 @@ describe('CourierService', () => {
         expect(workVeh.destroy).toHaveBeenCalled();
         expect(courierService.isWorking(1)).toBe(false);
         expect(player.call).toHaveBeenCalledWith('client:courier:target', [null]);
+    });
+
+    // ---- дописка: конкурентность выплат и ветки отказа ----
+
+    test('параллельные completeOrder оплачивают заказ один раз (asyncLock)', async () => {
+        const st = { stage: 'return', pointIdx: 0, vehicleId: 42, pay: 200 };
+        courierService.states.set(1, st);
+        let resolveMoney;
+        const p = {
+            accountId: 1,
+            accountName: 't',
+            position: { x: 10, y: 10, z: 0 },
+            outputChatBox: () => {},
+            call: () => {},
+            addMoney: jest.fn(
+                () =>
+                    new Promise((r) => {
+                        resolveMoney = r;
+                    })
+            ),
+        };
+        const pr1 = courierService.completeOrder(p, st);
+        const pr2 = courierService.completeOrder(p, st);
+        await Promise.resolve(); // FIX: дать fn1 стартовать в микротаске и зависнуть на addMoney
+        resolveMoney(true);
+        await Promise.all([pr1, pr2]);
+        expect(p.addMoney).toHaveBeenCalledTimes(1); // fn2 увидел stage!=='return' и вышел
+        expect(st.stage).toBe('delivery');
+    });
+
+    test('completeOrder: сбой базовой выплаты (false) → return, аудит не пишется', async () => {
+        const st = { stage: 'return', pointIdx: 0, vehicleId: 42, pay: 200 };
+        courierService.states.set(1, st);
+        const p = {
+            accountId: 1,
+            accountName: 't',
+            position: { x: 10, y: 10, z: 0 },
+            outputChatBox: () => {},
+            call: () => {},
+            addMoney: jest.fn().mockResolvedValue(false),
+        };
+        await courierService.completeOrder(p, st);
+        expect(st.stage).toBe('return');
+        expect(auditService.logPlayer).not.toHaveBeenCalled();
+        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('провалилось'));
+    });
+
+    test('completeOrder: исключение базовой выплаты → return', async () => {
+        const st = { stage: 'return', pointIdx: 0, vehicleId: 42, pay: 200 };
+        courierService.states.set(1, st);
+        const p = {
+            accountId: 1,
+            accountName: 't',
+            position: { x: 10, y: 10, z: 0 },
+            outputChatBox: () => {},
+            call: () => {},
+            addMoney: jest.fn().mockRejectedValue(new Error('money db down')),
+        };
+        await courierService.completeOrder(p, st);
+        expect(st.stage).toBe('return');
+        expect(auditService.logPlayer).not.toHaveBeenCalled();
+        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('completeOrder error'));
+    });
+
+    test('completeOrder: сбой бонуса после успешной базы → заказ засчитан, аудит НЕ пишется', async () => {
+        factionService.getMembership.mockResolvedValue({
+            faction: { id: 1, name: 'Семья' },
+            member: { rank: 0 },
+        });
+        const st = { stage: 'return', pointIdx: 0, vehicleId: 42, pay: 100 };
+        courierService.states.set(1, st);
+        const p = {
+            accountId: 1,
+            accountName: 't',
+            position: { x: 10, y: 10, z: 0 },
+            outputChatBox: jest.fn(),
+            call: () => {},
+            addMoney: jest.fn((sum, reason) =>
+                String(reason).includes('бонус')
+                    ? Promise.reject(new Error('bonus down'))
+                    : Promise.resolve(true)
+            ),
+        };
+        await courierService.completeOrder(p, st);
+        expect(st.stage).toBe('delivery'); // база ушла → перешли к новой посылке
+        expect(auditService.logPlayer).not.toHaveBeenCalled(); // успешный аудит потерян осознанно
+        expect(p.outputChatBox).toHaveBeenCalledWith(
+            expect.stringContaining('часть бонусов не применилась')
+        );
+    });
+
+    test('completeOrder: сбой казны после бонуса игроку → заказ засчитан, аудит НЕ пишется', async () => {
+        factionService.getMembership.mockResolvedValue({
+            faction: { id: 1, name: 'Семья' },
+            member: { rank: 0 },
+        });
+        factionService.addTreasury.mockRejectedValue(new Error('treasury down'));
+        const st = { stage: 'return', pointIdx: 0, vehicleId: 42, pay: 100 };
+        courierService.states.set(1, st);
+        const p = {
+            accountId: 1,
+            accountName: 't',
+            position: { x: 10, y: 10, z: 0 },
+            outputChatBox: jest.fn(),
+            call: () => {},
+            addMoney: jest.fn().mockResolvedValue(true),
+        };
+        await courierService.completeOrder(p, st);
+        expect(p.addMoney).toHaveBeenCalledTimes(2); // база + бонус игроку успели
+        expect(st.stage).toBe('delivery');
+        expect(auditService.logPlayer).not.toHaveBeenCalled();
+    });
+
+    test('completeOrder игнорирует устаревшее (подменённое) состояние', async () => {
+        const stOld = { stage: 'return', pointIdx: 0, vehicleId: 42, pay: 200 };
+        courierService.states.set(1, stOld);
+        courierService.states.set(1, { stage: 'return', pointIdx: 1, vehicleId: 99, pay: 1 }); // подмена
+        await courierService.completeOrder(player, stOld);
+        expect(player.addMoney).not.toHaveBeenCalled();
+    });
+
+    test('completeOrder игнорирует состояние не в стадии return', async () => {
+        const st = { stage: 'delivery', pointIdx: 0, vehicleId: 42, pay: 200 };
+        courierService.states.set(1, st);
+        await courierService.completeOrder(player, st);
+        expect(player.addMoney).not.toHaveBeenCalled();
+        expect(st.stage).toBe('delivery');
+    });
+
+    test('interact: рабочий транспорт исчез → работа завершена, цель сброшена', () => {
+        courierService.states.set(1, { stage: 'pickup', pointIdx: 0, vehicleId: 42, pay: 200 });
+        global.mp.vehicles.at.mockReturnValue(null);
+        courierService.interact(player);
+        expect(courierService.isWorking(1)).toBe(false);
+        expect(player.outputChatBox).toHaveBeenCalledWith(
+            expect.stringContaining('Рабочий транспорт потерян')
+        );
+        expect(player.call).toHaveBeenCalledWith('client:courier:target', [null]);
+        global.mp.vehicles.at.mockReturnValue(workVeh); // восстановить дефолт
+    });
+
+    test('interact на стартовой точке завершает работу', () => {
+        courierService.states.set(1, { stage: 'delivery', pointIdx: 0, vehicleId: 42, pay: 200 });
+        player.position = { x: 0, y: 0, z: 0 }; // == startPos
+        courierService.interact(player);
+        expect(courierService.isWorking(1)).toBe(false);
+        expect(player.outputChatBox).toHaveBeenCalledWith(
+            expect.stringContaining('Работа завершена'),
+            { toast: true } // FIX: endWork зовёт с вторым аргументом
+        );
+        expect(player.call).toHaveBeenCalledWith('client:courier:target', [null]);
+    });
+
+    test('characterization: выход игрока во время await выплаты теряет аудит', async () => {
+        const st = { stage: 'return', pointIdx: 0, vehicleId: 42, pay: 200 };
+        courierService.states.set(1, st);
+        let resolveMoney;
+        const p = {
+            accountId: 1,
+            accountName: 't',
+            position: { x: 10, y: 10, z: 0 },
+            outputChatBox: () => {},
+            call: () => {},
+            addMoney: jest.fn(
+                () =>
+                    new Promise((r) => {
+                        resolveMoney = r;
+                    })
+            ),
+        };
+        const pr = courierService.completeOrder(p, st);
+        await Promise.resolve(); // FIX: fn1 прочитал registered===st (wasRegistered=true) и завис на addMoney
+        courierService.endWork(1); // удаляет state ВО ВРЕМЯ await выплаты
+        resolveMoney(true);
+        await pr;
+        expect(auditService.logPlayer).not.toHaveBeenCalled(); // <-- деньги ушли, аудита нет
+        expect(st.stage).toBe('processing'); // залипло: stillCurrent()===false
     });
 });
 
