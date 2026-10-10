@@ -139,30 +139,27 @@ class CourierService {
 
                 basePaid = true;
 
-                if (!stillCurrent()) return;
-
                 let bonusPlayer = 0;
                 let bonusTreasury = 0;
                 let factionName = null;
 
-                const membership = await factionService.getMembership(player.accountId);
+                if (stillCurrent()) {
+                    const membership = await factionService.getMembership(player.accountId);
 
-                if (!stillCurrent()) return;
+                    if (stillCurrent() && membership) {
+                        bonusPlayer =
+                            Math.round((st.pay * FactionConfig.courierBonusPlayer) / 10) * 10;
+                        bonusTreasury =
+                            Math.round((st.pay * FactionConfig.courierBonusTreasury) / 10) * 10;
+                        factionName = membership.faction.name;
 
-                if (membership) {
-                    bonusPlayer = Math.round((st.pay * FactionConfig.courierBonusPlayer) / 10) * 10;
-                    bonusTreasury =
-                        Math.round((st.pay * FactionConfig.courierBonusTreasury) / 10) * 10;
-                    factionName = membership.faction.name;
-
-                    if (bonusPlayer > 0) {
-                        await player.addMoney(bonusPlayer, `бонус семьи ${factionName}`);
+                        if (bonusPlayer > 0) {
+                            await player.addMoney(bonusPlayer, `бонус семьи ${factionName}`);
+                        }
+                        if (bonusTreasury > 0) {
+                            await factionService.addTreasury(membership.faction.id, bonusTreasury);
+                        }
                     }
-                    if (bonusTreasury > 0) {
-                        await factionService.addTreasury(membership.faction.id, bonusTreasury);
-                    }
-
-                    if (!stillCurrent()) return;
                 }
 
                 auditService.logPlayer(player, 'courier', {
@@ -174,8 +171,11 @@ class CourierService {
                         bonusPlayer,
                         bonusTreasury,
                         factionName,
+                        stateLost: !stillCurrent(),
                     },
                 });
+
+                if (!stillCurrent()) return;
 
                 let message = `!{#00FF00}[Курьер] Заказ выполнен: +$${st.pay}.`;
                 if (bonusPlayer > 0 || bonusTreasury > 0) {
@@ -193,6 +193,21 @@ class CourierService {
                 );
             } catch (err) {
                 logger.error(`[CourierService] completeOrder error: ${err.message}`);
+                if (basePaid) {
+                    auditService.logPlayer(player, 'courier', {
+                        category: 'money',
+                        amount: st.pay,
+                        details: {
+                            point: st.pointIdx,
+                            dist: Math.round(this.distTo(st.pointIdx)),
+                            bonusPlayer: 0,
+                            bonusTreasury: 0,
+                            factionName: null,
+                            partial: true,
+                            error: err.message,
+                        },
+                    });
+                }
 
                 if (!stillCurrent()) return;
 

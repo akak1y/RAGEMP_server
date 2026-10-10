@@ -177,8 +177,6 @@ describe('CourierService', () => {
         expect(player.call).toHaveBeenCalledWith('client:courier:target', [null]);
     });
 
-    // ---- дописка: конкурентность выплат и ветки отказа ----
-
     test('параллельные completeOrder оплачивают заказ один раз (asyncLock)', async () => {
         const st = { stage: 'return', pointIdx: 0, vehicleId: 42, pay: 200 };
         courierService.states.set(1, st);
@@ -198,10 +196,10 @@ describe('CourierService', () => {
         };
         const pr1 = courierService.completeOrder(p, st);
         const pr2 = courierService.completeOrder(p, st);
-        await Promise.resolve(); // FIX: дать fn1 стартовать в микротаске и зависнуть на addMoney
+        await Promise.resolve();
         resolveMoney(true);
         await Promise.all([pr1, pr2]);
-        expect(p.addMoney).toHaveBeenCalledTimes(1); // fn2 увидел stage!=='return' и вышел
+        expect(p.addMoney).toHaveBeenCalledTimes(1);
         expect(st.stage).toBe('delivery');
     });
 
@@ -239,7 +237,7 @@ describe('CourierService', () => {
         expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('completeOrder error'));
     });
 
-    test('completeOrder: сбой бонуса после успешной базы → заказ засчитан, аудит НЕ пишется', async () => {
+    test('сбой бонуса после успешной базы → заказ засчитан, аудит пишется (partial)', async () => {
         factionService.getMembership.mockResolvedValue({
             faction: { id: 1, name: 'Семья' },
             member: { rank: 0 },
@@ -259,14 +257,21 @@ describe('CourierService', () => {
             ),
         };
         await courierService.completeOrder(p, st);
-        expect(st.stage).toBe('delivery'); // база ушла → перешли к новой посылке
-        expect(auditService.logPlayer).not.toHaveBeenCalled(); // успешный аудит потерян осознанно
+        expect(st.stage).toBe('delivery');
+        expect(auditService.logPlayer).toHaveBeenCalledWith(
+            p,
+            'courier',
+            expect.objectContaining({
+                amount: 100,
+                details: expect.objectContaining({ partial: true }),
+            })
+        );
         expect(p.outputChatBox).toHaveBeenCalledWith(
             expect.stringContaining('часть бонусов не применилась')
         );
     });
 
-    test('completeOrder: сбой казны после бонуса игроку → заказ засчитан, аудит НЕ пишется', async () => {
+    test('сбой казны после бонуса игроку → заказ засчитан, аудит пишется (partial)', async () => {
         factionService.getMembership.mockResolvedValue({
             faction: { id: 1, name: 'Семья' },
             member: { rank: 0 },
@@ -283,15 +288,22 @@ describe('CourierService', () => {
             addMoney: jest.fn().mockResolvedValue(true),
         };
         await courierService.completeOrder(p, st);
-        expect(p.addMoney).toHaveBeenCalledTimes(2); // база + бонус игроку успели
+        expect(p.addMoney).toHaveBeenCalledTimes(2);
         expect(st.stage).toBe('delivery');
-        expect(auditService.logPlayer).not.toHaveBeenCalled();
+        expect(auditService.logPlayer).toHaveBeenCalledWith(
+            p,
+            'courier',
+            expect.objectContaining({
+                amount: 100,
+                details: expect.objectContaining({ partial: true }),
+            })
+        );
     });
 
     test('completeOrder игнорирует устаревшее (подменённое) состояние', async () => {
         const stOld = { stage: 'return', pointIdx: 0, vehicleId: 42, pay: 200 };
         courierService.states.set(1, stOld);
-        courierService.states.set(1, { stage: 'return', pointIdx: 1, vehicleId: 99, pay: 1 }); // подмена
+        courierService.states.set(1, { stage: 'return', pointIdx: 1, vehicleId: 99, pay: 1 });
         await courierService.completeOrder(player, stOld);
         expect(player.addMoney).not.toHaveBeenCalled();
     });
@@ -313,22 +325,22 @@ describe('CourierService', () => {
             expect.stringContaining('Рабочий транспорт потерян')
         );
         expect(player.call).toHaveBeenCalledWith('client:courier:target', [null]);
-        global.mp.vehicles.at.mockReturnValue(workVeh); // восстановить дефолт
+        global.mp.vehicles.at.mockReturnValue(workVeh);
     });
 
     test('interact на стартовой точке завершает работу', () => {
         courierService.states.set(1, { stage: 'delivery', pointIdx: 0, vehicleId: 42, pay: 200 });
-        player.position = { x: 0, y: 0, z: 0 }; // == startPos
+        player.position = { x: 0, y: 0, z: 0 };
         courierService.interact(player);
         expect(courierService.isWorking(1)).toBe(false);
         expect(player.outputChatBox).toHaveBeenCalledWith(
             expect.stringContaining('Работа завершена'),
-            { toast: true } // FIX: endWork зовёт с вторым аргументом
+            { toast: true }
         );
         expect(player.call).toHaveBeenCalledWith('client:courier:target', [null]);
     });
 
-    test('characterization: выход игрока во время await выплаты теряет аудит', async () => {
+    test('хардденинг: выход во время await выплаты НЕ теряет аудит (stateLost)', async () => {
         const st = { stage: 'return', pointIdx: 0, vehicleId: 42, pay: 200 };
         courierService.states.set(1, st);
         let resolveMoney;
@@ -346,12 +358,19 @@ describe('CourierService', () => {
             ),
         };
         const pr = courierService.completeOrder(p, st);
-        await Promise.resolve(); // FIX: fn1 прочитал registered===st (wasRegistered=true) и завис на addMoney
-        courierService.endWork(1); // удаляет state ВО ВРЕМЯ await выплаты
+        await Promise.resolve();
+        courierService.endWork(1);
         resolveMoney(true);
         await pr;
-        expect(auditService.logPlayer).not.toHaveBeenCalled(); // <-- деньги ушли, аудита нет
-        expect(st.stage).toBe('processing'); // залипло: stillCurrent()===false
+        expect(auditService.logPlayer).toHaveBeenCalledWith(
+            p,
+            'courier',
+            expect.objectContaining({
+                amount: 200,
+                details: expect.objectContaining({ stateLost: true }),
+            })
+        );
+        expect(st.stage).toBe('processing');
     });
 });
 
