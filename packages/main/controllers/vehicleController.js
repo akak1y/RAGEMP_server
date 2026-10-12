@@ -30,8 +30,13 @@ mp.events.add(
     withGuards(
         [isLoggedIn, rateLimit('buy_car', 1, 5)],
         async (player, model) => {
-            if (!VehicleConfig[model]) return;
+            if (!model || typeof model !== 'string') return;
             const config = VehicleConfig[model];
+            if (!config) {
+                logger.warn(`[Dealership] Игрок ${player.accountName} запросил неизвестную модель "${model}"`);
+                return player.outputChatBox('!{FF3333}[Ошибка] Неизвестная модель транспорта.', { toast: true });
+            }
+
             if (!isNear(player.position, DealershipPos, DealershipInteractionRadius)) {
                 return player.outputChatBox(
                     '!{#FF3333}[Автосалон] Покупка доступна только в автосалоне.',
