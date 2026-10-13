@@ -33,8 +33,12 @@ mp.events.add(
             if (!model || typeof model !== 'string') return;
             const config = VehicleConfig[model];
             if (!config) {
-                logger.warn(`[Dealership] Игрок ${player.accountName} запросил неизвестную модель "${model}"`);
-                return player.outputChatBox('!{FF3333}[Ошибка] Неизвестная модель транспорта.', { toast: true });
+                logger.warn(
+                    `[Dealership] Игрок ${player.accountName} запросил неизвестную модель "${model}"`
+                );
+                return player.outputChatBox('!{#FF3333}[Ошибка] Неизвестная модель транспорта.', {
+                    toast: true,
+                });
             }
 
             if (!isNear(player.position, DealershipPos, DealershipInteractionRadius)) {
@@ -52,18 +56,45 @@ mp.events.add(
                 }); // проверка баланса
 
             const sequelize = getSequelize();
-            await sequelize.transaction(async (t) => {
-                const paid = await moneyService.takeMoney(
-                    player.accountId,
-                    config.price,
-                    `покупка ${config.name}`,
-                    t
-                );
-                if (!paid) throw new Error('not_enough_money');
+            try {
+                await sequelize.transaction(async (t) => {
+                    const paid = await moneyService.takeMoney(
+                        player.accountId,
+                        config.price,
+                        `покупка ${config.name}`,
+                        t
+                    );
+                    if (!paid) throw new Error('not_enough_money');
 
-                const result = await vehicleService.buyVehicle(player.accountId, model, t);
-                if (!result.success) throw new Error('vehicle_failed');
-            });
+                    const result = await vehicleService.buyVehicle(player.accountId, model, t);
+                    if (!result.success) throw new Error('vehicle_failed');
+                });
+            } catch (err) {
+                if (err.message === 'not_enough_money') {
+                    logger.warn(
+                        `[Dealership] Расхождение кэша/БД: у игрока ${player.accountName} в БД не хватило $${config.price} на ${config.name}`
+                    );
+                    return player.outputChatBox('!{#FF3333}[Ошибка] Недостаточно денег.', {
+                        toast: true,
+                    });
+                }
+                if (err.message === 'vehicle_failed') {
+                    logger.error(
+                        `[Dealership] buyVehicle отказал для ${player.accountName} (${model}): транзакция отменена`
+                    );
+                    return player.outputChatBox(
+                        '!{#FF3333}[Ошибка] Не удалось оформить покупку, попробуй позже.',
+                        { toast: true }
+                    );
+                }
+                logger.error(
+                    `[Dealership] Неизвестная ошибка покупки ${model} для ${player.accountName}: ${err.message}`
+                );
+                return player.outputChatBox(
+                    '!{#FF3333}[Ошибка] Внутренняя ошибка сервера, покупка не проведена.',
+                    { toast: true }
+                );
+            }
 
             auditService.logPlayer(player, 'buy_vehicle', {
                 category: 'money',
