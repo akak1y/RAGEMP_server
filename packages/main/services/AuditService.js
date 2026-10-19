@@ -21,6 +21,17 @@ const NON_RETRYABLE = new Set([
 ]);
 
 /**
+ * Мёртвый пул соединений
+ * @private
+ * @param {any} err
+ * @returns {boolean}
+ */
+function isConnectionClosed(err) {
+    const msg = err && err.message ? String(err.message) : '';
+    return /connection manager was closed/i.test(msg);
+}
+
+/**
  * @typedef {Object} QueuedEntry
  * @property {Object} payload - уже сериализованный объект для модели
  * @property {(row: Object|null) => void} resolve - резолв промиса log(); null = дроп
@@ -82,8 +93,8 @@ class AuditService {
                 details === undefined
                     ? null
                     : typeof details === 'string'
-                    ? details
-                    : JSON.stringify(details),
+                      ? details
+                      : JSON.stringify(details),
         };
     }
 
@@ -167,10 +178,7 @@ class AuditService {
                 await ensureAuditReady();
             } catch (err) {
                 logger.error(`[AuditService] flush aborted, срез сброшен: ${err.message}`);
-                metrics.inc(
-                    'rage_audit_dropped_total',
-                    'Audit entries dropped (model not ready)'
-                );
+                metrics.inc('rage_audit_dropped_total', 'Audit entries dropped (model not ready)');
                 for (const item of batch) item.resolve(null);
                 this._stopTimerIfIdle();
                 return;
@@ -201,6 +209,10 @@ class AuditService {
             try {
                 return await getAuditModel().create(payload);
             } catch (err) {
+                if (isConnectionClosed(err)) {
+                    metrics.inc('rage_audit_dropped_total', 'Audit entries dropped (pool closed)');
+                    return null;
+                }
                 const nonRetryable = NON_RETRYABLE.has(err && err.name);
                 if (nonRetryable || attempt >= MAX_RETRIES) {
                     metrics.inc('rage_audit_dropped_total', 'Audit entries dropped (write failed)');
@@ -249,9 +261,9 @@ class AuditService {
         if (withPosition) {
             const p = player.position || {};
             entry.details = {
-                position: `${(p.x || 0).toFixed(1)},${(p.y || 0).toFixed(1)},${(
-                    p.z || 0
-                ).toFixed(1)}`,
+                position: `${(p.x || 0).toFixed(1)},${(p.y || 0).toFixed(1)},${(p.z || 0).toFixed(
+                    1
+                )}`,
                 ...(extra.details || {}),
             };
         }
