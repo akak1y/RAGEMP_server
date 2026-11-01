@@ -166,6 +166,7 @@ module.exports = {
         courierTarget: 'Точка доставки',
         miningRock: 'Добывать руду',
         miningSell: 'Продать руду',
+        bank: 'Банк',
     },
     FactionConfig: {
         courierBonusPlayer: 0.2, // к зарплате курьера
@@ -180,5 +181,27 @@ module.exports = {
     ArmoryConfig: {
         minRankTake: 1, // ранг, с которого можно брать из арсенала
         maxActiveLoans: 5, // активных займов на одного члена семьи
+    },
+    BankPos: { x: -410.5, y: -83.2, z: 44.5, h: 270.0 },
+    BankInteractionRadius: 5,
+    BankConfig: {
+        maxBalance: 2000000000,
+        minOperation: 1,
+        maxDeposit: 1000000,
+        maxWithdraw: 1000000,
+        maxTransfer: 1000000,
+        includeInEconomy: true,
+        interest: {
+            enabled: true,
+            periodMs: 24 * 60 * 60 * 1000,
+            ratePerPeriod: 0.001,
+            minBalance: 1000,
+            maxCatchupPeriods: 7,
+            accrueOnOpen: true,
+        },
+        fees: {
+            transferPercent: 0,
+            minFee: 0,
+        },
     },
 };
