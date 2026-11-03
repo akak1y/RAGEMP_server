@@ -182,7 +182,7 @@ module.exports = {
         minRankTake: 1, // ранг, с которого можно брать из арсенала
         maxActiveLoans: 5, // активных займов на одного члена семьи
     },
-    BankPos: { x: -410.5, y: -83.2, z: 44.5, h: 270.0 },
+    BankPos: { x: -453.3, y: -85.1, z: 40.0, h: 215.6 },
     BankInteractionRadius: 5,
     BankConfig: {
         maxBalance: 2000000000,

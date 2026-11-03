@@ -104,25 +104,15 @@ module.exports = {
         await ensureIndex(seq, 'bank_ledger', ['account_id', 'created_at']);
         await ensureIndex(seq, 'bank_ledger', ['reference_id']);
 
-        await ensureIndex(
-            seq,
-            'bank_ledger',
-            ['account_id', 'type', 'period_key'],
-            {
-                unique: true,
-                name: 'bank_ledger_interest_period_unique',
-            }
-        );
+        await ensureIndex(seq, 'bank_ledger', ['account_id', 'type', 'period_key'], {
+            unique: true,
+            name: 'bank_ledger_interest_period_unique',
+        });
 
-        await ensureIndex(
-            seq,
-            'bank_ledger',
-            ['reference_id', 'account_id', 'type'],
-            {
-                unique: true,
-                name: 'bank_ledger_transfer_leg_unique',
-            }
-        );
+        await ensureIndex(seq, 'bank_ledger', ['reference_id', 'account_id', 'type'], {
+            unique: true,
+            name: 'bank_ledger_transfer_leg_unique',
+        });
     },
 
     async down(queryInterface) {

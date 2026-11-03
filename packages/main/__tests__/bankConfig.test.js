@@ -1,9 +1,4 @@
-const {
-    BankPos,
-    BankInteractionRadius,
-    BankConfig,
-    InteractionHints,
-} = require('../config');
+const { BankPos, BankInteractionRadius, BankConfig, InteractionHints } = require('../config');
 
 describe('BankConfig', () => {
     test('BankPos содержит валидные координаты', () => {
