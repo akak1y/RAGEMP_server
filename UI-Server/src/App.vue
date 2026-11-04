@@ -76,6 +76,13 @@
             @armory-return="onArmoryReturn"
             @close="closeWindow('faction')"
         />
+        <!--банк-->
+        <Bank
+            v-if="windows.bank"
+            :info="bankInfo"
+            :ledger="bankLedger"
+            @close="closeWindow('bank')"
+        />
         <!--перехватываем нажатие клавиш-->
         <input
             ref="focusTrap"
@@ -120,6 +127,7 @@ import Shop from './components/Shop.vue';
 import MiningSell from './components/MiningSell.vue';
 import HospitalWindow from './components/HospitalWindow.vue';
 import Faction from './components/Faction.vue';
+import Bank from './components/Bank.vue';
 import Chat from './components/Chat.vue';
 import Toasts from './components/Toasts.vue';
 
@@ -149,6 +157,7 @@ const windows = ref({
     miningSell: false,
     hospital: false,
     faction: false,
+    bank: false,
 });
 const focusTrap = ref(null);
 const speed = ref(0);
@@ -164,6 +173,15 @@ const factionStorage = ref(null);
 const armoryInfo = ref(null);
 const hospitalPrice = ref(0);
 const toastsRef = ref(null);
+const bankInfo = ref({
+    balance: 0,
+    recent: [],
+    limits: {},
+    interest: {},
+    pendingPeriods: 0,
+    nextInterestAt: null,
+});
+const bankLedger = ref(null);
 
 const addDebugLog = (text, type = 'info') => {
     const now = new Date();
@@ -451,5 +469,20 @@ onMounted(() => {
         hospitalPrice.value = price;
     };
     window.chatNotify = (text) => toastsRef.value?.show(text);
+    window.openBankWindow = () => {
+        windows.value.bank = true;
+        syncCursorAndChat('bank');
+    };
+    window.setBankInfo = (data) => {
+        try {
+            const obj = typeof data === 'string' ? JSON.parse(data) : data;
+            if (obj) bankInfo.value = { ...bankInfo.value, ...obj };
+        } catch (e) {
+            console.error('[Vue Error] Не удалось распарсить данные банка:', e);
+        }
+    };
+    window.setBankLedger = (arr) => {
+        bankLedger.value = Array.isArray(arr) ? arr : null;
+    };
 });
 </script>

@@ -21,6 +21,7 @@ globalThis.UIState = {
         miningSell: false,
         hospital: false,
         faction: false,
+        bank: false,
     },
     positions: {
         dealership: null,
@@ -32,5 +33,6 @@ globalThis.UIState = {
         shop: null,
         mafiaBase: null,
         hospital: null,
+        bank: null,
     },
 };

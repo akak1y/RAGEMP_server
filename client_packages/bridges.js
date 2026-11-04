@@ -18,6 +18,7 @@ const LOCATION_KEYS = [
     'shop',
     'hospital',
     'mafiaBase',
+    'bank',
 ];
 
 // ДАННЫЕ → VUE ==============
@@ -55,6 +56,23 @@ mp.events.add('client:customCar:setTuningConfig', (json) => {
 
 mp.events.add('client:customCar:setTuningState', (json) => {
     ui.call('setTuningState', JSON.parse(json));
+});
+
+// БАНК → VUE
+mp.events.add('client:bank:open', () => {
+    ui.call('openBankWindow');
+});
+
+mp.events.add('client:bank:setInfo', (json) => {
+    ui.call('setBankInfo', JSON.parse(json));
+});
+
+mp.events.add('client:bank:result', (ok, text) => {
+    ui.call('bankResult', !!ok, String(text));
+});
+
+mp.events.add('client:bank:ledger', (json) => {
+    ui.call('setBankLedger', JSON.parse(json));
 });
 
 // VUE → СЕРВЕР ==============

@@ -17,6 +17,7 @@ require('./shop');
 require('./mining');
 require('./factions');
 require('./hospital');
+require('./bank');
 
 /**
  * Входная точка клиента: создание браузера и подключение доменных модулей.
