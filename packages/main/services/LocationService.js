@@ -9,6 +9,7 @@ const {
     MiningConfig,
     BotConfig,
     LocationConfig,
+    BankPos,
 } = require('../config');
 const { isNear } = require('../utils/distance');
 const logger = require('../core/logger');
@@ -59,6 +60,11 @@ class LocationService {
                 pos: ShopConfig.position,
                 blip: { sprite: 52, color: 2, name: '24/7', scale: 0.9 },
                 marker: { type: 1, size: 1.5, color: [0, 120, 255, 150], zOffset: -1.0 },
+            },
+            bank: {
+                pos: BankPos,
+                blip: { sprite: 108, color: 2, name: 'Банк', scale: 1.0 },
+                marker: { type: 1, size: 1.5, color: [0, 160, 255, 160], zOffset: -1.0 },
             },
             // шахта: камни как 3D-объекты без маркеров
             ...MiningConfig.rocks.reduce((acc, pos, i) => {

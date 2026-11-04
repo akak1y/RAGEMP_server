@@ -29,6 +29,7 @@ mp.events.add(
                 fuel: locationService.getPosition('fuel'),
                 courierStart: locationService.getPosition('courier'),
                 shop: locationService.getPosition('shop'),
+                bank: locationService.getPosition('bank'),
                 mining: {
                     rocks: MiningConfig.rocks,
                     botPos: BotConfig.position,
