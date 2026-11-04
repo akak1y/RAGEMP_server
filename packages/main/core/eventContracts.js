@@ -78,6 +78,12 @@ const contracts = {
     'client:chat:message': ['string'],
     'client:chat:notify': ['string'],
     'client:chat:state': ['string'],
+
+    // ===== bankController.js =====
+    'client:bank:open': [],
+    'client:bank:setInfo': ['string'],
+    'client:bank:result': ['boolean', 'string'],
+    'client:bank:ledger': ['string'],
 };
 
 function typeOf(value) {

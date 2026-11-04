@@ -43,10 +43,10 @@ global.mp = {
 describe('LocationService', () => {
     beforeEach(() => jest.clearAllMocks());
 
-    test('initialize: 7 маркеров + 7 блипов + 3 камня', () => {
+    test('initialize: 8 маркеров + 8 блипов + 3 камня', () => {
         locationService.initialize();
-        expect(global.mp.markers.new).toHaveBeenCalledTimes(7);
-        expect(global.mp.blips.new).toHaveBeenCalledTimes(7);
+        expect(global.mp.markers.new).toHaveBeenCalledTimes(8);
+        expect(global.mp.blips.new).toHaveBeenCalledTimes(8);
         expect(global.mp.objects.new).toHaveBeenCalledTimes(3);
     });
 

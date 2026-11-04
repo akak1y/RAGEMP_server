@@ -40,3 +40,7 @@
 | `client:chat:message`                  | string                                    | services/ChatService.js                                |
 | `client:chat:notify`                   | string                                    | services/ChatService.js                                |
 | `client:chat:state`                    | string                                    | controllers/chatController.js                          |
+| `client:bank:open`                     |                                           | controllers/bankController.js                          |
+| `client:bank:setInfo`                  | string                                    | controllers/bankController.js                          |
+| `client:bank:result`                   | boolean, string                           | controllers/bankController.js                          |
+| `client:bank:ledger`                   | string                                    | controllers/bankController.js                          |
