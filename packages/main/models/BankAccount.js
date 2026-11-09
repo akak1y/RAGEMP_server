@@ -32,6 +32,16 @@ function initBankAccountModel() {
                 allowNull: false,
                 defaultValue: DataTypes.NOW,
             },
+            plan_id: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 1,
+            },
+            cashback_pending: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0,
+            },
         },
         {
             tableName: 'bank_accounts',

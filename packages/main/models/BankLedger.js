@@ -25,6 +25,11 @@ function initBankLedgerModel() {
                 references: { model: 'accounts', key: 'id' },
                 onDelete: 'CASCADE',
             },
+            deposit_id: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0,
+            },
             type: {
                 type: DataTypes.STRING(32),
                 allowNull: false,
@@ -62,10 +67,12 @@ function initBankLedgerModel() {
             indexes: [
                 { fields: ['account_id', 'created_at'] },
                 { fields: ['reference_id'] },
+                { fields: ['deposit_id', 'created_at'] },
+                { fields: ['account_id', 'type', 'created_at'] },
                 {
                     unique: true,
-                    fields: ['account_id', 'type', 'period_key'],
-                    name: 'bank_ledger_interest_period_unique',
+                    fields: ['account_id', 'type', 'period_key', 'deposit_id'],
+                    name: 'bank_ledger_period_unique',
                 },
                 {
                     unique: true,
