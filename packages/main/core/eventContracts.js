@@ -84,6 +84,8 @@ const contracts = {
     'client:bank:setInfo': ['string'],
     'client:bank:result': ['boolean', 'string'],
     'client:bank:ledger': ['string'],
+    'client:bank:deposits': ['string'],
+    'client:bank:statement': ['string'],
 };
 
 function typeOf(value) {

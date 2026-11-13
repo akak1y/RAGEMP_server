@@ -6,7 +6,7 @@ const withGuards = require('../middleware/withGuards');
 const { sendEvent } = require('../core/eventSender');
 const { humanizeError } = require('../core/errorMessages');
 const { isNear } = require('../utils/distance');
-const { BankPos, BankInteractionRadius, BankConfig } = require('../config');
+const { BankPos, BankInteractionRadius } = require('../config');
 
 /**
  * Банк: открытие окна кассы, пополнение/снятие, перевод между банковскими счетами, история операций.
@@ -20,31 +20,30 @@ async function sendBankInfo(player) {
         bankService.getLedger(player.accountId, 5),
     ]);
 
-    sendEvent(player, 'client:bank:setInfo', [
-        JSON.stringify({
-            ...info,
-            recent,
-            limits: {
-                minOperation: BankConfig.minOperation,
-                maxDeposit: BankConfig.maxDeposit,
-                maxWithdraw: BankConfig.maxWithdraw,
-                maxTransfer: BankConfig.maxTransfer,
-                maxBalance: BankConfig.maxBalance,
-            },
-            interest: BankConfig.interest,
-        }),
-    ]);
+    sendEvent(player, 'client:bank:setInfo', [JSON.stringify({ ...info, recent })]);
 }
 
-// Короткий фидбек об операции (успех/ошибка) в toast окна банка.
+// Короткий фидбек об операции (успех/ошибка) в плашку окна.
 function sendBankResult(player, ok, text) {
     sendEvent(player, 'client:bank:result', [!!ok, String(text)]);
 }
 
-// Полный список движений для вкладки история.
+// Полный список движений карты для вкладки история.
 async function sendBankLedger(player, limit) {
     const rows = await bankService.getLedger(player.accountId, limit);
     sendEvent(player, 'client:bank:ledger', [JSON.stringify(rows)]);
+}
+
+// Список вкладов.
+async function sendDeposits(player) {
+    const rows = await bankService.getDeposits(player.accountId);
+    sendEvent(player, 'client:bank:deposits', [JSON.stringify(rows)]);
+}
+
+// Выписка по карте за период.
+async function sendStatement(player, fromMs, toMs) {
+    const st = await bankService.getStatement(player.accountId, fromMs, toMs);
+    sendEvent(player, 'client:bank:statement', [JSON.stringify(st)]);
 }
 
 // Открытие окна кассы.
@@ -89,7 +88,31 @@ mp.events.add(
     )
 );
 
-// Пополнение счёта.
+// Список вкладов.
+mp.events.add(
+    'server:bank:requestDeposits',
+    withGuards(
+        [isLoggedIn, rateLimit('bank:deposits', 10, 5)],
+        async (player) => {
+            await sendDeposits(player);
+        },
+        'bank:requestDeposits'
+    )
+);
+
+// Выписка по карте за период.
+mp.events.add(
+    'server:bank:requestStatement',
+    withGuards(
+        [isLoggedIn, rateLimit('bank:statement', 5, 5)],
+        async (player, fromMs, toMs) => {
+            await sendStatement(player, Number(fromMs), Number(toMs));
+        },
+        'bank:requestStatement'
+    )
+);
+
+// Пополнение карты.
 mp.events.add(
     'server:bank:deposit',
     withGuards(
@@ -111,17 +134,17 @@ mp.events.add(
                 amount: qty,
                 success: true,
                 withPosition: true,
-                details: { balanceAfter: result.balance, accrued: result.accrued },
+                details: { balanceAfter: result.balance },
             });
 
-            sendBankResult(player, true, `Пополнение: +$${qty}. Баланс: $${result.balance}.`);
+            sendBankResult(player, true, `Пополнение карты: +$${qty}. Баланс: $${result.balance}.`);
             await sendBankInfo(player);
         },
         'bank:deposit'
     )
 );
 
-// Снятие со счёта.
+// Снятие с карты.
 mp.events.add(
     'server:bank:withdraw',
     withGuards(
@@ -143,17 +166,17 @@ mp.events.add(
                 amount: qty,
                 success: true,
                 withPosition: true,
-                details: { balanceAfter: result.balance, accrued: result.accrued },
+                details: { balanceAfter: result.balance },
             });
 
-            sendBankResult(player, true, `Снятие: -$${qty}. Баланс: $${result.balance}.`);
+            sendBankResult(player, true, `Снятие с карты: -$${qty}. Баланс: $${result.balance}.`);
             await sendBankInfo(player);
         },
         'bank:withdraw'
     )
 );
 
-// Перевод между банковскими счетами.
+// Перевод между картами.
 mp.events.add(
     'server:bank:transfer',
     withGuards(
@@ -179,9 +202,118 @@ mp.events.add(
                 },
             });
 
-            sendBankResult(player, true, `Перевод $${qty} на счёт ${to} выполнен.`);
+            sendBankResult(player, true, `Перевод $${qty} на карту ${to} выполнен.`);
             await sendBankInfo(player);
         },
         'bank:transfer'
+    )
+);
+
+// Смена/оплата своего тарифа. Управление своим счёт.
+mp.events.add(
+    'server:bank:setPlan',
+    withGuards(
+        [isLoggedIn, rateLimit('bank:setPlan', 3, 10)],
+        async (player, planId) => {
+            const result = await bankService.setPlan(player, Number(planId));
+
+            if (!result.success) {
+                return sendBankResult(player, false, humanizeError(result.error));
+            }
+
+            await auditService.logPlayer(player, 'bank_set_plan', {
+                category: 'bank',
+                success: true,
+                details: {
+                    planId: result.plan.id,
+                    planName: result.plan.name,
+                    unchanged: !!result.unchanged,
+                },
+            });
+
+            const verb = result.unchanged ? 'Тариф уже активен' : 'Тариф изменён';
+            sendBankResult(player, true, `${verb}: ${result.plan.name}.`);
+            await sendBankInfo(player);
+        },
+        'bank:setPlan'
+    )
+);
+
+// Открытие вклада.
+mp.events.add(
+    'server:bank:createDeposit',
+    withGuards(
+        [isLoggedIn, rateLimit('bank:createDeposit', 3, 10)],
+        async (player, kind, amount, tierDays) => {
+            if (!isNear(player.position, BankPos, BankInteractionRadius)) {
+                return sendBankResult(player, false, humanizeError('too_far'));
+            }
+
+            const qty = Number(amount);
+            const result = await bankService.createDeposit(
+                player,
+                String(kind),
+                qty,
+                Number(tierDays)
+            );
+
+            if (!result.success) {
+                return sendBankResult(player, false, humanizeError(result.error));
+            }
+
+            await auditService.logPlayer(player, 'bank_deposit_open', {
+                category: 'bank',
+                amount: qty,
+                success: true,
+                withPosition: true,
+                details: { depositId: result.deposit.id, kind: result.deposit.kind },
+            });
+
+            sendBankResult(player, true, `Вклад ${result.deposit.kind} открыт на $${qty}.`);
+            await sendBankInfo(player);
+            await sendDeposits(player);
+        },
+        'bank:createDeposit'
+    )
+);
+
+// Закрытие вклада.
+mp.events.add(
+    'server:bank:closeDeposit',
+    withGuards(
+        [isLoggedIn, rateLimit('bank:closeDeposit', 3, 10)],
+        async (player, depositId, early) => {
+            if (!isNear(player.position, BankPos, BankInteractionRadius)) {
+                return sendBankResult(player, false, humanizeError('too_far'));
+            }
+
+            const result = await bankService.closeDeposit(player, Number(depositId), !!early);
+
+            if (!result.success) {
+                return sendBankResult(player, false, humanizeError(result.error));
+            }
+
+            await auditService.logPlayer(player, 'bank_deposit_close', {
+                category: 'bank',
+                amount: result.payout,
+                success: true,
+                withPosition: true,
+                details: {
+                    depositId: Number(depositId),
+                    penalty: result.penalty,
+                    early: !!early,
+                },
+            });
+
+            const penaltyText = result.penalty > 0 ? ` (штраф $${result.penalty})` : '';
+            sendBankResult(
+                player,
+                true,
+                `Вклад закрыт, на карту: $${result.payout}${penaltyText}.`
+            );
+            await sendBankInfo(player);
+            await sendDeposits(player);
+        },
+        'bank:closeDeposit'
     )
 );

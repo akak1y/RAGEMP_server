@@ -44,3 +44,5 @@
 | `client:bank:setInfo`                  | string                                    | controllers/bankController.js                          |
 | `client:bank:result`                   | boolean, string                           | controllers/bankController.js                          |
 | `client:bank:ledger`                   | string                                    | controllers/bankController.js                          |
+| `client:bank:deposits`                 | string                                    | controllers/bankController.js                          |
+| `client:bank:statement`                | string                                    | controllers/bankController.js                          |
